@@ -6,6 +6,8 @@ public class PageManager : MonoBehaviour
 {
     [SerializeField] private List<GameObject> pageList;
     [SerializeField] private ThemeManager themeManager;
+    [SerializeField] private Transform canvas;
+    [SerializeField] private Transform mainView;
 
     public void SelectPage(GameObject btnPage, bool keepOldPage = false)
     {
@@ -13,7 +15,8 @@ public class PageManager : MonoBehaviour
         {
             if (page == btnPage || (page.activeSelf == true && keepOldPage))
             {
-                page.SetActive(true);
+                page.transform.SetParent(mainView);
+                page.transform.SetSiblingIndex(1);
             }
             else
             {
@@ -23,7 +26,8 @@ public class PageManager : MonoBehaviour
                     scrollbar.value = 1f;
                 }
 
-                page.SetActive(false);
+                page.transform.SetParent(canvas);
+                page.transform.SetAsFirstSibling();
             }
         }
     }

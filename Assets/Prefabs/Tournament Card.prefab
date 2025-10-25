@@ -167,10 +167,10 @@ GameObject:
   - component: {fileID: 9014308157447041544}
   - component: {fileID: 1006688828730934450}
   - component: {fileID: 4971655245869936063}
-  - component: {fileID: -3780507108839975817}
-  - component: {fileID: 2136041801516478553}
+  - component: {fileID: 592843507695667268}
+  - component: {fileID: 1027321625268404584}
   m_Layer: 5
-  m_Name: Announcement Card
+  m_Name: Tournament Card
   m_TagString: Secondary
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -260,7 +260,7 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 3
---- !u!114 &-3780507108839975817
+--- !u!114 &592843507695667268
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -304,9 +304,9 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 2136041801516478553}
-        m_TargetAssemblyTypeName: AnnouncementCard, Assembly-CSharp
-        m_MethodName: OpenAnnouncementPost
+      - m_Target: {fileID: 1027321625268404584}
+        m_TargetAssemblyTypeName: TournamentCard, Assembly-CSharp
+        m_MethodName: OpenTournamentPost
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -316,7 +316,7 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
---- !u!114 &2136041801516478553
+--- !u!114 &1027321625268404584
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -325,13 +325,13 @@ MonoBehaviour:
   m_GameObject: {fileID: 2684861780926219532}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f977daabc9be5b0408fac937e4412c0b, type: 3}
+  m_Script: {fileID: 11500000, guid: 1f23ef82c28f96245a2df974b1dfa8e1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  annTitle: {fileID: 8837642294426450000}
-  annDate: {fileID: 5630979289329061120}
+  tourTitle: {fileID: 8837642294426450000}
+  tourDate: {fileID: 5630979289329061120}
   parentList: {fileID: 0}
-  announcementPost: {fileID: 0}
+  tournamentPost: {fileID: 0}
   mainView: {fileID: 0}
   canvas: {fileID: 0}
 --- !u!1 &2715560227700302512

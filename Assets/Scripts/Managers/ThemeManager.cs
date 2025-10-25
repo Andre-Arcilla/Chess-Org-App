@@ -43,20 +43,6 @@ public class ThemeManager : MonoBehaviour
     // add animation to hide/cover screen while doing this =================================================
     private void ChangeTheme(ColorPaletteSO theme)
     {
-        string activePage = " ";
-
-        // Enable all pages
-        foreach (var page in pages)
-        {
-            // Remember the current active page
-            if (page.gameObject.activeSelf == true)
-            {
-                activePage = page.name;
-            }
-
-            page.SetActive(true);
-        }
-
         // Change background theme
         foreach (var item in GameObject.FindGameObjectsWithTag("Background"))
         {
@@ -138,16 +124,6 @@ public class ThemeManager : MonoBehaviour
                 Color curColor = text.color;
                 Color newColor = theme.NavBarText;
                 text.color = new Color(newColor.r, newColor.g, newColor.b, curColor.a);
-            }
-        }
-
-        // Disable pages
-        foreach (var page in pages)
-        {
-            // Skip the current active page
-            if (page.name != activePage)
-            {
-                page.SetActive(false);
             }
         }
     }

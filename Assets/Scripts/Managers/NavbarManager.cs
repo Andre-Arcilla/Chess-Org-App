@@ -14,6 +14,7 @@ public class NavbarManager : MonoBehaviour
         {
             var text = buttonObj.GetComponentInChildren<TextMeshProUGUI>();
             var image = buttonObj.GetComponentInChildren<Image>();
+            var layout = buttonObj.GetComponent<LayoutElement>();
             if (text == null || image == null)
             {
                 continue;
@@ -21,13 +22,17 @@ public class NavbarManager : MonoBehaviour
 
             if (buttonObj == senderObj)
             {
-                text.color = Color.black;
-                image.color = new Color(image.color.r, image.color.g, image.color.b, 0f);
+                // Selected button
+                layout.flexibleWidth = 1.5f;
+                text.color = Color.white;
+                image.color = new Color(image.color.r, image.color.g, image.color.b, 1f);
             }
             else
             {
-                text.color = themeManager._currentTheme.NavBarText;
-                image.color = new Color(image.color.r, image.color.g, image.color.b, 1f);
+                // Not selected button
+                layout.flexibleWidth = 1f;
+                text.color = Color.black;
+                image.color = new Color(image.color.r, image.color.g, image.color.b, 0f);
             }
         }
     }
