@@ -10,12 +10,6 @@ public class GenerateDatabase : MonoBehaviour
     [SerializeField] private string saveFileName = "Hoshiyomi_ChessOrg.db";
     [SerializeField] private SQLiteConnection database;
 
-    [SerializeField] private GameObject profilePage;
-    [SerializeField] private TextMeshProUGUI studName;
-    [SerializeField] private TextMeshProUGUI studNum;
-    [SerializeField] private TextMeshProUGUI rating;
-    [SerializeField] private TextMeshProUGUI puzzles;
-
     void Awake()
     {
         ConnectDB();
@@ -103,17 +97,7 @@ public class GenerateDatabase : MonoBehaviour
             );
         ");
 
-        //// DEBUG TEST
-        //database.Execute(@"DELETE FROM Profiles");
-        //database.Execute(@"DELETE FROM ChessGames");
-        //database.Execute(@"DELETE FROM Announcements");
-        //database.Execute(@"DELETE FROM Tournaments");
-        //database.Execute(@"DELETE FROM Registrations");
-        //database.Execute(@"DELETE FROM OrgRoster");
-        //database.Execute(@"DELETE FROM sqlite_sequence WHERE name='Profiles'");
-        //database.Execute(@"DELETE FROM sqlite_sequence WHERE name='ChessGames'");
-        //database.Execute(@"DELETE FROM sqlite_sequence WHERE name='Announcements'");
-        //database.Execute(@"DELETE FROM sqlite_sequence WHERE name='Tournaments'");
+        // DEBUG TEST
 
         ProfileDebug();
         AnnouncementDebug();
@@ -143,10 +127,10 @@ public class GenerateDatabase : MonoBehaviour
 
         Profiles profile = database.Table<Profiles>().FirstOrDefault();
 
-        studName.text = profile.StudName;
-        studNum.text = profile.StudNum;
-        rating.text = profile.Rating.ToString();
-        puzzles.text = profile.Puzzles.ToString();
+        //studName.text = profile.StudName;
+        //studNum.text = profile.StudNum;
+        //rating.text = profile.Rating.ToString();
+        //puzzles.text = profile.Puzzles.ToString();
     }
 
     private void AnnouncementDebug()
@@ -201,6 +185,20 @@ Nulla facilisi. Donec sit amet eros a sem pulvinar tincidunt. Phasellus elementu
                 VALUES ('A12346169', 'A12346169', 'kyaa~~', '{DateTime.Now:yyyy-MM-dd HH:mm:ss}', '{text}', 0);
             ");
         }
+    }
+
+    private void DeleteTablesDebug()
+    {
+        database.Execute(@"DELETE FROM Profiles");
+        database.Execute(@"DELETE FROM ChessGames");
+        database.Execute(@"DELETE FROM Announcements");
+        database.Execute(@"DELETE FROM Tournaments");
+        database.Execute(@"DELETE FROM Registrations");
+        database.Execute(@"DELETE FROM OrgRoster");
+        database.Execute(@"DELETE FROM sqlite_sequence WHERE name='Profiles'");
+        database.Execute(@"DELETE FROM sqlite_sequence WHERE name='ChessGames'");
+        database.Execute(@"DELETE FROM sqlite_sequence WHERE name='Announcements'");
+        database.Execute(@"DELETE FROM sqlite_sequence WHERE name='Tournaments'");
     }
 }
 

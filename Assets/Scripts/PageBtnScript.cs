@@ -10,7 +10,9 @@ public class PageBtnScript : MonoBehaviour
 
     public void OnClick()
     {
+        // Switch pages
         pageManager.SelectPage(page, keepOldPage);
+        // Change button visuals
         navbarManager.SelectButton(sender);
     }
 }
