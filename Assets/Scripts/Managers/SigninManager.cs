@@ -9,10 +9,6 @@ public class SigninManager : MonoBehaviour
     [Header("Scene Manager")]
     [SerializeField] private SceneLoader SceneLoader;
 
-    [Header("Database")]
-    [SerializeField] private GenerateDatabase dbManager;
-    [SerializeField] private SQLiteConnection database;
-
     [Header("Login Fields")]
     [SerializeField] private TMP_InputField studNum;
     [SerializeField] private TMP_InputField password;
@@ -24,30 +20,30 @@ public class SigninManager : MonoBehaviour
 
     public void SignInButton()
     {
-        database = dbManager.ConnectDB();
-
         var inputStudNum = studNum.text;
         var inputPassword = password.text;
 
         // CHANGE TO CHECK FROM ONLINE SERVER INSTEAD OF LOCAL
-        var user = database.Table<ProfileModel>()
-                           .Where(profile => profile.StudNum.ToUpper() == inputStudNum.ToUpper())
-                           .FirstOrDefault();
+        // Get profile with same student ID
+        var user = GenerateDatabase.Instance.database.Table<ProfileModel>().Where(profile => profile.StudNum.ToUpper() == inputStudNum.ToUpper()).FirstOrDefault();
 
-        if (user == null)
+        // No profile with same student ID found in local database
+        if (user == null || string.IsNullOrWhiteSpace(inputStudNum))
         {
             StopAllCoroutines();
             StartCoroutine(ShowPopup("Invalid student number"));
             return;
         }
 
-        if (user.Password != inputPassword || inputPassword == null)
+        // Check if inputpassword and profile password match
+        if (user.Password != inputPassword || string.IsNullOrWhiteSpace(inputPassword))
         {
             StopAllCoroutines();
             StartCoroutine(ShowPopup("Invalid password"));
             return;
         }
 
+        // Load scene based on profile role
         if (user.Role.ToUpper() == "MEMBER")
         {
             SceneLoader.LoadNewScene("MemberScene");

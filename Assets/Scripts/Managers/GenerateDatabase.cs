@@ -1,16 +1,33 @@
 using SQLite4Unity3d;
 using System;
 using System.IO;
-using TMPro;
 using UnityEngine;
 
 public class GenerateDatabase : MonoBehaviour
 {
+    public static GenerateDatabase Instance { get; private set; }
+
+    private void Awake()
+    {
+        if (Instance == null)
+        {
+            Instance = this;
+            transform.SetParent(null);
+            DontDestroyOnLoad(gameObject);
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
+
+        SetupDatabase();
+    }
+
     [Header("data")]
     [SerializeField] private string saveFileName = "Hoshiyomi_ChessOrg.db";
-    [SerializeField] private SQLiteConnection database;
+    [SerializeField] public SQLiteConnection database;
 
-    void Awake()
+    private void SetupDatabase()
     {
         ConnectDB();
 
@@ -115,9 +132,10 @@ public class GenerateDatabase : MonoBehaviour
         return database;
     }
 
+    // MOVE TO ITS OWN SCRIPT
     private void ProfileDebug()
     {
-        if (database.Table<Profiles>().FirstOrDefault() == null)
+        if (database.Table<ProfileModel>().FirstOrDefault() == null)
         {
             database.Execute(@"
                 INSERT INTO Profiles (StudName, StudNum, Password, College, Rating, Puzzles, Role) 
@@ -125,7 +143,7 @@ public class GenerateDatabase : MonoBehaviour
             ");
         }
 
-        Profiles profile = database.Table<Profiles>().FirstOrDefault();
+        ProfileModel profile = database.Table<ProfileModel>().FirstOrDefault();
 
         //studName.text = profile.StudName;
         //studNum.text = profile.StudNum;
@@ -133,6 +151,7 @@ public class GenerateDatabase : MonoBehaviour
         //puzzles.text = profile.Puzzles.ToString();
     }
 
+    // MOVE TO ITS OWN SCRIPT
     private void AnnouncementDebug()
     {
         if (database.Table<AnnouncementModel>().FirstOrDefault() == null)
@@ -161,6 +180,7 @@ Quisque in arcu id nisl tincidunt ultricies. Ut commodo arcu nec justo finibus, 
         }
     }
 
+    // MOVE TO ITS OWN SCRIPT
     private void TournamentDebug()
     {
         if (database.Table<TournamentModel>().FirstOrDefault() == null)
@@ -200,23 +220,4 @@ Nulla facilisi. Donec sit amet eros a sem pulvinar tincidunt. Phasellus elementu
         database.Execute(@"DELETE FROM sqlite_sequence WHERE name='Announcements'");
         database.Execute(@"DELETE FROM sqlite_sequence WHERE name='Tournaments'");
     }
-}
-
-public class Profiles
-{
-    public int UserID { get; set; }
-
-    public string StudName { get; set; }
-
-    public string StudNum { get; set; }
-
-    public string Password { get; set; }
-
-    public string College { get; set; }
-
-    public int Rating { get; set; }
-
-    public int Puzzles { get; set; }
-
-    public string Role { get; set; }
 }

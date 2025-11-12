@@ -22,7 +22,6 @@ public class AnnouncementList : MonoBehaviour
         database = dbManager.ConnectDB();
 
         announcementsList = database.Table<AnnouncementModel>().ToList();
-        Debug.Log($"{announcementsList[0].Author} s");
 
         foreach (var item in announcementsList)
         {
