@@ -1,4 +1,5 @@
 using SQLite4Unity3d;
+using System;
 
 [Table("ChessGames")]
 public class GameModel
@@ -12,7 +13,7 @@ public class GameModel
 
     public string PlayerColor { get; set; }
 
-    public string Date { get; set; }
+    public DateTime Date { get; set; }
 
     public string Moves { get; set; }
 

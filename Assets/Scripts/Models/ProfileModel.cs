@@ -1,4 +1,5 @@
 using SQLite4Unity3d;
+using System;
 
 [Table("Profiles")]
 public class ProfileModel
@@ -20,7 +21,7 @@ public class ProfileModel
 
     public string Role { get; set; }
 
-    public string Date { get; set; }
+    public DateTime Date { get; set; }
 
     public long LastModified { get; set; }
 }

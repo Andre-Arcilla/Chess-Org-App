@@ -101,7 +101,7 @@ public class RegistrationListManager : MonoBehaviour
         StudName.text = registration.StudName;
         StudNum.text = registration.StudNum;
         StudEmail.text = registration.Email;
-        RegDate.text = registration.Date.ToString("MMMM dd, yyyy");
+        RegDate.text = registration.Date.ToString("MMMM dd, yyyy hh:mm:ss tt");
 
         pageToShow.transform.SetParent(mainView);
         pageToShow.transform.SetAsLastSibling();
@@ -118,7 +118,7 @@ public class RegistrationListManager : MonoBehaviour
             Password = currentRegistrant.Password,
             Rating = 100,
             Role = "Member",
-            Date = DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss"),
+            Date = DateTime.Now,
             LastModified = DateTimeOffset.Now.ToUnixTimeSeconds()
         };
 
@@ -138,7 +138,6 @@ public class RegistrationListManager : MonoBehaviour
 
     public void RejectRegistration()
     {
-        // remove in regTable
         GenerateDatabase.Instance.database.Delete(currentRegistrant);
 
         if (registrationDataCache.ContainsKey(currentRegistrant.StudNum))

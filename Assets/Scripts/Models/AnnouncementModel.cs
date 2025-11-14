@@ -1,8 +1,10 @@
 using SQLite4Unity3d;
+using System;
 
 [Table("Announcements")]
 public class AnnouncementModel
 {
+    [PrimaryKey, AutoIncrement]
     public int AnnID { get; set; }
 
     public string Author { get; set; }
@@ -11,9 +13,11 @@ public class AnnouncementModel
 
     public string Title { get; set; }
 
-    public string Date { get; set; }
+    public DateTime Date { get; set; }
 
     public string Text { get; set; }
 
     public int IsEditing { get; set; }
+
+    public long LastModified { get; set; }
 }

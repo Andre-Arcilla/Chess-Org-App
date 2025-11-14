@@ -1,5 +1,6 @@
 using SQLite4Unity3d;
 using System;
+using System.Collections;
 using System.IO;
 using UnityEngine;
 
@@ -26,23 +27,36 @@ public class GenerateDatabase : MonoBehaviour
     [Header("data")]
     [SerializeField] private string saveFileName = "Hoshiyomi_ChessOrg.db";
     [SerializeField] public SQLiteConnection database;
+    [SerializeField] public ProfileModel currentUser;
 
     private void SetupDatabase()
     {
         ConnectDB();
 
+        if (database.Table<ProfileModel>().FirstOrDefault() == null)
+        {
+            database.DropTable<ProfileModel>();
+            database.DropTable<RegisterModel>();
+            database.DropTable<OrgMemberModel>();
+            database.DropTable<AnnouncementModel>();
+            database.DropTable<TournamentModel>();
+            database.DropTable<GameModel>();
+        }
+
         // Creates Profiles table
         database.Execute(@"
             CREATE TABLE IF NOT EXISTS Profiles (
-                UserID INTEGER NOT NULL DEFAULT 1 CHECK(UserID >= 0),
-                StudName TEXT NOT NULL DEFAULT 'John Smith' COLLATE NOCASE,
-                StudNum TEXT NOT NULL COLLATE NOCASE,
-                Password TEXT NOT NULL DEFAULT '12345' COLLATE BINARY,
-                College TEXT NOT NULL DEFAULT 'CCIS' COLLATE NOCASE,
-                Rating INTEGER NOT NULL DEFAULT 100 CHECK(Rating >= 1),
-                Puzzles INTEGER NOT NULL DEFAULT 0 CHECK(Puzzles >= 0),
-                Role TEXT NOT NULL DEFAULT 'Member' CHECK(Role IN ('Member', 'Mod', 'Admin')) COLLATE NOCASE,
-                PRIMARY KEY(UserID AUTOINCREMENT)
+	            UserID	INTEGER NOT NULL DEFAULT 1 CHECK(UserID >= 0),
+	            StudName	TEXT NOT NULL DEFAULT 'John Smith' COLLATE NOCASE,
+	            StudNum	TEXT NOT NULL UNIQUE COLLATE NOCASE,
+	            Email	TEXT NOT NULL DEFAULT 'no.mail@umak.edu.ph' COLLATE NOCASE,
+	            Password	TEXT NOT NULL DEFAULT '12345' COLLATE BINARY,
+	            Rating	INTEGER NOT NULL DEFAULT 100 CHECK(Rating >= 1),
+	            Puzzles	INTEGER NOT NULL DEFAULT 0 CHECK(Puzzles >= 0),
+	            Role	TEXT NOT NULL DEFAULT 'Member' CHECK(Role IN ('Member', 'Coach', 'Admin', 'Disabled')) COLLATE NOCASE,
+	            Date	TEXT NOT NULL DEFAULT (strftime('%m/%d/%Y %H:%M:%S', 'now')) COLLATE NOCASE,
+	            LastModified	INTEGER NOT NULL DEFAULT (strftime('%s', 'now')) COLLATE NOCASE,
+	            PRIMARY KEY(UserID AUTOINCREMENT)
             );
         ");
 
@@ -50,29 +64,32 @@ public class GenerateDatabase : MonoBehaviour
         database.Execute(@"
             CREATE TABLE IF NOT EXISTS ChessGames (
 	            GameID	INTEGER NOT NULL DEFAULT 1 CHECK(GameID >= 0),
+	            GameNum	INTEGER NOT NULL DEFAULT 1,
 	            StudNum	TEXT NOT NULL,
 	            PlayerColor	TEXT NOT NULL DEFAULT 'White' CHECK(PlayerColor IN ('White', 'Black')) COLLATE NOCASE,
-	            Date	TEXT NOT NULL DEFAULT '12/12/2000 12:00:00' COLLATE NOCASE,
+	            Date	TEXT NOT NULL DEFAULT (strftime('%m/%d/%Y %H:%M:%S', 'now')) COLLATE NOCASE,
 	            Moves	TEXT NOT NULL DEFAULT 'N/A' COLLATE NOCASE,
 	            Result	TEXT NOT NULL DEFAULT 'Draw' CHECK(Result IN ('Win', 'Lose', 'Draw')) COLLATE NOCASE,
+	            LastModified	INTEGER NOT NULL DEFAULT (strftime('%s', 'now')) COLLATE NOCASE,
 	            PRIMARY KEY(GameID AUTOINCREMENT),
-	            FOREIGN KEY(StudNum) REFERENCES Profiles(StudNum)
+	            FOREIGN KEY(StudNum) REFERENCES Profiles(StudNum) ON DELETE CASCADE ON UPDATE CASCADE
             );
         ");
 
         // Creates Announcements table
         database.Execute(@"
             CREATE TABLE IF NOT EXISTS Announcements (
-	            AnnID	INTEGER NOT NULL DEFAULT 1 CHECK(AnnID >= 0),
+	            AnnID 	INTEGER NOT NULL DEFAULT 1 CHECK(AnnID >= 0),
 	            Author	TEXT NOT NULL,
 	            LastEditor	TEXT NOT NULL,
 	            Title	TEXT NOT NULL DEFAULT 'Title' COLLATE NOCASE,
-	            Date	TEXT NOT NULL DEFAULT '12/12/2000 12:00:00' COLLATE NOCASE,
+	            Date	TEXT NOT NULL DEFAULT (strftime('%m/%d/%Y %H:%M:%S', 'now')) COLLATE NOCASE,
 	            Text	TEXT NOT NULL DEFAULT 'Text' COLLATE NOCASE,
 	            IsEditing	INTEGER NOT NULL DEFAULT 0 CHECK(IsEditing == 0 || IsEditing == 1),
+	            LastModified	INTEGER NOT NULL DEFAULT (strftime('%s', 'now')) COLLATE NOCASE,
 	            PRIMARY KEY(AnnID AUTOINCREMENT),
-	            FOREIGN KEY(Author) REFERENCES Profiles(StudNum),
-	            FOREIGN KEY(LastEditor) REFERENCES Profiles(StudNum)
+	            FOREIGN KEY(Author) REFERENCES Profiles(StudNum) ON DELETE CASCADE ON UPDATE CASCADE,
+	            FOREIGN KEY(LastEditor) REFERENCES Profiles(StudNum) ON DELETE CASCADE ON UPDATE CASCADE
             );
         ");
 
@@ -83,12 +100,13 @@ public class GenerateDatabase : MonoBehaviour
 	            Author	TEXT NOT NULL,
 	            LastEditor	TEXT NOT NULL,
 	            Title	TEXT NOT NULL DEFAULT 'Title' COLLATE NOCASE,
-	            Date	TEXT NOT NULL DEFAULT '12/12/2000 12:00:00' COLLATE NOCASE,
+	            Date	TEXT NOT NULL DEFAULT (strftime('%m/%d/%Y %H:%M:%S', 'now')) COLLATE NOCASE,
 	            Text	TEXT NOT NULL DEFAULT 'Text' COLLATE NOCASE,
 	            IsEditing	INTEGER NOT NULL DEFAULT 0 CHECK(IsEditing == 0 || IsEditing == 1),
+	            LastModified	INTEGER NOT NULL DEFAULT (strftime('%s', 'now')) COLLATE NOCASE,
 	            PRIMARY KEY(TourID AUTOINCREMENT),
-	            FOREIGN KEY(Author) REFERENCES Profiles(StudNum),
-	            FOREIGN KEY(LastEditor) REFERENCES Profiles(StudNum)
+	            FOREIGN KEY(Author) REFERENCES Profiles(StudNum) ON DELETE CASCADE ON UPDATE CASCADE,
+	            FOREIGN KEY(LastEditor) REFERENCES Profiles(StudNum) ON DELETE CASCADE ON UPDATE CASCADE
             );
         ");
 
@@ -96,10 +114,12 @@ public class GenerateDatabase : MonoBehaviour
         database.Execute(@"
             CREATE TABLE IF NOT EXISTS Registrations (
 	            RegID	INTEGER NOT NULL DEFAULT 1 CHECK(RegID >= 0),
-                StudNum TEXT NOT NULL UNIQUE COLLATE NOCASE,
+	            StudName	TEXT NOT NULL DEFAULT 'John Smith' COLLATE NOCASE,
+	            StudNum	TEXT NOT NULL UNIQUE COLLATE NOCASE,
+	            Email	TEXT NOT NULL DEFAULT 'no.mail@umak.edu.ph' COLLATE NOCASE,
 	            Password	TEXT NOT NULL DEFAULT '12345' COLLATE BINARY,
-	            Name	TEXT NOT NULL DEFAULT 'John Smith' COLLATE NOCASE,
-	            College	TEXT NOT NULL DEFAULT 'CCIS' COLLATE NOCASE,
+	            Date	TEXT NOT NULL DEFAULT (strftime('%m/%d/%Y %H:%M:%S', 'now')) COLLATE NOCASE,
+	            LastModified	INTEGER NOT NULL DEFAULT (strftime('%s', 'now')) COLLATE NOCASE,
 	            PRIMARY KEY(RegID AUTOINCREMENT)
             );
         ");
@@ -108,8 +128,9 @@ public class GenerateDatabase : MonoBehaviour
         database.Execute(@"
             CREATE TABLE IF NOT EXISTS OrgRoster (
 	            MmbrID	INTEGER NOT NULL DEFAULT 1 CHECK(MmbrID >= 0),
-                StudNum TEXT NOT NULL UNIQUE COLLATE NOCASE,
-	            Name	TEXT NOT NULL DEFAULT 'John Smith' COLLATE NOCASE,
+	            StudName	TEXT NOT NULL DEFAULT 'John Smith' COLLATE NOCASE,
+	            StudNum	TEXT NOT NULL UNIQUE COLLATE NOCASE,
+	            LastModified	INTEGER NOT NULL DEFAULT (strftime('%s', 'now')) COLLATE NOCASE,
 	            PRIMARY KEY(MmbrID AUTOINCREMENT)
             );
         ");
@@ -119,6 +140,9 @@ public class GenerateDatabase : MonoBehaviour
         ProfileDebug();
         AnnouncementDebug();
         TournamentDebug();
+        GameDebug();
+        OrgDebug();
+        RegDebug();
     }
 
     public SQLiteConnection ConnectDB()
@@ -127,6 +151,7 @@ public class GenerateDatabase : MonoBehaviour
         {
             string dbPath = Path.Combine(Application.persistentDataPath, saveFileName);
             database = new SQLiteConnection(dbPath);
+            database.Execute("PRAGMA foreign_keys = ON;");
         }
 
         return database;
@@ -138,17 +163,30 @@ public class GenerateDatabase : MonoBehaviour
         if (database.Table<ProfileModel>().FirstOrDefault() == null)
         {
             database.Execute(@"
-                INSERT INTO Profiles (StudName, StudNum, Password, College, Rating, Puzzles, Role) 
-                VALUES ('John Softeng', 'A12346169', '123', 'CCIS', 410, 10, 'Member');
+                INSERT INTO Profiles (StudName, StudNum, Email, Password, Rating, Puzzles, Role)
+                VALUES ('John Softeng', 'A12346169', 'asd@umak.edu.ph', '123', 100, 1, 'Admin');
+            ");
+
+            database.Execute(@"
+                INSERT INTO Profiles (StudName, StudNum, Email, Password, Rating, Puzzles, Role)
+                VALUES ('Hugh G. Rektion', '222', 'asd@umak.edu.ph', '123', 100, 1, 'Admin');
+            ");
+
+            database.Execute(@"
+                INSERT INTO Profiles (StudName, StudNum, Email, Password, Rating, Puzzles, Role)
+                VALUES ('ahjid Fajram', '333', 'asd@umak.edu.ph', '123', 100, 1, 'Admin');
+            ");
+
+            database.Execute(@"
+                INSERT INTO Profiles (StudName, StudNum, Email, Password, Rating, Puzzles, Role)
+                VALUES ('Mhalac E. Taeteh', '444', 'asd@umak.edu.ph', '123', 100, 1, 'Admin');
+            ");
+
+            database.Execute(@"
+                INSERT INTO Profiles (StudName, StudNum, Email, Password, Rating, Puzzles, Role)
+                VALUES ('Fhuc Mae A. Noues', '555', 'asd@umak.edu.ph', '123', 100, 1, 'Admin');
             ");
         }
-
-        ProfileModel profile = database.Table<ProfileModel>().FirstOrDefault();
-
-        //studName.text = profile.StudName;
-        //studNum.text = profile.StudNum;
-        //rating.text = profile.Rating.ToString();
-        //puzzles.text = profile.Puzzles.ToString();
     }
 
     // MOVE TO ITS OWN SCRIPT
@@ -203,6 +241,74 @@ Nulla facilisi. Donec sit amet eros a sem pulvinar tincidunt. Phasellus elementu
             database.Execute(@$"
                 INSERT INTO Tournaments (Author, LastEditor, Title, Date, Text, IsEditing)
                 VALUES ('A12346169', 'A12346169', 'kyaa~~', '{DateTime.Now:yyyy-MM-dd HH:mm:ss}', '{text}', 0);
+            ");
+        }
+    }
+
+    private void GameDebug()
+    {
+        if (database.Table<GameModel>().FirstOrDefault() == null)
+        {
+            database.Execute(@"
+                INSERT INTO ChessGames (GameNum, StudNum, PlayerColor, Moves, Result)
+                VALUES ('1', 'A12346169', 'White', 'N/A', 'Win');
+            ");
+
+            database.Execute(@"
+                INSERT INTO ChessGames (GameNum, StudNum, PlayerColor, Moves, Result)
+                VALUES ('2', 'A12346169', 'White', 'N/A', 'Win');
+            ");
+
+            database.Execute(@"
+                INSERT INTO ChessGames (GameNum, StudNum, PlayerColor, Moves, Result)
+                VALUES ('3', 'A12346169', 'White', 'N/A', 'Win');
+            ");
+
+            database.Execute(@"
+                INSERT INTO ChessGames (GameNum, StudNum, PlayerColor, Moves, Result)
+                VALUES ('4', 'A12346169', 'White', 'N/A', 'Win');
+            ");
+        }
+    }
+
+    private void OrgDebug()
+    {
+        if (database.Table<OrgMemberModel>().FirstOrDefault() == null)
+        {
+            database.Execute(@"
+                INSERT INTO OrgRoster (StudName, StudNum)
+                VALUES ('aaaaaaa', '999');
+            ");
+
+            database.Execute(@"
+                INSERT INTO OrgRoster (StudName, StudNum)
+                VALUES ('aaaaaaa', '888');
+            ");
+
+            database.Execute(@"
+                INSERT INTO OrgRoster (StudName, StudNum)
+                VALUES ('aaaaaaa', '777');
+            ");
+        }
+    }
+
+    private void RegDebug()
+    {
+        if (database.Table<RegisterModel>().FirstOrDefault() == null)
+        {
+            database.Execute(@"
+                INSERT INTO Registrations (StudName, StudNum, Email, Password)
+                VALUES ('John A', '123', 'asd@umak.edu.ph', '123');
+            ");
+
+            database.Execute(@"
+                INSERT INTO Registrations (StudName, StudNum, Email, Password)
+                VALUES ('John B', '234', 'asd@umak.edu.ph', '123');
+            ");
+
+            database.Execute(@"
+                INSERT INTO Registrations (StudName, StudNum, Email, Password)
+                VALUES ('John C', '345', 'asd@umak.edu.ph', '123');
             ");
         }
     }

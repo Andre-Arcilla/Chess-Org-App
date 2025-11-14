@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -6,9 +7,9 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class SelectedProfileManager : MonoBehaviour
+public class ProfileManager : MonoBehaviour
 {
-    public static SelectedProfileManager Instance { get; private set; }
+    public static ProfileManager Instance { get; private set; }
 
     private void Awake()
     {
@@ -21,13 +22,14 @@ public class SelectedProfileManager : MonoBehaviour
         {
             Destroy(gameObject);
         }
+
+        currentProfile = GenerateDatabase.Instance.currentUser;
     }
 
     [Header("Profile UI References")]
     [SerializeField] private TextMeshProUGUI studNameText;
     [SerializeField] private TextMeshProUGUI studNumText;
     [SerializeField] private TextMeshProUGUI studRatingText;
-    [SerializeField] private ToggleGroup profRole;
 
     [Header("Game Stats UI References")]
     [SerializeField] private TextMeshProUGUI totalGames;
@@ -45,6 +47,9 @@ public class SelectedProfileManager : MonoBehaviour
     [SerializeField] private LayoutElement puzzleWinBar;
     [SerializeField] private LayoutElement puzzleLoseBar;
 
+    [Header("Home Page UI References")]
+    [SerializeField] private TextMeshProUGUI headerGreeting;
+
     [Header("Profile Edit References")]
     [SerializeField] private TMP_InputField studNameInput;
     [SerializeField] private TMP_InputField studNumInput;
@@ -55,15 +60,12 @@ public class SelectedProfileManager : MonoBehaviour
     [SerializeField] private GameObject cardPrefab;
     [SerializeField] private Transform cardContainer;
 
-    [Header("Page References")]
-    [SerializeField] private Transform hiddenContainer;
-
     // Current Profile
     private ProfileModel currentProfile;
 
-    // Cached data and gameobject, StudNum key + (GameNum key + data model/gameobject value) value
-    private Dictionary<string, Dictionary<int, GameModel>> allProfileGameCaches = new Dictionary<string, Dictionary<int, GameModel>>();
-    private Dictionary<string, Dictionary<int, GameObject>> allProfileObjectCaches = new Dictionary<string, Dictionary<int, GameObject>>();
+    // Cached data and gameobject, GameNum key + data model/gameobject value
+    private Dictionary<int, GameModel> gamesDataCaches = new Dictionary<int, GameModel>();
+    private Dictionary<int, GameObject> gamesObjectCaches = new Dictionary<int, GameObject>();
 
     void Start()
     {
@@ -71,6 +73,12 @@ public class SelectedProfileManager : MonoBehaviour
         {
             Destroy(child.gameObject);
         }
+
+        if (currentProfile == null)
+        {
+            SetCurrentProfile(GenerateDatabase.Instance.database.Table<ProfileModel>().FirstOrDefault());
+        }
+        HomePageSetup();
     }
 
     public void SetCurrentProfile(ProfileModel currentProfile)
@@ -92,104 +100,52 @@ public class SelectedProfileManager : MonoBehaviour
         UpdateProfileInfoPage();
     }
 
-    private void UpdateProfileInfoPage()
+    public void UpdateProfileInfoPage()
     {
         studNameText.text = currentProfile.StudName;
         studNumText.text = currentProfile.StudNum;
         studRatingText.text = currentProfile.Rating.ToString();
 
-        var toggle = profRole.GetComponentsInChildren<Toggle>().FirstOrDefault(t => t.name == currentProfile.Role);
-
-        if (toggle != null)
-        {
-            toggle.isOn = true;
-        }
-        else
-        {
-            toggle.isOn = false;
-        }
-
-        if (!allProfileGameCaches.ContainsKey(currentProfile.StudNum))
-        {
-            allProfileGameCaches[currentProfile.StudNum] = new Dictionary<int, GameModel>();
-        }
-
-        if (!allProfileObjectCaches.ContainsKey(currentProfile.StudNum))
-        {
-            allProfileObjectCaches[currentProfile.StudNum] = new Dictionary<int, GameObject>();
-        }
-
         GenerateList();
         SetGameStatistics();
         SetPuzzleStatistics();
+        HomePageSetup();
     }
 
     public void GenerateList()
     {
         var dbGames = GenerateDatabase.Instance.database.Table<GameModel>().Where(g => g.StudNum == currentProfile.StudNum).ToList();
 
-        var gameDataCache = allProfileGameCaches[currentProfile.StudNum];
-        var gameObjectCache = allProfileObjectCaches[currentProfile.StudNum];
-
-        foreach (var profile in allProfileObjectCaches)
-        {
-            if (profile.Key != currentProfile.StudNum)
-            {
-                foreach (var obj in profile.Value)
-                {
-                    obj.Value.transform.SetParent(hiddenContainer);
-                    obj.Value.SetActive(false);
-                }
-            }
-            else if (profile.Key == currentProfile.StudNum)
-            {
-                foreach (var obj in profile.Value)
-                {
-                    if (obj.Value.transform.parent != cardContainer)
-                    {
-                        obj.Value.transform.SetParent(cardContainer);
-                        obj.Value.SetActive(true);
-                    }
-                }
-            }
-        }
-
         // Check if data is cached, if not, generate it
         foreach (var game in dbGames)
         {
-            if (gameDataCache.TryGetValue(game.GameNum, out var cached))
+            if (gamesDataCaches.TryGetValue(game.GameNum, out var cached))
             {
                 if (game.LastModified > cached.LastModified)
                 {
-                    gameDataCache[game.GameNum] = game;
-                    gameObjectCache[game.GameNum].GetComponent<GameCard>().SetInformation(game);
+                    gamesDataCaches[game.GameNum] = game;
+                    gamesObjectCaches[game.GameNum].GetComponent<GameCard>().SetInformation(game);
                 }
             }
             else
             {
                 var newCard = Instantiate(cardPrefab, cardContainer);
                 newCard.GetComponent<GameCard>().SetInformation(game);
-                gameDataCache[game.GameNum] = game;
-                gameObjectCache[game.GameNum] = newCard;
+                gamesDataCaches[game.GameNum] = game;
+                gamesObjectCaches[game.GameNum] = newCard;
             }
         }
 
-        var dbKeys = new HashSet<int>(dbGames.Select(game => game.GameNum));
-        var deletedKeys = gameDataCache.Keys.Where(key => !dbKeys.Contains(key)).ToList();
+        var dbKeys = new HashSet<int>(dbGames.Select(announcement => announcement.GameNum));
+        var deletedKeys = gamesDataCaches.Keys.Where(key => !dbKeys.Contains(key)).ToList();
 
         // Delete cached data not in database
         foreach (var key in deletedKeys)
         {
-            Destroy(gameObjectCache[key]);
-            gameDataCache.Remove(key);
-            gameObjectCache.Remove(key);
+            Destroy(gamesObjectCaches[key]);
+            gamesDataCaches.Remove(key);
+            gamesObjectCaches.Remove(key);
         }
-    }
-
-    // Called by GameCard, show selected game and pass information
-    public void ShowItem(GameModel game)
-    {
-        Debug.Log($"GameNum: {game.GameNum}\nStudNum: {game.StudNum}");
     }
 
     public void EditProfile()
@@ -202,8 +158,6 @@ public class SelectedProfileManager : MonoBehaviour
 
     public void SaveProfileChanges()
     {
-        var oldStudNum = currentProfile.StudNum;
-
         //verify studnum if unique
         if (GenerateDatabase.Instance.database.Table<ProfileModel>().Any(profile => profile.StudNum == studNumInput.text) && currentProfile.StudNum != studNumInput.text)
         {
@@ -222,13 +176,6 @@ public class SelectedProfileManager : MonoBehaviour
         currentProfile.StudNum = studNumInput.text;
         currentProfile.Email = studEmailInput.text;
         currentProfile.Password = studPassInput.text;
-        var newStudNum = currentProfile.StudNum;
-
-        GenerateDatabase.Instance.database.Execute(
-            "UPDATE Profiles SET StudNum = ? WHERE StudNum = ?",
-                newStudNum,
-                oldStudNum
-            );
 
         currentProfile.LastModified = DateTimeOffset.Now.ToUnixTimeSeconds();
         GenerateDatabase.Instance.database.Update(currentProfile);
@@ -243,22 +190,19 @@ public class SelectedProfileManager : MonoBehaviour
         int gameLose = 0;
         int gameDraw = 0;
 
-        if (allProfileGameCaches.TryGetValue(currentProfile.StudNum, out var gamesDataCaches))
+        foreach (var game in gamesDataCaches)
         {
-            foreach (var game in gamesDataCaches.Values)
+            switch (gamesDataCaches[game.Key].Result)
             {
-                switch (game.Result)
-                {
-                    case "Win":
-                        gameWin++;
-                        break;
-                    case "Lose":
-                        gameLose++;
-                        break;
-                    case "Draw":
-                        gameDraw++;
-                        break;
-                }
+                case "Win":
+                    gameWin++;
+                    break;
+                case "Lose":
+                    gameLose++;
+                    break;
+                case "Draw":
+                    gameDraw++;
+                    break;
             }
         }
 
@@ -291,19 +235,16 @@ public class SelectedProfileManager : MonoBehaviour
         int gameWin = 0;
         int gameLose = 0;
 
-        if (allProfileGameCaches.TryGetValue(currentProfile.StudNum, out var gamesDataCaches))
+        foreach (var game in gamesDataCaches)
         {
-            foreach (var game in gamesDataCaches.Values)
+            switch (gamesDataCaches[game.Key].Result)
             {
-                switch (game.Result)
-                {
-                    case "Win":
-                        gameWin++;
-                        break;
-                    case "Lose":
-                        gameLose++;
-                        break;
-                }
+                case "Win":
+                    gameWin++;
+                    break;
+                case "Lose":
+                    gameLose++;
+                    break;
             }
         }
 
@@ -326,16 +267,11 @@ public class SelectedProfileManager : MonoBehaviour
         puzzleLoseText.text = gameLose + " Lose";
     }
 
-    public void SetRoleMember() => SetRole("Member");
-    public void SetRoleCoach() => SetRole("Coach");
-    public void SetRoleAdmin() => SetRole("Admin");
-    public void SetRoleDisabled() => SetRole("Disabled");
-
-    void SetRole(string newRole)
+    private void HomePageSetup()
     {
-        currentProfile.Role = newRole;
-        currentProfile.LastModified = DateTimeOffset.Now.ToUnixTimeSeconds();
-        GenerateDatabase.Instance.database.Update(currentProfile);
-        ProfileListManager.Instance.GenerateList();
+        headerGreeting.text = $"Welcome, {currentProfile.StudName}!";
+
+        // last 3 games
+        // game stats
     }
 }

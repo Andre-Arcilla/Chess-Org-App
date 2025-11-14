@@ -43,6 +43,8 @@ public class SigninManager : MonoBehaviour
             return;
         }
 
+        GenerateDatabase.Instance.currentUser = user;
+
         // Load scene based on profile role
         if (user.Role.ToUpper() == "MEMBER")
         {

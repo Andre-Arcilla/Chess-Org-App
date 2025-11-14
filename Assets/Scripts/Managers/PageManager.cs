@@ -7,6 +7,7 @@ public class PageManager : MonoBehaviour
 {
     [SerializeField] private List<GameObject> pageList;
     [SerializeField] private Transform canvas;
+    [SerializeField] private Button announcementButton;
 
     public void SelectPage()
     {
@@ -21,5 +22,10 @@ public class PageManager : MonoBehaviour
             page.transform.SetParent(canvas);
             page.transform.SetAsFirstSibling();
         }
+    }
+
+    public void OpenPosts()
+    {
+        announcementButton.onClick.Invoke();
     }
 }

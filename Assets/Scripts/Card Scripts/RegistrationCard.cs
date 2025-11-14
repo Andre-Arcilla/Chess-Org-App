@@ -16,7 +16,7 @@ public class RegistrationCard : MonoBehaviour
     {
         this.registration = registration;
         cardStudName.text = registration.StudName;
-        cardDate.text = registration.Date.ToString("MMMM dd, yyyy");
+        cardDate.text = registration.Date.ToString("MMMM dd, yyyy hh:mm:ss tt");
     }
 
     public void OnClick()
