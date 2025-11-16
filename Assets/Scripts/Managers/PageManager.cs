@@ -21,11 +21,17 @@ public class PageManager : MonoBehaviour
 
             page.transform.SetParent(canvas);
             page.transform.SetAsFirstSibling();
+            page.SetActive(false);
         }
     }
 
     public void OpenPosts()
     {
         announcementButton.onClick.Invoke();
+    }
+
+    public void PlayChess()
+    {
+        SceneLoader.Instance.LoadNewScene("ChessScene");
     }
 }

@@ -104,6 +104,7 @@ public class OrgListManager : MonoBehaviour
 
         pageToShow.transform.SetParent(mainView);
         pageToShow.transform.SetAsLastSibling();
+        pageToShow.SetActive(true);
     }
 
     public void SaveChanges()

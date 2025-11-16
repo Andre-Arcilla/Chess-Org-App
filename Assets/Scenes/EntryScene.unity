@@ -4321,7 +4321,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   SceneLoader: {fileID: 1549233645}
-  dbManager: {fileID: 275915923}
   studNum: {fileID: 1036834977}
   password: {fileID: 586964573}
   popupObject: {fileID: 1687741232}
@@ -6433,6 +6432,7 @@ MonoBehaviour:
   - MemberScene
   - CoachScene
   - AdminScene
+  - ChessScene
 --- !u!1 &1576748647
 GameObject:
   m_ObjectHideFlags: 0
@@ -8132,7 +8132,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e2944094c391bfe43bf669f9147a67ca, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  dbManager: {fileID: 275915923}
   studName: {fileID: 955444029}
   studNum: {fileID: 1384869802}
   Email: {fileID: 171380324}
@@ -8187,6 +8186,7 @@ MonoBehaviour:
   - {fileID: 1468364511}
   - {fileID: 2095931668}
   canvas: {fileID: 1064989971}
+  announcementButton: {fileID: 0}
 --- !u!1 &1979231495
 GameObject:
   m_ObjectHideFlags: 0

@@ -124,9 +124,11 @@ public class AnnouncementList : MonoBehaviour
 
         pageToRemove.transform.SetParent(canvasView);
         pageToRemove.transform.SetAsFirstSibling();
+        pageToRemove.SetActive(false);
 
         pageToShow.transform.SetParent(mainView);
         pageToShow.transform.SetSiblingIndex(1);
+        pageToShow.SetActive(true);
     }
 
     public void EditPost()

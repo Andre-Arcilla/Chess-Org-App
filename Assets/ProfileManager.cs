@@ -49,6 +49,10 @@ public class ProfileManager : MonoBehaviour
 
     [Header("Home Page UI References")]
     [SerializeField] private TextMeshProUGUI headerGreeting;
+    [SerializeField] private TextMeshProUGUI annTitle;
+    [SerializeField] private TextMeshProUGUI annDate;
+    [SerializeField] private TextMeshProUGUI annText;
+    [SerializeField] private List<GameCard> gameCards;
 
     [Header("Profile Edit References")]
     [SerializeField] private TMP_InputField studNameInput;
@@ -269,7 +273,23 @@ public class ProfileManager : MonoBehaviour
 
     private void HomePageSetup()
     {
+        AnnouncementModel announcement = GenerateDatabase.Instance.database.Table<AnnouncementModel>().FirstOrDefault();
+
         headerGreeting.text = $"Welcome, {currentProfile.StudName}!";
+
+        annTitle.text = announcement.Title;
+        annDate.text = announcement.Date.ToString("MMMM dd, yyyy hh:mm:ss tt");
+        annText.text = announcement.Text;
+
+        var recentGames = GenerateDatabase.Instance.database.Table<GameModel>().OrderByDescending(a => a.GameNum).Take(3).ToList();
+
+        for (int i = 0; i < 3; i++)
+        {
+            if (recentGames.Contains(recentGames[i]))
+            {
+                gameCards[i].SetInformation(recentGames[i]);
+            }
+        }
 
         // last 3 games
         // game stats

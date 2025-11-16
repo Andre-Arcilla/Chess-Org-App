@@ -90,8 +90,10 @@ public class ProfileListManager : MonoBehaviour
         // I have to switch pages here
         pageToRemove.transform.SetParent(canvasView);
         pageToRemove.transform.SetAsFirstSibling();
+        pageToRemove.SetActive(false);
 
         pageToShow.transform.SetParent(mainView);
         pageToShow.transform.SetSiblingIndex(1);
+        pageToShow.SetActive(true);
     }
 }

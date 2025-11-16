@@ -105,6 +105,7 @@ public class RegistrationListManager : MonoBehaviour
 
         pageToShow.transform.SetParent(mainView);
         pageToShow.transform.SetAsLastSibling();
+        pageToShow.SetActive(true);
     }
 
     public void ApproveRegistration()

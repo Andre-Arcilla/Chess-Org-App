@@ -33,16 +33,6 @@ public class GenerateDatabase : MonoBehaviour
     {
         ConnectDB();
 
-        if (database.Table<ProfileModel>().FirstOrDefault() == null)
-        {
-            database.DropTable<ProfileModel>();
-            database.DropTable<RegisterModel>();
-            database.DropTable<OrgMemberModel>();
-            database.DropTable<AnnouncementModel>();
-            database.DropTable<TournamentModel>();
-            database.DropTable<GameModel>();
-        }
-
         // Creates Profiles table
         database.Execute(@"
             CREATE TABLE IF NOT EXISTS Profiles (
