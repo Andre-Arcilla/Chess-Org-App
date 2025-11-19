@@ -2052,7 +2052,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 314339165}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1401694231}
+        m_TargetAssemblyTypeName: GlobalClickDetector, Assembly-CSharp
+        m_MethodName: CheckFocusedElement
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &314339165
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3792,7 +3804,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 727613461}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1401694231}
+        m_TargetAssemblyTypeName: GlobalClickDetector, Assembly-CSharp
+        m_MethodName: CheckFocusedElement
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &727613461
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4646,7 +4670,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 778816293}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1401694231}
+        m_TargetAssemblyTypeName: GlobalClickDetector, Assembly-CSharp
+        m_MethodName: CheckFocusedElement
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &778816293
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6833,6 +6869,7 @@ GameObject:
   - component: {fileID: 1401694230}
   - component: {fileID: 1401694229}
   - component: {fileID: 1401694228}
+  - component: {fileID: 1401694231}
   m_Layer: 5
   m_Name: === Canvas ===
   m_TagString: Untagged
@@ -6923,6 +6960,18 @@ Canvas:
   m_SortingLayerID: 0
   m_SortingOrder: -10
   m_TargetDisplay: 0
+--- !u!114 &1401694231
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1401694226}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9e6b98fc35af6744189419e55602278b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1405302977
 GameObject:
   m_ObjectHideFlags: 0
@@ -8247,6 +8296,7 @@ GameObject:
   - component: {fileID: 1582227056}
   - component: {fileID: 1582227055}
   - component: {fileID: 1582227054}
+  - component: {fileID: 1582227061}
   m_Layer: 5
   m_Name: Play Button
   m_TagString: Untagged
@@ -8359,7 +8409,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1582227058}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1401694231}
+        m_TargetAssemblyTypeName: GlobalClickDetector, Assembly-CSharp
+        m_MethodName: CheckFocusedElement
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &1582227058
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8418,6 +8480,18 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &1582227061
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1582227053}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9e6b98fc35af6744189419e55602278b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1001 &1596429995
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -10622,8 +10696,8 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 321488906}
-  - {fileID: 2133111161}
   - {fileID: 774174380}
+  - {fileID: 2133111161}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1841346105 stripped
@@ -12197,21 +12271,25 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &2133111161
-Transform:
+--- !u!224 &2133111161
+RectTransform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2133111160}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
+  m_LocalScale: {x: 0.6666667, y: 0.6666667, z: 0.6666667}
+  m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 1835431156}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 360, y: 640}
+  m_SizeDelta: {x: 1080, y: 1920}
+  m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2133111162
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12232,6 +12310,9 @@ MonoBehaviour:
   Queen: {fileID: 5842882566861597792, guid: 241b0f1d4cd58b44a87fe077d432d7a0, type: 3}
   black: {r: 0.25, g: 0.25, b: 0.25, a: 1}
   white: {r: 1, g: 1, b: 1, a: 1}
+  focus: {fileID: 0}
+  selectedPiece: {fileID: 0}
+  tileContent: 
   tileObjects:
   - {fileID: 340441179}
   - {fileID: 1553404533}
@@ -12297,7 +12378,7 @@ MonoBehaviour:
   - {fileID: 1984621924}
   - {fileID: 397488216}
   - {fileID: 1828756980}
-  tileContent: 
+  moves: []
   mainView: {fileID: 1498125674}
 --- !u!1 &2139705981
 GameObject:
@@ -12426,7 +12507,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 2139705986}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1401694231}
+        m_TargetAssemblyTypeName: GlobalClickDetector, Assembly-CSharp
+        m_MethodName: CheckFocusedElement
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &2139705986
 MonoBehaviour:
   m_ObjectHideFlags: 0
