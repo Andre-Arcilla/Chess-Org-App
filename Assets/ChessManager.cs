@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -38,6 +37,13 @@ public class ChessManager : MonoBehaviour
     [SerializeField] public GameObject focus;
     [SerializeField] private GameObject selectedPiece;
     [SerializeField] private int enPassantIndex = -1;
+    [SerializeField] private bool isPromotionPending = false;
+    [SerializeField] private int capturedPieceValue = Piece.None;
+    [SerializeField] private int promotionOriginIndex = -1;
+    [SerializeField] private int promotionDestinationIndex = -1;
+
+    [Header("UI References")]
+    [SerializeField] private GameObject promotionPanel;
 
     // Castling Rights (K=Kingside, Q=Queenside)
     [SerializeField] private bool whiteCanKSC = true;
@@ -72,7 +78,7 @@ public class ChessManager : MonoBehaviour
 
         // Example starting position:
         // King at e1/e8, Rook at h1/h8, some space on other files
-        string fenPos = "r3k2r/pppppppp/8/8/8/8/PPPPPPPP/R3K2R w KQkq 0 1";
+        string fenPos = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq 0 1";
 
         ReadFENPos(fenPos);
     }
@@ -139,10 +145,12 @@ public class ChessManager : MonoBehaviour
     {
         int originIndex = Array.IndexOf(tileObjects, origin);
         int destinationIndex = Array.IndexOf(tileObjects, destination);
+        int originalPieceAtDest = tileContent[destinationIndex];
         int pieceValue = int.Parse(selectedPiece.name);
         int pieceType = GetPieceType(pieceValue);
+        int pieceColor = GetPieceColor(pieceValue); // Needed for logic below
 
-        // --- Castling Execution Check ---
+        // --- Castling Execution Check (BUG FIX: Rook value updated) ---
         if (pieceType == Piece.King && Math.Abs(originIndex - destinationIndex) == 2)
         {
             // Calculate rook movement indices
@@ -163,9 +171,10 @@ public class ChessManager : MonoBehaviour
                 rookGO.transform.SetParent(tileObjects[rookDestinationIndex].transform.GetChild(0));
             }
 
-            // 3. Update tileContent for the rook
+            // 3. Update tileContent for the rook (FIXED VALUE)
+            int rookValue = Piece.Rook | pieceColor;
             tileContent[rookOriginIndex] = Piece.None;
-            tileContent[rookDestinationIndex] = pieceValue; // Rook has the same color/value as the king for now
+            tileContent[rookDestinationIndex] = rookValue; // Now uses the correct Rook value
         }
 
         // --- En passant capture check ---
@@ -183,25 +192,30 @@ public class ChessManager : MonoBehaviour
         enPassantIndex = -1;
 
         // --- Castling Rights Revocation ---
-        if (pieceType == Piece.King)
+        // (Unchanged logic for King/Rook move clearing rights)
+        if (originIndex != destinationIndex)
         {
-            if (GetPieceColor(pieceValue) == Piece.White)
+            if (pieceType == Piece.King)
             {
-                whiteCanKSC = false;
-                whiteCanQSC = false;
+                if (pieceColor == Piece.White)
+                {
+                    whiteCanKSC = false;
+                    whiteCanQSC = false;
+                }
+                else
+                {
+                    blackCanKSC = false;
+                    blackCanQSC = false;
+                }
             }
-            else
+            else if (pieceType == Piece.Rook)
             {
-                blackCanKSC = false;
-                blackCanQSC = false;
+                // These checks are now safely inside the if(originIndex != destinationIndex) block.
+                if (originIndex == 63) whiteCanKSC = false; // H1 (White KS Rook)
+                if (originIndex == 56) whiteCanQSC = false; // A1 (White QS Rook)
+                if (originIndex == 7) blackCanKSC = false;  // H8 (Black KS Rook)
+                if (originIndex == 0) blackCanQSC = false;  // A8 (Black QS Rook)
             }
-        }
-        else if (pieceType == Piece.Rook)
-        {
-            if (originIndex == 63) whiteCanKSC = false; // H1 (White KS Rook)
-            if (originIndex == 56) whiteCanQSC = false; // A1 (White QS Rook)
-            if (originIndex == 7) blackCanKSC = false;  // H8 (Black KS Rook)
-            if (originIndex == 0) blackCanQSC = false;  // A8 (Black QS Rook)
         }
 
         // --- Check for new en passant opportunity ---
@@ -216,14 +230,42 @@ public class ChessManager : MonoBehaviour
             }
         }
 
-        // --- Finalize Piece Move (King/Regular) ---
+        // --- Finalize Piece Move (Visual) ---
         Transform destHolder = destination.transform.GetChild(0);
         foreach (Transform child in destHolder)
             Destroy(child.gameObject);
 
         selectedPiece.transform.SetParent(destHolder);
 
-        // Update tileContent for the King/Piece
+        // --- PAWN PROMOTION CHECK AND PAUSE (NEW CRITICAL LOGIC) ---
+        if (pieceType == Piece.Pawn && IsPromotionSquare(destinationIndex, pieceColor))
+        {
+            // Set the state, but we must update tileContent *before* returning 
+            // so that the IsMoveLegal check can see the pawn is gone from the origin.
+            isPromotionPending = true;
+            capturedPieceValue = originalPieceAtDest;
+            promotionOriginIndex = originIndex;
+            promotionDestinationIndex = destinationIndex;
+
+            // Finalize the pawn's move in the board state, waiting for promotion selection.
+            tileContent[originIndex] = Piece.None;
+            tileContent[destinationIndex] = pieceValue;
+
+            // ADD THE UI ACTIVATION HERE
+            if (promotionPanel != null)
+            {
+                promotionPanel.SetActive(true);
+            }
+            else
+            {
+                PromoteToQueen();
+            }
+
+            // **HALT:** Return and wait for PromoteToX() or CancelPromotion() to be called by UI.
+            return;
+        }
+
+        // --- Normal Move Finalization (If NOT a promotion) ---
         tileContent[originIndex] = Piece.None;
         tileContent[destinationIndex] = pieceValue;
 
@@ -329,10 +371,10 @@ public class ChessManager : MonoBehaviour
         return true; // Path is safe
     }
 
-
     // Checks if a tile is attacked by the attackerColor using ray-tracing
     public bool IsTileAttacked(int targetIndex, int attackerColor)
     {
+        // These remain the starting coordinates (used for Knight/King/Pawn checks later)
         int targetRow = targetIndex / 8;
         int targetCol = targetIndex % 8;
 
@@ -340,25 +382,28 @@ public class ChessManager : MonoBehaviour
         foreach (int dir in lateralDir.Concat(diagonalDir))
         {
             int index = targetIndex;
-            int nextRow = targetRow;
-            int nextCol = targetCol;
+            int currentRow = targetRow;
+            int currentCol = targetCol;
 
             while (true)
             {
-                // Basic edge checks
-                if (dir == +1 && nextCol == 7) break;
-                if (dir == -1 && nextCol == 0) break;
-                if (dir == +8 && nextRow == 7) break;
-                if (dir == -8 && nextRow == 0) break;
-                if (dir == +9 && (nextRow == 7 || nextCol == 7)) break;
-                if (dir == +7 && (nextRow == 7 || nextCol == 0)) break;
-                if (dir == -9 && (nextRow == 0 || nextCol == 0)) break;
-                if (dir == -7 && (nextRow == 0 || nextCol == 7)) break;
+                // --- CRITICAL FIX: Check the CURRENT tile's edge based on the direction ---
+                // If the current tile is on the edge we'd cross, break before moving.
+                if (dir == +1 && currentCol == 7) break; // Moving East from H-file
+                if (dir == -1 && currentCol == 0) break; // Moving West from A-file
+                if (dir == +8 && currentRow == 7) break; // Moving South from 1st Rank
+                if (dir == -8 && currentRow == 0) break; // Moving North from 8th Rank
+                if (dir == +9 && (currentRow == 7 || currentCol == 7)) break; // Moving SE from edge
+                if (dir == +7 && (currentRow == 7 || currentCol == 0)) break; // Moving SW from edge
+                if (dir == -9 && (currentRow == 0 || currentCol == 0)) break; // Moving NW from edge
+                if (dir == -7 && (currentRow == 0 || currentCol == 7)) break; // Moving NE from edge
 
+                // --- Apply the move and update coordinates ---
                 index += dir;
-                nextRow = index / 8;
-                nextCol = index % 8;
+                currentRow = index / 8;
+                currentCol = index % 8;
 
+                // Failsafe check (should be caught by the edge checks above)
                 if (index < 0 || index >= tileContent.Length) break;
 
                 int piece = tileContent[index];
@@ -368,8 +413,12 @@ public class ChessManager : MonoBehaviour
                     {
                         int pieceType = GetPieceType(piece);
 
-                        bool isSlidingAttacker = (Array.IndexOf(lateralDir, dir) != -1 && (pieceType == Piece.Rook || pieceType == Piece.Queen)) ||
-                                                 (Array.IndexOf(diagonalDir, dir) != -1 && (pieceType == Piece.Bishop || pieceType == Piece.Queen));
+                        // Check if the attacker matches the ray direction (Rook/Queen for lateral, etc.)
+                        bool isLateral = (dir == +1 || dir == -1 || dir == +8 || dir == -8);
+                        bool isDiagonal = !isLateral;
+
+                        bool isSlidingAttacker = (isLateral && (pieceType == Piece.Rook || pieceType == Piece.Queen)) ||
+                                                 (isDiagonal && (pieceType == Piece.Bishop || pieceType == Piece.Queen));
 
                         if (isSlidingAttacker) return true;
                     }
@@ -379,6 +428,7 @@ public class ChessManager : MonoBehaviour
         }
 
         // --- 2. Check Knight Attacks ---
+        // (Logic remains correct, as it checks distance/L-shape only)
         foreach (int dir in knightDir)
         {
             int checkIndex = targetIndex + dir;
@@ -400,6 +450,7 @@ public class ChessManager : MonoBehaviour
         }
 
         // --- 3. Check King Attack (1 square away) ---
+        // (Logic remains correct, as it checks distance/single step only)
         foreach (int dir in lateralDir.Concat(diagonalDir))
         {
             int checkIndex = targetIndex + dir;
@@ -407,6 +458,7 @@ public class ChessManager : MonoBehaviour
 
             int checkRow = checkIndex / 8;
             int checkCol = checkIndex % 8;
+            // This check guards against wrap-around when using dir offsets
             if (Math.Abs(checkRow - targetRow) > 1 || Math.Abs(checkCol - targetCol) > 1) continue;
 
             int piece = tileContent[checkIndex];
@@ -417,9 +469,9 @@ public class ChessManager : MonoBehaviour
         }
 
         // --- 4. Check Pawn Attacks ---
-        // Direction from target back to the attacker's row
+        // (Logic remains correct)
         int forwardOffset = (attackerColor == Piece.White) ? +8 : -8;
-        int[] pawnCaptureDirs = { forwardOffset - 1, forwardOffset + 1 }; // Diagonal positions from target
+        int[] pawnCaptureDirs = { forwardOffset - 1, forwardOffset + 1 };
 
         foreach (int dir in pawnCaptureDirs)
         {
@@ -429,7 +481,6 @@ public class ChessManager : MonoBehaviour
             {
                 int checkCol = checkIndex % 8;
 
-                // Ensure the tile is indeed diagonal
                 if (Math.Abs(checkCol - targetCol) == 1)
                 {
                     int piece = tileContent[checkIndex];
@@ -478,7 +529,7 @@ public class ChessManager : MonoBehaviour
 
                 if (!IsMoveLegal(originIndex, index))
                 {
-                    break;
+                    continue;
                 }
 
                 if (targetTileContent != Piece.None)
@@ -525,7 +576,7 @@ public class ChessManager : MonoBehaviour
 
                 if (!IsMoveLegal(originIndex, index))
                 {
-                    break;
+                    continue;
                 }
 
                 if (targetTileContent != Piece.None)
@@ -618,7 +669,7 @@ public class ChessManager : MonoBehaviour
 
                 if (!IsMoveLegal(originIndex, index))
                 {
-                    break;
+                    continue;
                 }
 
                 if (targetTileContent != Piece.None)
@@ -829,6 +880,153 @@ public class ChessManager : MonoBehaviour
     }
 
     // ----------------------------------------------------------------------
+    // --- PAWN PROMOTION ---
+    // ----------------------------------------------------------------------
+
+    public void PromoteToQueen() { PromoteAndFinalizeMove(Piece.Queen); }
+    public void PromoteToRook() { PromoteAndFinalizeMove(Piece.Rook); }
+    public void PromoteToBishop() { PromoteAndFinalizeMove(Piece.Bishop); }
+    public void PromoteToKnight() { PromoteAndFinalizeMove(Piece.Knight); }
+
+    private void PromoteAndFinalizeMove(int newType)
+    {
+        if (!isPromotionPending)
+        {
+            Debug.LogError("Promotion function called, but no promotion is currently pending.");
+            return;
+        }
+
+        // --- FIX 1: Safely retrieve the piece value from the tileContent array ---
+        // The piece (pawn) value was placed here in MovePiece just before returning.
+        int pieceValue = tileContent[promotionDestinationIndex];
+        if (pieceValue == Piece.None)
+        {
+            Debug.LogError("Promotion target tile is empty in tileContent array.");
+            return;
+        }
+
+        int pieceColor = GetPieceColor(pieceValue);
+        int newPieceValue = newType | pieceColor;
+
+        // --- FIX 2: Safely get the GameObject to destroy ---
+        // Get the pawn GameObject from the tile holder before destroying it.
+        Transform holder = tileObjects[promotionDestinationIndex].transform.GetChild(0);
+        GameObject pawnGOToDestroy = null;
+
+        if (holder.childCount > 0)
+        {
+            pawnGOToDestroy = holder.GetChild(0).gameObject;
+        }
+
+        // Destroy the existing Pawn GameObject
+        if (pawnGOToDestroy != null)
+        {
+            Destroy(pawnGOToDestroy);
+        }
+
+        // NOTE: Do NOT use selectedPiece = null; here, as it might be used by ResetObjects().
+
+        // --- 1. Execute the visual promotion (Rest of your original logic) ---
+        GameObject prefab = GetPrefabForPiece(newType);
+
+        if (prefab != null)
+        {
+            GameObject newPieceGO = Instantiate(prefab, holder);
+            Image img = newPieceGO.GetComponent<Image>();
+
+            if (img != null)
+            {
+                img.color = (pieceColor == Piece.White) ? white : black;
+            }
+
+            // --- FIX 3: Update selectedPiece to the newly created piece for consistency ---
+            selectedPiece = newPieceGO;
+            newPieceGO.name = newPieceValue.ToString();
+        }
+
+        // --- 2. Update the final board state and clear flags ---
+        tileContent[promotionDestinationIndex] = newPieceValue;
+
+        // Clear the promotion state flags
+        isPromotionPending = false;
+        promotionDestinationIndex = -1;
+
+        if (promotionPanel != null)
+        {
+            promotionPanel.SetActive(false);
+        }
+
+        // Call ResetObjects() AFTER selectedPiece is updated to the new Queen/Rook/etc.
+        ResetObjects();
+        // Next turn logic (e.g., changing currentTurnColor) would follow here.
+    }
+
+    public void CancelPromotionAndRevertMove()
+    {
+        // --- Initial Safety Checks ---
+        if (!isPromotionPending || selectedPiece == null || promotionDestinationIndex == -1 || promotionOriginIndex == -1)
+        {
+            Debug.LogWarning("Cannot cancel promotion: No promotion is currently pending or state is invalid.");
+
+            // Ensure the panel is hidden even on invalid calls
+            if (promotionPanel != null)
+            {
+                promotionPanel.SetActive(false);
+            }
+            ResetObjects();
+            return;
+        }
+
+        // --- 1. Determine Indices and Piece Value ---
+        int originIndex = promotionOriginIndex;
+        int destinationIndex = promotionDestinationIndex;
+
+        // Get the piece value from the destination tile content (where the pawn currently is).
+        // This `pieceValue` is the pawn that is being reverted.
+        int pieceValueBeingReverted = tileContent[destinationIndex];
+
+        // --- 2. Visual Reversion (Move the Pawn back) ---
+        // Use the correctly stored originIndex to get the pawn's actual starting tile.
+        Transform originHolder = tileObjects[originIndex].transform.GetChild(0);
+        selectedPiece.transform.SetParent(originHolder);
+        selectedPiece.transform.localPosition = Vector3.zero; // Ensure it's centered
+
+        // --- 3. Logical Reversion (Update tileContent) ---
+
+        // Restore the pawn's value to its actual original tile
+        tileContent[originIndex] = pieceValueBeingReverted;
+
+        // Restore the captured piece value to the destination tile (Piece.None if no piece was captured)
+        tileContent[destinationIndex] = capturedPieceValue;
+
+        // --- 4. Visual Restoration (Add the captured piece back) ---
+        if (capturedPieceValue != Piece.None)
+        {
+            RestoreCapturedPieceVisuals(destinationIndex, capturedPieceValue);
+        }
+
+        // --- 5. Reset Temporary Game State ---
+        enPassantIndex = -1;
+
+        // Clear the promotion/reversion state flags
+        isPromotionPending = false;
+        promotionDestinationIndex = -1;
+        promotionOriginIndex = -1;
+        capturedPieceValue = Piece.None; // Clear the captured piece state
+
+        // --- 6. Reset UI and Highlights ---
+
+        // Deactivate the promotion panel
+        if (promotionPanel != null)
+        {
+            promotionPanel.SetActive(false);
+        }
+
+        // Reset highlights and selection.
+        ResetObjects();
+    }
+
+    // ----------------------------------------------------------------------
     // --- UTILITIES ---
     // ----------------------------------------------------------------------
 
@@ -852,6 +1050,45 @@ public class ChessManager : MonoBehaviour
         }
     }
 
+    private void RestoreCapturedPieceVisuals(int tileIndex, int pieceValue)
+    {
+        int pieceType = GetPieceType(pieceValue);
+        int pieceColor = GetPieceColor(pieceValue);
+
+        // Get the appropriate prefab for the captured piece type
+        GameObject prefab = GetPrefabForPiece(pieceType);
+
+        if (prefab != null)
+        {
+            // Get the transform for the destination tile's holder
+            Transform holder = tileObjects[tileIndex].transform.GetChild(0);
+
+            // Clear any existing children (e.g., if a temporary placeholder was there)
+            foreach (Transform child in holder)
+            {
+                Destroy(child.gameObject);
+            }
+
+            // Instantiate the captured piece's GameObject
+            GameObject restoredPieceGO = Instantiate(prefab, holder);
+            restoredPieceGO.transform.localPosition = Vector3.zero; // Center it
+
+            // Set its visual properties
+            Image img = restoredPieceGO.GetComponent<Image>();
+            if (img != null)
+            {
+                img.color = (pieceColor == Piece.White) ? white : black;
+            }
+
+            // Set its name to reflect its value (important if you parse names for piece data)
+            restoredPieceGO.name = pieceValue.ToString();
+        }
+        else
+        {
+            Debug.LogError($"Prefab not found for piece type: {pieceType}");
+        }
+    }
+
     public int FindKingTile(int color)
     {
         for (int i = 0; i < tileContent.Length; i++)
@@ -862,6 +1099,21 @@ public class ChessManager : MonoBehaviour
             }
         }
         return -1;
+    }
+
+    private bool IsPromotionSquare(int index, int color)
+    {
+        // White promotes on Rank 8 (Index 0-7)
+        if (color == Piece.White && index >= 0 && index <= 7)
+        {
+            return true;
+        }
+        // Black promotes on Rank 1 (Index 56-63)
+        if (color == Piece.Black && index >= 56 && index <= 63)
+        {
+            return true;
+        }
+        return false;
     }
 
     private GameObject GetPrefabForPiece(int pieceType)
