@@ -4499,7 +4499,7 @@ Transform:
   m_GameObject: {fileID: 774174379}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -946.74817, y: -571.29047, z: 0.012598594}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -6495,7 +6495,7 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1301754034}
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -12271,25 +12271,21 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!224 &2133111161
-RectTransform:
+--- !u!4 &2133111161
+Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2133111160}
+  serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.6666667, y: 0.6666667, z: 0.6666667}
-  m_ConstrainProportionsScale: 1
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1835431156}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 360, y: 640}
-  m_SizeDelta: {x: 1080, y: 1920}
-  m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2133111162
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12302,16 +12298,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e823de6f9e5721346ae61d6aaed7af75, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  King: {fileID: 1141363921830114156, guid: 3e3d94def4335234696a0890224ca272, type: 3}
-  Pawn: {fileID: 4124972534793839248, guid: 7e4360a81e5211f46b0084002901461a, type: 3}
-  Knight: {fileID: 4164791484736290080, guid: 202ca15ffbb4f8240a50922555a018c3, type: 3}
-  Bishop: {fileID: 6826393541103083846, guid: 162a69b5ad85a144297a603f267d9576, type: 3}
-  Rook: {fileID: 6918444870846707230, guid: 320b494d312ad9d4f8757f07c0b69508, type: 3}
-  Queen: {fileID: 5842882566861597792, guid: 241b0f1d4cd58b44a87fe077d432d7a0, type: 3}
+  kingPrefab: {fileID: 1141363921830114156, guid: 3e3d94def4335234696a0890224ca272, type: 3}
+  pawnPrefab: {fileID: 4124972534793839248, guid: 7e4360a81e5211f46b0084002901461a, type: 3}
+  knightPrefab: {fileID: 4164791484736290080, guid: 202ca15ffbb4f8240a50922555a018c3, type: 3}
+  bishopPrefab: {fileID: 6826393541103083846, guid: 162a69b5ad85a144297a603f267d9576, type: 3}
+  rookPrefab: {fileID: 6918444870846707230, guid: 320b494d312ad9d4f8757f07c0b69508, type: 3}
+  queenPrefab: {fileID: 5842882566861597792, guid: 241b0f1d4cd58b44a87fe077d432d7a0, type: 3}
   black: {r: 0.25, g: 0.25, b: 0.25, a: 1}
   white: {r: 1, g: 1, b: 1, a: 1}
   focus: {fileID: 0}
   selectedPiece: {fileID: 0}
+  enPassantIndex: -1
   tileContent: 
   tileObjects:
   - {fileID: 340441179}
