@@ -23,6 +23,8 @@ public class ChessManager : MonoBehaviour
         }
     }
 
+    [Header("PGN & FEN")]
+
     [Header("Chess Pieces")]
     [SerializeField] private GameObject kingPrefab;
     [SerializeField] private GameObject pawnPrefab;
@@ -41,6 +43,7 @@ public class ChessManager : MonoBehaviour
     [SerializeField] private int capturedPieceValue = Piece.None;
     [SerializeField] private int promotionOriginIndex = -1;
     [SerializeField] private int promotionDestinationIndex = -1;
+    [SerializeField] private int currentTurnColor = Piece.White;
 
     [Header("UI References")]
     [SerializeField] private GameObject promotionPanel;
@@ -57,6 +60,7 @@ public class ChessManager : MonoBehaviour
     [SerializeField] private List<GameObject> moves;
 
     [SerializeField] private Transform mainView;
+    [SerializeField] public int CurrentTurnColor => currentTurnColor;
     [SerializeField] public GameObject SelectedPiece => selectedPiece;
     [SerializeField] public GameObject[] TileObjects => tileObjects;
     [SerializeField] public List<GameObject> Moves => moves;
@@ -143,12 +147,17 @@ public class ChessManager : MonoBehaviour
 
     public void MovePiece(GameObject origin, GameObject destination)
     {
+        if (selectedPiece == null)
+        {
+            return;
+        }
+
         int originIndex = Array.IndexOf(tileObjects, origin);
         int destinationIndex = Array.IndexOf(tileObjects, destination);
         int originalPieceAtDest = tileContent[destinationIndex];
         int pieceValue = int.Parse(selectedPiece.name);
         int pieceType = GetPieceType(pieceValue);
-        int pieceColor = GetPieceColor(pieceValue); // Needed for logic below
+        int pieceColor = GetPieceColor(pieceValue);
 
         // --- Castling Execution Check (BUG FIX: Rook value updated) ---
         if (pieceType == Piece.King && Math.Abs(originIndex - destinationIndex) == 2)
@@ -174,7 +183,7 @@ public class ChessManager : MonoBehaviour
             // 3. Update tileContent for the rook (FIXED VALUE)
             int rookValue = Piece.Rook | pieceColor;
             tileContent[rookOriginIndex] = Piece.None;
-            tileContent[rookDestinationIndex] = rookValue; // Now uses the correct Rook value
+            tileContent[rookDestinationIndex] = rookValue;
         }
 
         // --- En passant capture check ---
@@ -192,7 +201,6 @@ public class ChessManager : MonoBehaviour
         enPassantIndex = -1;
 
         // --- Castling Rights Revocation ---
-        // (Unchanged logic for King/Rook move clearing rights)
         if (originIndex != destinationIndex)
         {
             if (pieceType == Piece.King)
@@ -210,11 +218,10 @@ public class ChessManager : MonoBehaviour
             }
             else if (pieceType == Piece.Rook)
             {
-                // These checks are now safely inside the if(originIndex != destinationIndex) block.
-                if (originIndex == 63) whiteCanKSC = false; // H1 (White KS Rook)
-                if (originIndex == 56) whiteCanQSC = false; // A1 (White QS Rook)
-                if (originIndex == 7) blackCanKSC = false;  // H8 (Black KS Rook)
-                if (originIndex == 0) blackCanQSC = false;  // A8 (Black QS Rook)
+                if (originIndex == 63) whiteCanKSC = false;
+                if (originIndex == 56) whiteCanQSC = false;
+                if (originIndex == 7) blackCanKSC = false;
+                if (originIndex == 0) blackCanQSC = false;
             }
         }
 
@@ -237,11 +244,9 @@ public class ChessManager : MonoBehaviour
 
         selectedPiece.transform.SetParent(destHolder);
 
-        // --- PAWN PROMOTION CHECK AND PAUSE (NEW CRITICAL LOGIC) ---
+        // --- PAWN PROMOTION CHECK AND PAUSE (CRITICAL LOGIC) ---
         if (pieceType == Piece.Pawn && IsPromotionSquare(destinationIndex, pieceColor))
         {
-            // Set the state, but we must update tileContent *before* returning 
-            // so that the IsMoveLegal check can see the pawn is gone from the origin.
             isPromotionPending = true;
             capturedPieceValue = originalPieceAtDest;
             promotionOriginIndex = originIndex;
@@ -251,17 +256,16 @@ public class ChessManager : MonoBehaviour
             tileContent[originIndex] = Piece.None;
             tileContent[destinationIndex] = pieceValue;
 
-            // ADD THE UI ACTIVATION HERE
             if (promotionPanel != null)
             {
                 promotionPanel.SetActive(true);
             }
             else
             {
-                PromoteToQueen();
+                PromoteToQueen(); // Default to Queen if no panel is set
             }
 
-            // **HALT:** Return and wait for PromoteToX() or CancelPromotion() to be called by UI.
+            // HALT: Return and wait for PromoteToX() or CancelPromotion() to be called by UI.
             return;
         }
 
@@ -270,10 +274,23 @@ public class ChessManager : MonoBehaviour
         tileContent[destinationIndex] = pieceValue;
 
         ResetObjects();
+
+        // --- NEW: Turn Switch and Game End Check ---
+        SwitchTurnAndCheckGameEnd();
     }
 
     public void CheckMove(GameObject originGO, GameObject pieceGO)
     {
+        // --- TURN ENFORCEMENT ---
+        int pieceColor = GetPieceColor(int.Parse(pieceGO.name));
+        if (pieceColor != currentTurnColor)
+        {
+            // Don't select or generate moves for the wrong colored piece
+            // Optional: Debug.LogWarning("It is not this piece's turn.");
+            ResetObjects();
+            return;
+        }
+
         ResetObjects();
         selectedPiece = pieceGO;
         int pieceType = GetPieceType(int.Parse(pieceGO.name));
@@ -306,6 +323,38 @@ public class ChessManager : MonoBehaviour
 
             default:
                 break;
+        }
+    }
+
+    private void SwitchTurnAndCheckGameEnd()
+    {
+        // 1. Determine the color of the player whose turn it is next
+        int nextPlayerColor = (currentTurnColor == Piece.White) ? Piece.Black : Piece.White;
+
+        // 2. Switch the turn
+        currentTurnColor = nextPlayerColor;
+
+        // 3. Check for Game End Conditions
+        if (IsCheckmate(currentTurnColor))
+        {
+            int winnerColor = (currentTurnColor == Piece.White) ? Piece.Black : Piece.White;
+            Debug.Log($"Checkmate! {((winnerColor == Piece.White) ? "White" : "Black")} Wins.");
+            // TODO: Implement game end/UI display here
+        }
+        else if (IsStalemate(currentTurnColor))
+        {
+            Debug.Log("Stalemate! Game Drawn.");
+            // TODO: Implement draw/UI display here
+        }
+        else
+        {
+            // Optional: Check for simple check to display UI feedback
+            int kingIndex = FindKingTile(currentTurnColor);
+            int opponentColor = (currentTurnColor == Piece.White) ? Piece.Black : Piece.White;
+            if (IsTileAttacked(kingIndex, opponentColor))
+            {
+                Debug.Log($"{((currentTurnColor == Piece.White) ? "White" : "Black")} is in Check!");
+            }
         }
     }
 
@@ -529,7 +578,14 @@ public class ChessManager : MonoBehaviour
 
                 if (!IsMoveLegal(originIndex, index))
                 {
-                    continue;
+                    if (targetTileContent == Piece.None)
+                    {
+                        continue;
+                    }
+                    else
+                    {
+                        break;
+                    }
                 }
 
                 if (targetTileContent != Piece.None)
@@ -576,7 +632,14 @@ public class ChessManager : MonoBehaviour
 
                 if (!IsMoveLegal(originIndex, index))
                 {
-                    continue;
+                    if (targetTileContent == Piece.None)
+                    {
+                        continue;
+                    }
+                    else
+                    {
+                        break;
+                    }
                 }
 
                 if (targetTileContent != Piece.None)
@@ -669,7 +732,14 @@ public class ChessManager : MonoBehaviour
 
                 if (!IsMoveLegal(originIndex, index))
                 {
-                    continue;
+                    if (targetTileContent == Piece.None)
+                    {
+                        continue;
+                    }
+                    else
+                    {
+                        break;
+                    }
                 }
 
                 if (targetTileContent != Piece.None)
@@ -704,6 +774,7 @@ public class ChessManager : MonoBehaviour
             int row = index / 8;
             int col = index % 8;
 
+            // Boundary checks (Prevent wrapping and off-board access)
             if (dir == +1 && col == 7) continue;
             if (dir == -1 && col == 0) continue;
             if (dir == +8 && row == 7) continue;
@@ -718,24 +789,22 @@ public class ChessManager : MonoBehaviour
 
             int targetTileContent = tileContent[index];
 
-            // Direct Attack Check: King cannot move into check
-            if (IsTileAttacked(index, opponentColor))
+            // --- NEW: Skip if friendly piece ---
+            if (targetTileContent != Piece.None && GetPieceColor(targetTileContent) == color)
             {
                 continue;
             }
 
-            if (targetTileContent != Piece.None)
+            // --- THE ESSENTIAL FIX: Use IsMoveLegal as the final arbiter ---
+            // This checks if the move results in the King being attacked (i.e., prevents moving into check).
+            if (IsMoveLegal(originIndex, index))
             {
-                if (GetPieceColor(targetTileContent) != color)
-                {
-                    moves.Add(tileObjects[index]);
-                }
-                continue;
+                moves.Add(tileObjects[index]);
             }
-            moves.Add(tileObjects[index]);
         }
 
         // --- 2. Castling Checks ---
+        // Castling must be handled separately and must also use CanCastlePathBeAttacked.
         bool isCurrentlyInCheck = IsTileAttacked(originIndex, opponentColor);
 
         if (!isCurrentlyInCheck)
@@ -749,7 +818,9 @@ public class ChessManager : MonoBehaviour
                     int rookPiece = tileContent[63];
                     if (GetPieceType(rookPiece) == Piece.Rook && GetPieceColor(rookPiece) == Piece.White)
                     {
-                        if (CanCastlePathBeAttacked(60, 62, color))
+                        // NOTE: The original logic for CanCastlePathBeAttacked had a bug:
+                        // It should check if the path is NOT attacked.
+                        if (CanCastlePathBeAttacked(60, 62, color) == false) // ASSUMING CanCastlePathBeAttacked returns TRUE if PATH IS SAFE
                         {
                             moves.Add(tileObjects[62]); // Target G1
                         }
@@ -761,7 +832,7 @@ public class ChessManager : MonoBehaviour
                     int rookPiece = tileContent[56];
                     if (GetPieceType(rookPiece) == Piece.Rook && GetPieceColor(rookPiece) == Piece.White)
                     {
-                        if (CanCastlePathBeAttacked(60, 58, color))
+                        if (CanCastlePathBeAttacked(60, 58, color) == false) // ASSUMING CanCastlePathBeAttacked returns TRUE if PATH IS SAFE
                         {
                             moves.Add(tileObjects[58]); // Target C1
                         }
@@ -777,7 +848,7 @@ public class ChessManager : MonoBehaviour
                     int rookPiece = tileContent[7];
                     if (GetPieceType(rookPiece) == Piece.Rook && GetPieceColor(rookPiece) == Piece.Black)
                     {
-                        if (CanCastlePathBeAttacked(4, 6, color))
+                        if (CanCastlePathBeAttacked(4, 6, color) == false) // ASSUMING CanCastlePathBeAttacked returns TRUE if PATH IS SAFE
                         {
                             moves.Add(tileObjects[6]); // Target G8
                         }
@@ -789,7 +860,7 @@ public class ChessManager : MonoBehaviour
                     int rookPiece = tileContent[0];
                     if (GetPieceType(rookPiece) == Piece.Rook && GetPieceColor(rookPiece) == Piece.Black)
                     {
-                        if (CanCastlePathBeAttacked(4, 2, color))
+                        if (CanCastlePathBeAttacked(4, 2, color) == false) // ASSUMING CanCastlePathBeAttacked returns TRUE if PATH IS SAFE
                         {
                             moves.Add(tileObjects[2]); // Target C8
                         }
@@ -896,8 +967,6 @@ public class ChessManager : MonoBehaviour
             return;
         }
 
-        // --- FIX 1: Safely retrieve the piece value from the tileContent array ---
-        // The piece (pawn) value was placed here in MovePiece just before returning.
         int pieceValue = tileContent[promotionDestinationIndex];
         if (pieceValue == Piece.None)
         {
@@ -908,8 +977,7 @@ public class ChessManager : MonoBehaviour
         int pieceColor = GetPieceColor(pieceValue);
         int newPieceValue = newType | pieceColor;
 
-        // --- FIX 2: Safely get the GameObject to destroy ---
-        // Get the pawn GameObject from the tile holder before destroying it.
+        // Safely get the GameObject to destroy (the Pawn)
         Transform holder = tileObjects[promotionDestinationIndex].transform.GetChild(0);
         GameObject pawnGOToDestroy = null;
 
@@ -924,9 +992,7 @@ public class ChessManager : MonoBehaviour
             Destroy(pawnGOToDestroy);
         }
 
-        // NOTE: Do NOT use selectedPiece = null; here, as it might be used by ResetObjects().
-
-        // --- 1. Execute the visual promotion (Rest of your original logic) ---
+        // --- 1. Execute the visual promotion ---
         GameObject prefab = GetPrefabForPiece(newType);
 
         if (prefab != null)
@@ -939,7 +1005,7 @@ public class ChessManager : MonoBehaviour
                 img.color = (pieceColor == Piece.White) ? white : black;
             }
 
-            // --- FIX 3: Update selectedPiece to the newly created piece for consistency ---
+            // Update selectedPiece to the newly created piece for consistency
             selectedPiece = newPieceGO;
             newPieceGO.name = newPieceValue.ToString();
         }
@@ -950,15 +1016,19 @@ public class ChessManager : MonoBehaviour
         // Clear the promotion state flags
         isPromotionPending = false;
         promotionDestinationIndex = -1;
+        promotionOriginIndex = -1; // Also clear origin
+        capturedPieceValue = Piece.None; // Also clear captured value
 
         if (promotionPanel != null)
         {
             promotionPanel.SetActive(false);
         }
 
-        // Call ResetObjects() AFTER selectedPiece is updated to the new Queen/Rook/etc.
+        // Clear highlights and selection state
         ResetObjects();
-        // Next turn logic (e.g., changing currentTurnColor) would follow here.
+
+        // --- NEW: Turn Switch and Game End Check ---
+        SwitchTurnAndCheckGameEnd();
     }
 
     public void CancelPromotionAndRevertMove()
@@ -1024,6 +1094,93 @@ public class ChessManager : MonoBehaviour
 
         // Reset highlights and selection.
         ResetObjects();
+    }
+
+    // ----------------------------------------------------------------------
+    // --- CHECKMATE/STALEMATE LOGIC ---
+    // ----------------------------------------------------------------------
+    public bool IsCheckmate(int playerColor)
+    {
+        // 1. Is the player currently in check?
+        int kingIndex = FindKingTile(playerColor);
+        int opponentColor = (playerColor == Piece.White) ? Piece.Black : Piece.White;
+
+        if (!IsTileAttacked(kingIndex, opponentColor))
+        {
+            // If not in check, they cannot be in checkmate.
+            return false;
+        }
+
+        // 2. Do they have any legal moves?
+        return !HasAnyLegalMove(playerColor);
+    }
+
+    public bool IsStalemate(int playerColor)
+    {
+        // 1. Is the player currently in check?
+        int kingIndex = FindKingTile(playerColor);
+        int opponentColor = (playerColor == Piece.White) ? Piece.Black : Piece.White;
+
+        if (IsTileAttacked(kingIndex, opponentColor))
+        {
+            // If in check, it's either check or checkmate, not stalemate.
+            return false;
+        }
+
+        // 2. Do they have any legal moves?
+        return !HasAnyLegalMove(playerColor);
+    }
+
+    private bool HasAnyLegalMove(int playerColor)
+    {
+        // 1. Save the current state of moves list and selected piece
+        List<GameObject> originalMoves = new List<GameObject>(moves);
+        GameObject originalSelectedPiece = selectedPiece;
+
+        // Ensure the board is visually clean before starting the check
+        ResetObjects();
+
+        for (int originIndex = 0; originIndex < tileContent.Length; originIndex++)
+        {
+            int pieceValue = tileContent[originIndex];
+
+            if (pieceValue != Piece.None && GetPieceColor(pieceValue) == playerColor)
+            {
+                GameObject originGO = tileObjects[originIndex];
+
+                // Access the actual piece GameObject from the tile holder
+                Transform pieceHolder = originGO.transform.GetChild(0);
+                if (pieceHolder.childCount == 0) continue;
+
+                GameObject pieceGO = pieceHolder.GetChild(0).gameObject;
+
+                // Temporarily set the state and clear the moves list for the check
+                selectedPiece = pieceGO;
+                moves.Clear();
+
+                // Call CheckMove to generate moves (which validates against IsMoveLegal)
+                CheckMove(originGO, pieceGO);
+
+                // Check if any move was found
+                if (moves.Count > 0)
+                {
+                    // Legal move found: restore state and return true immediately
+                    selectedPiece = originalSelectedPiece;
+                    moves.Clear();
+                    moves.AddRange(originalMoves);
+                    ResetObjects(); // Clear any blue tiles generated by CheckMove
+                    return true;
+                }
+            }
+        }
+
+        // 3. No legal move found: restore the original state (moves/selection)
+        selectedPiece = originalSelectedPiece;
+        moves.Clear();
+        moves.AddRange(originalMoves);
+        ResetObjects(); // Final cleanup
+
+        return false;
     }
 
     // ----------------------------------------------------------------------
@@ -1130,12 +1287,12 @@ public class ChessManager : MonoBehaviour
         }
     }
 
-    private int GetPieceType(int piece)
+    public int GetPieceType(int piece)
     {
         return piece & 0b0111; // Extracts the piece type (1-7)
     }
 
-    private int GetPieceColor(int piece)
+    public int GetPieceColor(int piece)
     {
         return piece & (Piece.White | Piece.Black); // Extracts color bits (8 or 16)
     }

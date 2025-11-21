@@ -10,8 +10,25 @@ public class MovePieceScript : MonoBehaviour, IBeginDragHandler, IDragHandler, I
     private GameObject originalTile;
     public Image image;
 
+    // Flag to track if the drag was legal and actually started
+    private bool isDragLegal = false;
+
     public void OnBeginDrag(PointerEventData eventData)
     {
+        // 1. Get the piece's color
+        int pieceValue = int.Parse(this.gameObject.name);
+        int pieceColor = ChessManager.Instance.GetPieceColor(pieceValue);
+
+        // 2. CHECK TURN: If it's not this piece's turn, abort the drag immediately.
+        if (pieceColor != ChessManager.Instance.CurrentTurnColor)
+        {
+            isDragLegal = false;
+            return;
+        }
+
+        // --- If the check passes, proceed with drag setup ---
+        isDragLegal = true;
+
         // Set values to track and use
         newParent = transform.parent.transform.parent;
         originalParent = transform.parent.transform.parent;
@@ -23,7 +40,7 @@ public class MovePieceScript : MonoBehaviour, IBeginDragHandler, IDragHandler, I
         transform.SetParent(ChessManager.Instance.MainView);
         transform.SetAsLastSibling();
 
-        // Highlight possible moves
+        // Highlight possible moves (This will also set selectedPiece)
         ChessManager.Instance.CheckMove(originalTile, this.gameObject);
 
         // move to have bottom of obj be on cursor using lerp
@@ -32,26 +49,46 @@ public class MovePieceScript : MonoBehaviour, IBeginDragHandler, IDragHandler, I
 
     public void OnDrag(PointerEventData eventData)
     {
-        // Piece follows cursor
-        transform.position = Input.mousePosition;
+        // Only allow movement if the drag was legal
+        if (isDragLegal)
+        {
+            // Piece follows cursor
+            transform.position = Input.mousePosition;
+        }
     }
 
     public void OnEndDrag(PointerEventData eventData)
     {
-        // Check if selected tile is in list of moveable tiles
+        // If the drag was aborted in OnBeginDrag, just reset the flag and exit.
+        if (!isDragLegal)
+        {
+            return;
+        }
+
+        // --- MovePiece logic proceeds only if drag was legal ---
+        bool isMoveMade = false;
+
+        // 1. Check if selected tile is in list of moveable tiles
         if (ChessManager.Instance.Moves.Contains(newParent.gameObject))
         {
             // Move piece to new tile
             ChessManager.Instance.MovePiece(originalTile, newParent.gameObject);
+            isMoveMade = true;
         }
-        else
-        {
-            // Move piece back to original tile
-            ChessManager.Instance.MovePiece(originalTile, originalParent.gameObject);
-        }
-        
-        image.raycastTarget = true;
 
+        // 2. Handle invalid drop (snap back)
+        if (!isMoveMade)
+        {
+            // A. VISUAL RESET: Snap the piece back to its original parent holder
+            transform.SetParent(originalParent.GetChild(0)); // Go back to the tile's holder
+            transform.localPosition = Vector3.zero;        // Center it
+
+            // B. LOGICAL RESET: Clear highlights and set selectedPiece = null
+            ChessManager.Instance.ResetObjects();
+        }
+
+        image.raycastTarget = true;
+        isDragLegal = false; // Reset the flag
         // return to original size
     }
 
