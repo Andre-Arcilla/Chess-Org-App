@@ -19,6 +19,12 @@ public class MovePieceScript : MonoBehaviour, IBeginDragHandler, IDragHandler, I
         int pieceValue = int.Parse(this.gameObject.name);
         int pieceColor = ChessManager.Instance.GetPieceColor(pieceValue);
 
+        if (!ChessManager.Instance.IsMyPiece(pieceColor))
+        {
+            isDragLegal = false;
+            return;
+        }
+
         // 2. CHECK TURN: If it's not this piece's turn, abort the drag immediately.
         if (pieceColor != ChessManager.Instance.CurrentTurnColor)
         {
@@ -59,13 +65,8 @@ public class MovePieceScript : MonoBehaviour, IBeginDragHandler, IDragHandler, I
 
     public void OnEndDrag(PointerEventData eventData)
     {
-        // If the drag was aborted in OnBeginDrag, just reset the flag and exit.
-        if (!isDragLegal)
-        {
-            return;
-        }
+        if (!isDragLegal) return;
 
-        // --- MovePiece logic proceeds only if drag was legal ---
         bool isMoveMade = false;
 
         // 1. Check if selected tile is in list of moveable tiles
@@ -73,27 +74,34 @@ public class MovePieceScript : MonoBehaviour, IBeginDragHandler, IDragHandler, I
         {
             // Move piece to new tile
             ChessManager.Instance.MovePiece(originalTile, newParent.gameObject);
+
             isMoveMade = true;
         }
 
         // 2. Handle invalid drop (snap back)
         if (!isMoveMade)
         {
-            // A. VISUAL RESET: Snap the piece back to its original parent holder
-            transform.SetParent(originalParent.GetChild(0)); // Go back to the tile's holder
-            transform.localPosition = Vector3.zero;        // Center it
-
-            // B. LOGICAL RESET: Clear highlights and set selectedPiece = null
+            transform.SetParent(originalParent.GetChild(0));
+            transform.localPosition = Vector3.zero;
             ChessManager.Instance.ResetObjects();
         }
 
         image.raycastTarget = true;
-        isDragLegal = false; // Reset the flag
+        isDragLegal = false;
         // return to original size
     }
 
     public void OnPointerClick(PointerEventData eventData)
     {
+        int pieceValue = int.Parse(this.gameObject.name);
+        int pieceColor = ChessManager.Instance.GetPieceColor(pieceValue);
+
+        if (!ChessManager.Instance.IsMyPiece(pieceColor))
+        {
+            isDragLegal = false;
+            return;
+        }
+
         // Highlight possible moves
         GameObject currenttile = transform.parent.transform.parent.gameObject;
         ChessManager.Instance.CheckMove(currenttile, this.gameObject);

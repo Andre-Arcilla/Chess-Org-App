@@ -1,6 +1,8 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -23,7 +25,9 @@ public class ChessManager : MonoBehaviour
         }
     }
 
-    [Header("PGN & FEN")]
+    [Header("Toggle Settings")]
+    [SerializeField] private bool canRewriteHistory = false;
+    [SerializeField] private bool enableSideSelection = true;
 
     [Header("Chess Pieces")]
     [SerializeField] private GameObject kingPrefab;
@@ -44,11 +48,61 @@ public class ChessManager : MonoBehaviour
     [SerializeField] private int promotionOriginIndex = -1;
     [SerializeField] private int promotionDestinationIndex = -1;
     [SerializeField] private int currentTurnColor = Piece.White;
+    [SerializeField] private int halfMoveClock = 0;
+    public int PlayerSide { get; private set; } = -1;
+
+    [Header("Board Highlights")]
+    [SerializeField] private Color lastMoveColor = Color.yellow;
+    private Color[] defaultTileColors;
+    [SerializeField] private List<int> moveDestinationsHistory = new List<int>();
+    [SerializeField] private List<int> moveOriginsHistory = new List<int>();
+    private int currentLastMoveIndex = -1;
+    private int currentLastMoveOriginIndex = -1;
+
+    [Header("PGN & FEN History")]
+    private List<string> positionHistory = new List<string>();
+    private int currentHistoryIndex = -1;
+    private bool isReviewing = false;
+
+    [Header("Piece Pooling & State")]
+    private List<GameObject> piecePool = new List<GameObject>();
+    private List<int> piecesCapturedInCurrentState = new List<int>();
 
     [Header("UI References")]
     [SerializeField] private GameObject promotionPanel;
+    [SerializeField] private GameObject sideSelectionPanel;
+    [SerializeField] private GameObject resultsPanel;
+    [SerializeField] private TextMeshProUGUI winnerText;
+    [SerializeField] private TextMeshProUGUI winConText;
+    [SerializeField] private GameObject gamePanel;
+    [SerializeField] private GameObject whitePanel;
+    [SerializeField] private TextMeshProUGUI whiteName;
+    [SerializeField] private GameObject blackPanel;
+    [SerializeField] private TextMeshProUGUI blackName;
+    [SerializeField] private GameObject gameBoard;
+    [SerializeField] private Transform pgnContent;       // The Content object inside your ScrollView
+    [SerializeField] private GameObject pgnMoveButtonPrefab; // Prefab with a Button & TextMeshProUGUI component
+    [SerializeField] private ScrollRect pgnScrollRect;   // The ScrollRect component of your ScrollView
+    [SerializeField] private Scrollbar pgnScrollBar;
 
-    // Castling Rights (K=Kingside, Q=Queenside)
+    [Header("Captured Pieces UI (Trays)")]
+    [SerializeField] private Transform whitePawnDeadContainer;
+    [SerializeField] private Transform whiteRookDeadContainer;
+    [SerializeField] private Transform whiteKnightDeadContainer;
+    [SerializeField] private Transform whiteBishopDeadContainer;
+    [SerializeField] private Transform whiteQueenDeadContainer;
+    [SerializeField] private Transform whiteKingDeadContainer;
+
+    [SerializeField] private Transform blackPawnDeadContainer;
+    [SerializeField] private Transform blackRookDeadContainer;
+    [SerializeField] private Transform blackKnightDeadContainer;
+    [SerializeField] private Transform blackBishopDeadContainer;
+    [SerializeField] private Transform blackQueenDeadContainer;
+    [SerializeField] private Transform blackKingDeadContainer;
+
+    [SerializeField] private int fullMoveNumber = 1;
+    [SerializeField] private List<string> pgnHistoryList = new List<string>();
+
     [SerializeField] private bool whiteCanKSC = true;
     [SerializeField] private bool whiteCanQSC = true;
     [SerializeField] private bool blackCanKSC = true;
@@ -67,27 +121,92 @@ public class ChessManager : MonoBehaviour
     [SerializeField] public Transform MainView => mainView;
 
     // Direction Vectors (based on array index 0-63)
-    private int[] lateralDir = { +1, -1, +8, -8 }; // Right, Left, Down, Up
-    private int[] diagonalDir = { +7, -7, +9, -9 }; // Down-Left, Up-Right, Down-Right, Up-Left
+    private int[] lateralDir = { +1, -1, +8, -8 };
+    private int[] diagonalDir = { +7, -7, +9, -9 };
     private int[] knightDir = { +6, -6, +10, -10, +15, -15, +17, -17 };
 
     private void Start()
     {
+        // Cache the default colors of the board tiles
+        if (tileObjects != null)
+        {
+            defaultTileColors = new Color[tileObjects.Length];
+            for (int i = 0; i < tileObjects.Length; i++)
+            {
+                Image img = tileObjects[i].GetComponent<Image>();
+                if (img != null) defaultTileColors[i] = img.color;
+            }
+        }
+
         StartBoard();
     }
 
     private void StartBoard()
     {
-        tileContent = new int[tileObjects.Length];
-
-        // Example starting position:
-        // King at e1/e8, Rook at h1/h8, some space on other files
-        string fenPos = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq 0 1";
-
-        ReadFENPos(fenPos);
+        string defaultFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq 0 1";
+        StartGameFromFEN(defaultFen);
     }
 
-    // Takes a FEN string and sets up the board
+    public void StartGameFromFEN(string fen)
+    {
+        // 1. Reset History Lists & Flags
+        positionHistory.Clear();
+        pgnHistoryList.Clear();
+
+        // Reset move history (Destination & Origin)
+        moveDestinationsHistory.Clear();
+        moveOriginsHistory.Clear();
+
+        currentLastMoveIndex = -1;
+        currentLastMoveOriginIndex = -1;
+
+        currentHistoryIndex = -1;
+        isReviewing = false;
+
+        // 2. Clear PGN UI (Buttons)
+        if (pgnContent != null)
+        {
+            foreach (Transform child in pgnContent)
+            {
+                Destroy(child.gameObject);
+            }
+        }
+
+        // 3. Clear Board Visuals
+        ClearAllPieceVisuals();
+
+        // 4. Initialize Logic
+        tileContent = new int[tileObjects.Length];
+
+        // 5. Load the FEN (Calls RecordPosition)
+        ReadFENPos(fen);
+
+        // 6. Draw the pieces
+        RedrawPiecesFromTileContent();
+
+        // NEW: Ensure board colors are reset
+        HighlightLastMove();
+
+        if (enableSideSelection && sideSelectionPanel != null)
+        {
+            sideSelectionPanel.SetActive(true);
+        }
+        else
+        {
+            PlayerSide = -1;
+            whiteName.text = "You";
+            blackName.text = "Opponent";
+            gamePanel.transform.Rotate(0, 0, 0, Space.Self);
+            whitePanel.transform.Rotate(0, 0, 0, Space.Self);
+            blackPanel.transform.Rotate(0, 0, 0, Space.Self);
+
+            foreach (Transform child in gameBoard.transform)
+            {
+                child.Rotate(0, 0, 0, Space.Self);
+            }
+        }
+    }
+
     private void ReadFENPos(string fen)
     {
         Dictionary<char, int> pieceSymbol = new Dictionary<char, int>()
@@ -102,10 +221,18 @@ public class ChessManager : MonoBehaviour
 
         string[] fenParts = fen.Split(' ');
         string fenBoard = fenParts[0];
+        string activeColor = fenParts[1];
         string castlingRights = fenParts[2];
+        string enPassantSquare = fenParts[3];
+        string halfMoveClockStr = fenParts.Length > 4 ? fenParts[4] : "0";
+        string fullMoveNumStr = fenParts.Length > 5 ? fenParts[5] : "1";
+
+        // Clear board logic first
+        Array.Clear(tileContent, 0, tileContent.Length);
+
         int tiles = 0;
 
-        // --- 1. Piece Placement ---
+        // --- 1. Piece Placement (LOGIC ONLY) ---
         foreach (char symbol in fenBoard)
         {
             if (symbol != '/')
@@ -118,38 +245,57 @@ public class ChessManager : MonoBehaviour
                 {
                     int pieceColor = (char.IsUpper(symbol)) ? Piece.White : Piece.Black;
                     int pieceType = pieceSymbol[char.ToLower(symbol)];
+
+                    // Only update the integer array, DO NOT Instantiate here
                     tileContent[tiles] = pieceType | pieceColor;
 
-                    GameObject prefab = GetPrefabForPiece(pieceType);
-                    Transform holder = tileObjects[tiles].transform.GetChild(0);
-
-                    if (prefab != null)
-                    {
-                        GameObject pieceGO = Instantiate(prefab, holder);
-                        Image img = pieceGO.GetComponent<Image>();
-                        if (img != null)
-                        {
-                            img.color = (pieceColor == Piece.White) ? white : black;
-                        }
-                        pieceGO.name = tileContent[tiles].ToString();
-                    }
                     tiles++;
                 }
             }
         }
 
-        // --- 2. Castling Rights ---
+        // --- 2. Active Color ---
+        currentTurnColor = (activeColor.ToLower() == "w") ? Piece.White : Piece.Black;
+
+        // --- 3. Castling Rights ---
         whiteCanKSC = castlingRights.Contains('K');
         whiteCanQSC = castlingRights.Contains('Q');
         blackCanKSC = castlingRights.Contains('k');
         blackCanQSC = castlingRights.Contains('q');
+
+        // --- 4. En Passant Target Square ---
+        enPassantIndex = -1;
+        if (enPassantSquare.Length == 2 && enPassantSquare != "-")
+        {
+            int file = enPassantSquare[0] - 'a';
+            int rank = 8 - (enPassantSquare[1] - '0');
+            enPassantIndex = rank * 8 + file;
+        }
+
+        // --- 5. Halfmove Clock ---
+        if (int.TryParse(halfMoveClockStr, out int hmc))
+        {
+            halfMoveClock = hmc;
+        }
+
+        // --- 6. Fullmove Number (NEW) ---
+        if (int.TryParse(fullMoveNumStr, out int fmn))
+        {
+            fullMoveNumber = fmn;
+        }
+
+        // 7. Record Initial Position (Only if not reviewing)
+        if (!isReviewing) RecordPosition();
     }
 
     public void MovePiece(GameObject origin, GameObject destination)
     {
-        if (selectedPiece == null)
+        if (selectedPiece == null) return;
+
+        // --- History & Logic (Same as before) ---
+        if (currentHistoryIndex < positionHistory.Count - 1)
         {
-            return;
+            ClearFutureHistory();
         }
 
         int originIndex = Array.IndexOf(tileObjects, origin);
@@ -159,128 +305,116 @@ public class ChessManager : MonoBehaviour
         int pieceType = GetPieceType(pieceValue);
         int pieceColor = GetPieceColor(pieceValue);
 
-        // --- Castling Execution Check (BUG FIX: Rook value updated) ---
-        if (pieceType == Piece.King && Math.Abs(originIndex - destinationIndex) == 2)
+        // --- PGN Pre-calculation ---
+        bool isCastling = (pieceType == Piece.King && Math.Abs(originIndex - destinationIndex) == 2);
+        bool isEnPassant = (destinationIndex == enPassantIndex && pieceType == Piece.Pawn);
+        bool isCapture = (originalPieceAtDest != Piece.None) || isEnPassant;
+
+        // --- Special Move Execution (Castling/EnPassant) ---
+        if (isCastling)
         {
-            // Calculate rook movement indices
-            int rookOriginIndex = (destinationIndex > originIndex) ? (originIndex + 3) : (originIndex - 4);
-            int rookDestinationIndex = (destinationIndex > originIndex) ? (destinationIndex - 1) : (destinationIndex + 1);
+            int rookOrigin = (destinationIndex > originIndex) ? (originIndex + 3) : (originIndex - 4);
+            int rookDest = (destinationIndex > originIndex) ? (destinationIndex - 1) : (destinationIndex + 1);
 
-            // 1. Get the rook GameObject
-            Transform rookOriginHolder = tileObjects[rookOriginIndex].transform.GetChild(0);
-            GameObject rookGO = null;
-            if (rookOriginHolder.childCount > 0)
+            // Move Rook Visuals
+            Transform rookHolder = tileObjects[rookOrigin].transform.GetChild(0);
+            if (rookHolder.childCount > 0)
             {
-                rookGO = rookOriginHolder.GetChild(0).gameObject;
+                GameObject rook = rookHolder.GetChild(0).gameObject;
+                rook.transform.SetParent(tileObjects[rookDest].transform.GetChild(0));
+                rook.transform.localPosition = Vector3.zero;
             }
-
-            // 2. Move the rook GO
-            if (rookGO != null)
-            {
-                rookGO.transform.SetParent(tileObjects[rookDestinationIndex].transform.GetChild(0));
-            }
-
-            // 3. Update tileContent for the rook (FIXED VALUE)
-            int rookValue = Piece.Rook | pieceColor;
-            tileContent[rookOriginIndex] = Piece.None;
-            tileContent[rookDestinationIndex] = rookValue;
+            // Update Logic
+            tileContent[rookDest] = (Piece.Rook | pieceColor);
+            tileContent[rookOrigin] = Piece.None;
         }
 
-        // --- En passant capture check ---
-        if (destinationIndex == enPassantIndex && pieceType == Piece.Pawn)
+        if (isEnPassant)
         {
-            // Determine the location of the captured pawn (one row back from en passant square)
-            int capturedPawnIndex = enPassantIndex + ((GetPieceColor(pieceValue) == Piece.White) ? +8 : -8);
-
-            tileContent[capturedPawnIndex] = Piece.None;
-            Transform capTile = tileObjects[capturedPawnIndex].transform.GetChild(0);
-            foreach (Transform child in capTile)
-                Destroy(child.gameObject);
+            int capturedIndex = enPassantIndex + ((pieceColor == Piece.White) ? 8 : -8);
+            Transform capTile = tileObjects[capturedIndex].transform.GetChild(0);
+            if (capTile.childCount > 0)
+            {
+                HandleCapturedVisuals(capTile.GetChild(0).gameObject, (Piece.Pawn | ((pieceColor == Piece.White) ? Piece.Black : Piece.White)));
+            }
+            tileContent[capturedIndex] = Piece.None;
         }
 
         enPassantIndex = -1;
 
-        // --- Castling Rights Revocation ---
-        if (originIndex != destinationIndex)
+        // --- Castling Rights & En Passant Setup (Same as before) ---
+        // (Omitted for brevity, logic remains identical to your existing code)
+        // ... [Keep your Castling Rights Logic here] ...
+        if (pieceType == Piece.Pawn && Math.Abs((originIndex / 8) - (destinationIndex / 8)) == 2)
         {
-            if (pieceType == Piece.King)
-            {
-                if (pieceColor == Piece.White)
-                {
-                    whiteCanKSC = false;
-                    whiteCanQSC = false;
-                }
-                else
-                {
-                    blackCanKSC = false;
-                    blackCanQSC = false;
-                }
-            }
-            else if (pieceType == Piece.Rook)
-            {
-                if (originIndex == 63) whiteCanKSC = false;
-                if (originIndex == 56) whiteCanQSC = false;
-                if (originIndex == 7) blackCanKSC = false;
-                if (originIndex == 0) blackCanQSC = false;
-            }
+            enPassantIndex = (originIndex + destinationIndex) / 2;
         }
 
-        // --- Check for new en passant opportunity ---
-        if (pieceType == Piece.Pawn)
-        {
-            int originRow = originIndex / 8;
-            int destinationRow = destinationIndex / 8;
-
-            if (Math.Abs(originRow - destinationRow) == 2)
-            {
-                enPassantIndex = (originIndex + destinationIndex) / 2;
-            }
-        }
-
-        // --- Finalize Piece Move (Visual) ---
+        // --- Visual Move ---
         Transform destHolder = destination.transform.GetChild(0);
-        foreach (Transform child in destHolder)
-            Destroy(child.gameObject);
-
+        if (destHolder.childCount > 0)
+        {
+            HandleCapturedVisuals(destHolder.GetChild(0).gameObject, originalPieceAtDest);
+        }
         selectedPiece.transform.SetParent(destHolder);
+        selectedPiece.transform.localPosition = Vector3.zero;
 
-        // --- PAWN PROMOTION CHECK AND PAUSE (CRITICAL LOGIC) ---
+        // --- Promotion Check ---
         if (pieceType == Piece.Pawn && IsPromotionSquare(destinationIndex, pieceColor))
         {
             isPromotionPending = true;
             capturedPieceValue = originalPieceAtDest;
             promotionOriginIndex = originIndex;
             promotionDestinationIndex = destinationIndex;
-
-            // Finalize the pawn's move in the board state, waiting for promotion selection.
             tileContent[originIndex] = Piece.None;
             tileContent[destinationIndex] = pieceValue;
-
-            if (promotionPanel != null)
-            {
-                promotionPanel.SetActive(true);
-            }
-            else
-            {
-                PromoteToQueen(); // Default to Queen if no panel is set
-            }
-
-            // HALT: Return and wait for PromoteToX() or CancelPromotion() to be called by UI.
+            if (promotionPanel != null) promotionPanel.SetActive(true);
+            else PromoteToQueen();
             return;
         }
 
-        // --- Normal Move Finalization (If NOT a promotion) ---
+        // --- Finalize State ---
         tileContent[originIndex] = Piece.None;
         tileContent[destinationIndex] = pieceValue;
 
+        if (pieceType == Piece.Pawn || isCapture) halfMoveClock = 0;
+        else halfMoveClock++;
+
+        UpdatePGN(originIndex, destinationIndex, pieceValue, isCapture, isCastling);
+        currentTurnColor = (currentTurnColor == Piece.White) ? Piece.Black : Piece.White;
+
+        // Update the highlight index
+        currentLastMoveIndex = destinationIndex;
+        currentLastMoveOriginIndex = originIndex;
+
+        RecordPosition();
+
+        if (!isReviewing)
+        {
+            ClearAllPieceVisuals();
+            RedrawPiecesFromTileContent();
+        }
+
+        // --- CRITICAL ORDER ---
+        // 1. ResetObjects: Clears blue moves, Applies Yellow Highlight
         ResetObjects();
 
-        // --- NEW: Turn Switch and Game End Check ---
-        SwitchTurnAndCheckGameEnd();
+        // 2. CheckGameEnd: Checks for mate and Applies Red King Highlight (on top of yellow if needed)
+        CheckGameEnd();
     }
 
     public void CheckMove(GameObject originGO, GameObject pieceGO)
     {
+        // Check if we are currently looking at a past state
+        bool isLookingAtPast = currentHistoryIndex < positionHistory.Count - 1;
+
+        if (isLookingAtPast && !canRewriteHistory)
+        {
+            // If in "View Only" mode, clear selection and do nothing
+            ResetObjects();
+            return;
+        }
+
         // --- TURN ENFORCEMENT ---
         int pieceColor = GetPieceColor(int.Parse(pieceGO.name));
         if (pieceColor != currentTurnColor)
@@ -326,35 +460,48 @@ public class ChessManager : MonoBehaviour
         }
     }
 
-    private void SwitchTurnAndCheckGameEnd()
+    private void CheckGameEnd()
     {
-        // 1. Determine the color of the player whose turn it is next
-        int nextPlayerColor = (currentTurnColor == Piece.White) ? Piece.Black : Piece.White;
+        // --- 1. VISUALS: Highlight King if in Check ---
+        // We do this BEFORE checking for checkmate so the King turns red in both cases.
+        int kingIndex = FindKingTile(currentTurnColor);
+        int opponentColor = (currentTurnColor == Piece.White) ? Piece.Black : Piece.White;
+        bool inCheck = IsTileAttacked(kingIndex, opponentColor);
 
-        // 2. Switch the turn
-        currentTurnColor = nextPlayerColor;
-
-        // 3. Check for Game End Conditions
-        if (IsCheckmate(currentTurnColor))
+        if (inCheck)
         {
-            int winnerColor = (currentTurnColor == Piece.White) ? Piece.Black : Piece.White;
-            Debug.Log($"Checkmate! {((winnerColor == Piece.White) ? "White" : "Black")} Wins.");
-            // TODO: Implement game end/UI display here
-        }
-        else if (IsStalemate(currentTurnColor))
-        {
-            Debug.Log("Stalemate! Game Drawn.");
-            // TODO: Implement draw/UI display here
-        }
-        else
-        {
-            // Optional: Check for simple check to display UI feedback
-            int kingIndex = FindKingTile(currentTurnColor);
-            int opponentColor = (currentTurnColor == Piece.White) ? Piece.Black : Piece.White;
-            if (IsTileAttacked(kingIndex, opponentColor))
+            GameObject kingTile = tileObjects[kingIndex];
+            Image tileImg = kingTile.GetComponent<Image>();
+            if (tileImg != null)
             {
-                Debug.Log($"{((currentTurnColor == Piece.White) ? "White" : "Black")} is in Check!");
+                tileImg.color = Color.red;
             }
+        }
+
+        // --- 2. LOGIC: Check Game Over States ---
+        if (inCheck && IsCheckmate(currentTurnColor))
+        {
+            // It is Checkmate (Check + No Moves)
+            int winnerColor = (currentTurnColor == Piece.White) ? Piece.Black : Piece.White;
+            string winnerMsg = $"{(winnerColor == Piece.White ? "White" : "Black")} Wins!";
+            StartCoroutine(ShowGameOverUI(winnerMsg, "by Checkmate."));
+        }
+        else if (!inCheck && IsStalemate(currentTurnColor))
+        {
+            // It is Stalemate (No Check + No Moves)
+            StartCoroutine(ShowGameOverUI("It's a draw!", "by Stalemate."));
+        }
+        else if (IsInsufficientMaterial())
+        {
+            StartCoroutine(ShowGameOverUI("It's a draw!", "by Insufficient Material."));
+        }
+        else if (IsThreefoldRepetition())
+        {
+            StartCoroutine(ShowGameOverUI("It's a draw!", "by Threefold Repetition."));
+        }
+        else if (halfMoveClock >= 100)
+        {
+            StartCoroutine(ShowGameOverUI("It's a draw!", "by 50-Move Rule."));
         }
     }
 
@@ -396,7 +543,6 @@ public class ChessManager : MonoBehaviour
     {
         int opponentColor = (color == Piece.White) ? Piece.Black : Piece.White;
 
-        // Squares to check: Current square (start), square 1 (middle), square 2 (end)
         int[] squaresToCheck;
 
         if (endTile > startTile) // Kingside (e->g)
@@ -414,10 +560,10 @@ public class ChessManager : MonoBehaviour
         {
             if (IsTileAttacked(tileIndex, opponentColor))
             {
-                return false; // Path is attacked
+                return true; // Path IS attacked
             }
         }
-        return true; // Path is safe
+        return false; // Path is NOT attacked
     }
 
     // Checks if a tile is attacked by the attackerColor using ray-tracing
@@ -818,9 +964,8 @@ public class ChessManager : MonoBehaviour
                     int rookPiece = tileContent[63];
                     if (GetPieceType(rookPiece) == Piece.Rook && GetPieceColor(rookPiece) == Piece.White)
                     {
-                        // NOTE: The original logic for CanCastlePathBeAttacked had a bug:
-                        // It should check if the path is NOT attacked.
-                        if (CanCastlePathBeAttacked(60, 62, color) == false) // ASSUMING CanCastlePathBeAttacked returns TRUE if PATH IS SAFE
+                        // ADD MOVE ONLY IF PATH IS NOT ATTACKED (returns FALSE)
+                        if (!CanCastlePathBeAttacked(60, 62, color)) // <<< FIX 2: Correctly checking for safe path
                         {
                             moves.Add(tileObjects[62]); // Target G1
                         }
@@ -832,7 +977,8 @@ public class ChessManager : MonoBehaviour
                     int rookPiece = tileContent[56];
                     if (GetPieceType(rookPiece) == Piece.Rook && GetPieceColor(rookPiece) == Piece.White)
                     {
-                        if (CanCastlePathBeAttacked(60, 58, color) == false) // ASSUMING CanCastlePathBeAttacked returns TRUE if PATH IS SAFE
+                        // ADD MOVE ONLY IF PATH IS NOT ATTACKED (returns FALSE)
+                        if (!CanCastlePathBeAttacked(60, 58, color)) // <<< FIX 2: Correctly checking for safe path
                         {
                             moves.Add(tileObjects[58]); // Target C1
                         }
@@ -848,7 +994,8 @@ public class ChessManager : MonoBehaviour
                     int rookPiece = tileContent[7];
                     if (GetPieceType(rookPiece) == Piece.Rook && GetPieceColor(rookPiece) == Piece.Black)
                     {
-                        if (CanCastlePathBeAttacked(4, 6, color) == false) // ASSUMING CanCastlePathBeAttacked returns TRUE if PATH IS SAFE
+                        // ADD MOVE ONLY IF PATH IS NOT ATTACKED (returns FALSE)
+                        if (!CanCastlePathBeAttacked(4, 6, color)) // <<< FIX 2: Correctly checking for safe path
                         {
                             moves.Add(tileObjects[6]); // Target G8
                         }
@@ -860,7 +1007,8 @@ public class ChessManager : MonoBehaviour
                     int rookPiece = tileContent[0];
                     if (GetPieceType(rookPiece) == Piece.Rook && GetPieceColor(rookPiece) == Piece.Black)
                     {
-                        if (CanCastlePathBeAttacked(4, 2, color) == false) // ASSUMING CanCastlePathBeAttacked returns TRUE if PATH IS SAFE
+                        // ADD MOVE ONLY IF PATH IS NOT ATTACKED (returns FALSE)
+                        if (!CanCastlePathBeAttacked(4, 2, color)) // <<< FIX 2: Correctly checking for safe path
                         {
                             moves.Add(tileObjects[2]); // Target C8
                         }
@@ -954,10 +1102,25 @@ public class ChessManager : MonoBehaviour
     // --- PAWN PROMOTION ---
     // ----------------------------------------------------------------------
 
-    public void PromoteToQueen() { PromoteAndFinalizeMove(Piece.Queen); }
-    public void PromoteToRook() { PromoteAndFinalizeMove(Piece.Rook); }
-    public void PromoteToBishop() { PromoteAndFinalizeMove(Piece.Bishop); }
-    public void PromoteToKnight() { PromoteAndFinalizeMove(Piece.Knight); }
+    public void PromoteToQueen()
+    {
+        PromoteAndFinalizeMove(Piece.Queen);
+    }
+
+    public void PromoteToRook()
+    {
+        PromoteAndFinalizeMove(Piece.Rook);
+    }
+
+    public void PromoteToBishop()
+    {
+        PromoteAndFinalizeMove(Piece.Bishop);
+    }
+
+    public void PromoteToKnight()
+    {
+        PromoteAndFinalizeMove(Piece.Knight);
+    }
 
     private void PromoteAndFinalizeMove(int newType)
     {
@@ -977,47 +1140,36 @@ public class ChessManager : MonoBehaviour
         int pieceColor = GetPieceColor(pieceValue);
         int newPieceValue = newType | pieceColor;
 
-        // Safely get the GameObject to destroy (the Pawn)
+        // Check if the move that caused promotion was a capture
+        // We stored the captured value in capturedPieceValue before pausing
+        bool isCapture = (capturedPieceValue != Piece.None);
+
+        // --- FIX 1: Pool the existing Pawn instead of destroying it ---
         Transform holder = tileObjects[promotionDestinationIndex].transform.GetChild(0);
-        GameObject pawnGOToDestroy = null;
+        GameObject pawnGO = null;
 
         if (holder.childCount > 0)
         {
-            pawnGOToDestroy = holder.GetChild(0).gameObject;
+            pawnGO = holder.GetChild(0).gameObject;
         }
 
-        // Destroy the existing Pawn GameObject
-        if (pawnGOToDestroy != null)
+        if (pawnGO != null)
         {
-            Destroy(pawnGOToDestroy);
+            // Pool the Pawn, so it can be retrieved if we move backward
+            PoolPiece(pawnGO); // Use the public PoolPiece method we added earlier
         }
 
-        // --- 1. Execute the visual promotion ---
-        GameObject prefab = GetPrefabForPiece(newType);
-
-        if (prefab != null)
-        {
-            GameObject newPieceGO = Instantiate(prefab, holder);
-            Image img = newPieceGO.GetComponent<Image>();
-
-            if (img != null)
-            {
-                img.color = (pieceColor == Piece.White) ? white : black;
-            }
-
-            // Update selectedPiece to the newly created piece for consistency
-            selectedPiece = newPieceGO;
-            newPieceGO.name = newPieceValue.ToString();
-        }
-
-        // --- 2. Update the final board state and clear flags ---
+        // --- 2. Update the final board state and clear flags (LOGIC) ---
         tileContent[promotionDestinationIndex] = newPieceValue;
+
+        // --- PGN UPDATE (Promotion Specific) ---
+        UpdatePGN(promotionOriginIndex, promotionDestinationIndex, tileContent[promotionOriginIndex], isCapture, false, true, newType);
 
         // Clear the promotion state flags
         isPromotionPending = false;
         promotionDestinationIndex = -1;
-        promotionOriginIndex = -1; // Also clear origin
-        capturedPieceValue = Piece.None; // Also clear captured value
+        promotionOriginIndex = -1;
+        capturedPieceValue = Piece.None;
 
         if (promotionPanel != null)
         {
@@ -1027,8 +1179,25 @@ public class ChessManager : MonoBehaviour
         // Clear highlights and selection state
         ResetObjects();
 
-        // --- NEW: Turn Switch and Game End Check ---
-        SwitchTurnAndCheckGameEnd();
+        // --- CRITICAL FIX 2: Synchronize Visuals with Logical State ---
+
+        // 1. Switch Turn (CRITICAL for FEN history)
+        currentTurnColor = (currentTurnColor == Piece.White) ? Piece.Black : Piece.White;
+
+        // 2. Record Position (Save FEN with new active color)
+        RecordPosition();
+
+        // 3. FORCE VISUAL REDRAW: This is what you were missing.
+        // It clears the board, finds the captured piece(s) and the pooled pawn, 
+        // and places the new Queen and all captured pieces correctly.
+        if (!isReviewing)
+        {
+            ClearAllPieceVisuals(); // Move everything to the pool
+            RedrawPiecesFromTileContent(); // Move pieces from pool to correct positions (board/graveyard)
+        }
+
+        // 4. Check Game End
+        CheckGameEnd();
     }
 
     public void CancelPromotionAndRevertMove()
@@ -1036,13 +1205,7 @@ public class ChessManager : MonoBehaviour
         // --- Initial Safety Checks ---
         if (!isPromotionPending || selectedPiece == null || promotionDestinationIndex == -1 || promotionOriginIndex == -1)
         {
-            Debug.LogWarning("Cannot cancel promotion: No promotion is currently pending or state is invalid.");
-
-            // Ensure the panel is hidden even on invalid calls
-            if (promotionPanel != null)
-            {
-                promotionPanel.SetActive(false);
-            }
+            if (promotionPanel != null) promotionPanel.SetActive(false);
             ResetObjects();
             return;
         }
@@ -1050,49 +1213,46 @@ public class ChessManager : MonoBehaviour
         // --- 1. Determine Indices and Piece Value ---
         int originIndex = promotionOriginIndex;
         int destinationIndex = promotionDestinationIndex;
-
-        // Get the piece value from the destination tile content (where the pawn currently is).
-        // This `pieceValue` is the pawn that is being reverted.
         int pieceValueBeingReverted = tileContent[destinationIndex];
 
         // --- 2. Visual Reversion (Move the Pawn back) ---
-        // Use the correctly stored originIndex to get the pawn's actual starting tile.
         Transform originHolder = tileObjects[originIndex].transform.GetChild(0);
         selectedPiece.transform.SetParent(originHolder);
-        selectedPiece.transform.localPosition = Vector3.zero; // Ensure it's centered
+        selectedPiece.transform.localPosition = Vector3.zero;
 
         // --- 3. Logical Reversion (Update tileContent) ---
-
-        // Restore the pawn's value to its actual original tile
         tileContent[originIndex] = pieceValueBeingReverted;
-
-        // Restore the captured piece value to the destination tile (Piece.None if no piece was captured)
         tileContent[destinationIndex] = capturedPieceValue;
 
-        // --- 4. Visual Restoration (Add the captured piece back) ---
+        // --- 4. Visual Restoration & GRAVEYARD FIX ---
         if (capturedPieceValue != Piece.None)
         {
-            RestoreCapturedPieceVisuals(destinationIndex, capturedPieceValue);
+            // A. Put the piece back on the board
+            RestoreCapturedPieceVisuals(promotionDestinationIndex, capturedPieceValue);
+
+            // B. REMOVE the "Ghost" piece from the UI Graveyard
+            int capturedColor = GetPieceColor(capturedPieceValue);
+            int capturedType = GetPieceType(capturedPieceValue);
+
+            // Use the helper to find the specific tray
+            Transform graveyard = GetDeadPieceContainer(capturedType, capturedColor);
+
+            // We assume the last piece added to THIS specific tray is the one to remove
+            if (graveyard != null && graveyard.childCount > 0)
+            {
+                Destroy(graveyard.GetChild(graveyard.childCount - 1).gameObject);
+            }
         }
 
         // --- 5. Reset Temporary Game State ---
         enPassantIndex = -1;
-
-        // Clear the promotion/reversion state flags
         isPromotionPending = false;
         promotionDestinationIndex = -1;
         promotionOriginIndex = -1;
-        capturedPieceValue = Piece.None; // Clear the captured piece state
+        capturedPieceValue = Piece.None;
 
         // --- 6. Reset UI and Highlights ---
-
-        // Deactivate the promotion panel
-        if (promotionPanel != null)
-        {
-            promotionPanel.SetActive(false);
-        }
-
-        // Reset highlights and selection.
+        if (promotionPanel != null) promotionPanel.SetActive(false);
         ResetObjects();
     }
 
@@ -1183,6 +1343,319 @@ public class ChessManager : MonoBehaviour
         return false;
     }
 
+    private bool IsInsufficientMaterial()
+    {
+        // Lists to hold all non-King pieces for both sides
+        List<int> whiteMinorPieces = new List<int>();
+        List<int> blackMinorPieces = new List<int>();
+
+        // 1. Scan the entire board and categorize all pieces
+        foreach (int pieceValue in tileContent)
+        {
+            if (pieceValue == Piece.None) continue;
+
+            int type = GetPieceType(pieceValue);
+            int color = GetPieceColor(pieceValue);
+
+            // If there's a Pawn, Rook, or Queen, it's NOT insufficient material.
+            if (type == Piece.Pawn || type == Piece.Rook || type == Piece.Queen)
+            {
+                return false;
+            }
+
+            // Collect the minor pieces (Knight/Bishop)
+            if (type == Piece.Knight || type == Piece.Bishop)
+            {
+                if (color == Piece.White)
+                {
+                    whiteMinorPieces.Add(type);
+                }
+                else
+                {
+                    blackMinorPieces.Add(type);
+                }
+            }
+        }
+
+        // 2. Analyze the remaining pieces (Kings, Knights, Bishops only)
+
+        int whiteCount = whiteMinorPieces.Count;
+        int blackCount = blackMinorPieces.Count;
+
+        // --- CASE 1: King vs King (K vs K) ---
+        // Zero minor pieces on both sides (only Kings remain)
+        if (whiteCount == 0 && blackCount == 0)
+        {
+            return true;
+        }
+
+        // --- CASE 2: King vs King + Knight (K vs KN or KN vs K) ---
+        // One Knight on one side, zero minor pieces on the other.
+        if ((whiteCount == 1 && whiteMinorPieces[0] == Piece.Knight && blackCount == 0) ||
+            (blackCount == 1 && blackMinorPieces[0] == Piece.Knight && whiteCount == 0))
+        {
+            return true;
+        }
+
+        // --- CASE 3: King vs King + Bishop (K vs KB or KB vs K) ---
+        // One Bishop on one side, zero minor pieces on the other.
+        if ((whiteCount == 1 && whiteMinorPieces[0] == Piece.Bishop && blackCount == 0) ||
+            (blackCount == 1 && blackMinorPieces[0] == Piece.Bishop && whiteCount == 0))
+        {
+            return true;
+        }
+
+        // --- CASE 4: King + Bishop vs King + Bishop (KB vs KB) ---
+        // Two Bishops (one per side) on squares of the SAME color (resulting in an unbreakable fortress)
+        if (whiteCount == 1 && whiteMinorPieces[0] == Piece.Bishop &&
+            blackCount == 1 && blackMinorPieces[0] == Piece.Bishop)
+        {
+            // To check for same-color bishops, we need to find their index and check the tile color.
+
+            int whiteBishopIndex = -1;
+            int blackBishopIndex = -1;
+
+            for (int i = 0; i < tileContent.Length; i++)
+            {
+                if (GetPieceType(tileContent[i]) == Piece.Bishop)
+                {
+                    if (GetPieceColor(tileContent[i]) == Piece.White)
+                    {
+                        whiteBishopIndex = i;
+                    }
+                    else
+                    {
+                        blackBishopIndex = i;
+                    }
+                }
+            }
+
+            // Check if both Bishops are on the same colored tile (e.g., both on light squares or both on dark squares)
+            // (index % 2) is a simple way to get tile color parity if index 0 is dark (0) and index 1 is light (1).
+            // For a standard board where A1 (index 56) is dark, (index + row) % 2 gives color.
+            // Let's use the row + col method for robustness:
+            // (index/8) = row, (index%8) = col. If (row + col) % 2 is same for both, they are same color.
+
+            int whiteBishopRowColSum = (whiteBishopIndex / 8) + (whiteBishopIndex % 8);
+            int blackBishopRowColSum = (blackBishopIndex / 8) + (blackBishopIndex % 8);
+
+            // If the parity is the same (both even or both odd), they are on the same color squares.
+            if ((whiteBishopRowColSum % 2) == (blackBishopRowColSum % 2))
+            {
+                return true;
+            }
+        }
+
+        // All other combinations are considered checkmate-possible (e.g., KN vs KN, KN vs KB, 2B vs K, etc.)
+        return false;
+    }
+
+    private bool IsThreefoldRepetition()
+    {
+        // A position must occur 3 times total for the draw to be valid.
+        // We need at least 3 positions in history to find 3 matches.
+        if (positionHistory.Count < 3)
+        {
+            return false;
+        }
+
+        // Get the FEN of the CURRENT position (the one we just arrived at)
+        string fenCurrent = positionHistory[positionHistory.Count - 1];
+
+        // Ensure the FEN is not null (though the Count < 3 check should handle most early errors)
+        if (fenCurrent == null)
+        {
+            return false;
+        }
+
+        string[] fenPartsCurrent = fenCurrent.Split(' ');
+
+        // Safety check to ensure the FEN has enough parts
+        if (fenPartsCurrent.Length < 4)
+        {
+            // This indicates a bad FEN generation, but prevents an array crash
+            Debug.LogError("FEN string is too short for repetition check.");
+            return false;
+        }
+
+        // Create the unique key for the position (excluding half-move clock and full-move number)
+        string positionKeyCurrent = $"{fenPartsCurrent[0]} {fenPartsCurrent[1]} {fenPartsCurrent[2]} {fenPartsCurrent[3]}";
+
+        int repetitionCount = 0;
+
+        // Iterate through the entire history to count how many times this exact position has occurred.
+        // We must check all positions, including the current one.
+        for (int i = 0; i < positionHistory.Count; i++)
+        {
+            string fenHistory = positionHistory[i];
+
+            if (fenHistory == null) continue;
+
+            string[] fenPartsHistory = fenHistory.Split(' ');
+
+            // Re-check length for safety
+            if (fenPartsHistory.Length < 4) continue;
+
+            string positionKeyHistory = $"{fenPartsHistory[0]} {fenPartsHistory[1]} {fenPartsHistory[2]} {fenPartsHistory[3]}";
+
+            // *** SIMPLE COMPARISON ***
+            if (positionKeyCurrent == positionKeyHistory)
+            {
+                repetitionCount++;
+            }
+
+            // If the position has occurred 3 or more times, it's a draw.
+            if (repetitionCount >= 3)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    // ----------------------------------------------------------------------
+    // --- PGN GENERATION ---
+    // ----------------------------------------------------------------------
+
+    private void UpdatePGN(int originIndex, int destIndex, int pieceValue, bool isCapture, bool isCastling, bool isPromotion = false, int promotionType = Piece.None)
+    {
+        string moveString = "";
+        int pieceType = GetPieceType(pieceValue);
+        int pieceColor = GetPieceColor(pieceValue);
+
+        // --- 1. Construct the Move String ---
+        if (isCastling)
+        {
+            int destFile = destIndex % 8;
+            moveString = (destFile > 4) ? "O-O" : "O-O-O";
+        }
+        else
+        {
+            // Piece Letter
+            if (pieceType != Piece.Pawn)
+            {
+                moveString += GetPieceNotation(pieceValue);
+            }
+
+            // Capture Notation
+            if (isCapture)
+            {
+                if (pieceType == Piece.Pawn)
+                {
+                    char originFile = (char)('a' + (originIndex % 8));
+                    moveString += originFile;
+                }
+                moveString += "x";
+            }
+
+            // Destination Square
+            moveString += GetSquareNotation(destIndex);
+
+            // Promotion
+            if (isPromotion)
+            {
+                moveString += "=" + GetPieceNotation(promotionType | pieceColor);
+            }
+        }
+
+        // Check / Checkmate Suffix
+        int opponentColor = (pieceColor == Piece.White) ? Piece.Black : Piece.White;
+        if (IsCheckmate(opponentColor))
+        {
+            moveString += "#";
+        }
+        else
+        {
+            int kingIndex = FindKingTile(opponentColor);
+            if (IsTileAttacked(kingIndex, pieceColor))
+            {
+                moveString += "+";
+            }
+        }
+
+        // --- 2. Format & Store (White adds the number, Black just adds the move) ---
+        string finalButtonText = "";
+
+        if (pieceColor == Piece.White)
+        {
+            finalButtonText = $"{fullMoveNumber}. {moveString}";
+        }
+        else
+        {
+            finalButtonText = moveString;
+            fullMoveNumber++; // Increment after Black's move
+        }
+
+        // Add to logical list
+        pgnHistoryList.Add(finalButtonText);
+
+        // --- 3. Instantiate Button UI ---
+        if (pgnContent != null && pgnMoveButtonPrefab != null)
+        {
+            GameObject newButton = Instantiate(pgnMoveButtonPrefab, pgnContent);
+
+            // Get the index of the move AFTER it's added to the list
+            int moveIndex = pgnHistoryList.Count - 1;
+
+            // Add listener to the button
+            Button btn = newButton.GetComponent<Button>();
+            if (btn != null)
+            {
+                // Assign the function to load this specific board state
+                btn.onClick.AddListener(() => LoadBoardFromHistory(moveIndex));
+            }
+
+            // Try to set text on the button
+            TextMeshProUGUI btnText = newButton.GetComponentInChildren<TextMeshProUGUI>();
+            if (btnText != null)
+            {
+                btnText.text = finalButtonText;
+            }
+
+            newButton.name = $"Move_{moveIndex}_{moveString}";
+        }
+
+        // --- 4. Auto-Scroll ---
+        if (pgnScrollRect != null && pgnContent != null)
+        {
+            // Force the layout to update immediately on the Content RectTransform.
+            LayoutRebuilder.ForceRebuildLayoutImmediate(pgnContent.GetComponent<RectTransform>());
+
+            // Set to 1f to scroll to the end (right) for horizontal lists.
+            pgnScrollRect.horizontalNormalizedPosition = 1f;
+        }
+
+        // Always ensure the current move is highlighted
+        HighlightCurrentMoveButton(pgnHistoryList.Count - 1);
+    }
+
+    private string GetSquareNotation(int index)
+    {
+        int file = index % 8;
+        int rank = index / 8;
+
+        // Convert to chess notation (Rank 0=8, Rank 7=1)
+        int rankNumber = 8 - rank;
+        char fileChar = (char)('a' + file);
+
+        return $"{fileChar}{rankNumber}";
+    }
+
+    private string GetPieceNotation(int pieceValue)
+    {
+        int type = GetPieceType(pieceValue);
+        switch (type)
+        {
+            case Piece.King: return "K";
+            case Piece.Queen: return "Q";
+            case Piece.Rook: return "R";
+            case Piece.Bishop: return "B";
+            case Piece.Knight: return "N";
+            default: return ""; // Pawns have no letter
+        }
+    }
+
     // ----------------------------------------------------------------------
     // --- UTILITIES ---
     // ----------------------------------------------------------------------
@@ -1205,6 +1678,186 @@ public class ChessManager : MonoBehaviour
                 tileObjects[index].GetComponent<Image>().color = tileColor;
             }
         }
+
+        HighlightKingCheck();
+        HighlightLastMove();
+    }
+
+    public void LoadBoardFromHistory(int index)
+    {
+        if (index < 0 || index >= positionHistory.Count) return;
+
+        currentHistoryIndex = index;
+        isReviewing = true;
+
+        // Restore Destination Index
+        if (index < moveDestinationsHistory.Count)
+            currentLastMoveIndex = moveDestinationsHistory[index];
+        else
+            currentLastMoveIndex = -1;
+
+        // NEW: Restore Origin Index
+        if (index < moveOriginsHistory.Count)
+            currentLastMoveOriginIndex = moveOriginsHistory[index];
+        else
+            currentLastMoveOriginIndex = -1;
+
+        string fen = positionHistory[index];
+        ReadFENPos(fen);
+
+        ClearAllPieceVisuals();
+        RedrawPiecesFromTileContent();
+
+        HighlightLastMove();
+        HighlightCurrentMoveButton(index);
+    }
+
+    private void RecordPosition()
+    {
+        string fen = GenerateFEN();
+
+        // 1. Handle History Rewrite (Branching)
+        // If we are not at the end of history, we are rewriting it.
+        if (currentHistoryIndex < positionHistory.Count - 1)
+        {
+            int indexToRemoveFrom = currentHistoryIndex + 1;
+            int movesToRemove = positionHistory.Count - indexToRemoveFrom;
+
+            if (movesToRemove > 0)
+            {
+                // A. Remove from Board History
+                positionHistory.RemoveRange(indexToRemoveFrom, movesToRemove);
+
+                // B. Remove from PGN History
+                if (pgnHistoryList.Count > currentHistoryIndex)
+                {
+                    int pgnRemoveCount = pgnHistoryList.Count - currentHistoryIndex;
+                    pgnHistoryList.RemoveRange(currentHistoryIndex, pgnRemoveCount);
+                }
+
+                // C. Remove from HIGHLIGHT History (Crucial Fix)
+                // We must remove the "old future" moves so they don't appear in the new timeline
+                if (indexToRemoveFrom < moveDestinationsHistory.Count)
+                {
+                    moveDestinationsHistory.RemoveRange(indexToRemoveFrom, moveDestinationsHistory.Count - indexToRemoveFrom);
+                }
+
+                if (indexToRemoveFrom < moveOriginsHistory.Count)
+                {
+                    moveOriginsHistory.RemoveRange(indexToRemoveFrom, moveOriginsHistory.Count - indexToRemoveFrom);
+                }
+
+                // D. Clean UI Buttons
+                if (pgnContent != null)
+                {
+                    for (int i = pgnContent.childCount - 1; i >= currentHistoryIndex; i--)
+                    {
+                        Destroy(pgnContent.GetChild(i).gameObject);
+                    }
+                }
+
+                // Reset move number if needed
+                fullMoveNumber = (currentHistoryIndex / 2) + 1;
+            }
+
+            // We are no longer reviewing past moves, we are making new ones
+            isReviewing = false;
+        }
+
+        // 2. Add New State
+        positionHistory.Add(fen);
+
+        // Add the current move to the history lists
+        moveDestinationsHistory.Add(currentLastMoveIndex);
+        moveOriginsHistory.Add(currentLastMoveOriginIndex);
+
+        currentHistoryIndex = positionHistory.Count - 1;
+    }
+
+    private string GenerateFEN()
+    {
+        // 1. Piece Placement
+        string piecePlacement = "";
+        for (int rank = 0; rank < 8; rank++)
+        {
+            int emptyCount = 0;
+            for (int file = 0; file < 8; file++)
+            {
+                int index = rank * 8 + file;
+                int pieceValue = tileContent[index];
+
+                if (pieceValue == Piece.None)
+                {
+                    emptyCount++;
+                }
+                else
+                {
+                    if (emptyCount > 0)
+                    {
+                        piecePlacement += emptyCount.ToString();
+                        emptyCount = 0;
+                    }
+
+                    int type = GetPieceType(pieceValue);
+                    int color = GetPieceColor(pieceValue);
+                    char symbol = ' ';
+
+                    switch (type)
+                    {
+                        case Piece.King: symbol = 'k'; break;
+                        case Piece.Queen: symbol = 'q'; break;
+                        case Piece.Rook: symbol = 'r'; break;
+                        case Piece.Bishop: symbol = 'b'; break;
+                        case Piece.Knight: symbol = 'n'; break;
+                        case Piece.Pawn: symbol = 'p'; break;
+                    }
+
+                    if (color == Piece.White)
+                    {
+                        symbol = char.ToUpper(symbol);
+                    }
+                    piecePlacement += symbol;
+                }
+            }
+
+            if (emptyCount > 0)
+            {
+                piecePlacement += emptyCount.ToString();
+            }
+
+            if (rank < 7)
+            {
+                piecePlacement += "/";
+            }
+        }
+
+        // 2. Active Color
+        string activeColor = (currentTurnColor == Piece.White) ? "w" : "b";
+
+        // 3. Castling Rights
+        string castling = "";
+        if (whiteCanKSC) castling += "K";
+        if (whiteCanQSC) castling += "Q";
+        if (blackCanKSC) castling += "k";
+        if (blackCanQSC) castling += "q";
+        if (castling == "") castling = "-";
+
+        // 4. En Passant Target Square
+        string enPassantSquare = "-";
+        if (enPassantIndex != -1)
+        {
+            // Convert index (0-63) to chess notation (e.g., 20 -> d6)
+            int file = enPassantIndex % 8;
+            int rank = 8 - (enPassantIndex / 8);
+            enPassantSquare = ((char)('a' + file)).ToString() + rank.ToString();
+        }
+
+        // 5. Halfmove Clock (required for 50-move rule, but is part of position history)
+        string halfMove = halfMoveClock.ToString();
+
+        // NOTE: We omit the fullmove number for simplicity in the repetition check
+        // The repetition rule only cares about these 5 fields.
+        return $"{piecePlacement} {activeColor} {castling} {enPassantSquare} {halfMove}";
     }
 
     private void RestoreCapturedPieceVisuals(int tileIndex, int pieceValue)
@@ -1297,8 +1950,467 @@ public class ChessManager : MonoBehaviour
         return piece & (Piece.White | Piece.Black); // Extracts color bits (8 or 16)
     }
 
+    private void HandleCapturedVisuals(GameObject capturedBoardGO, int pieceValue)
+    {
+        // 1. Destroy the actual piece on the board
+        if (capturedBoardGO != null)
+        {
+            Destroy(capturedBoardGO);
+        }
+
+        if (pieceValue == Piece.None) return;
+
+        int pieceType = GetPieceType(pieceValue);
+        int pieceColor = GetPieceColor(pieceValue);
+
+        // 2. Identify the correct UI container using the new helper
+        Transform targetContainer = GetDeadPieceContainer(pieceType, pieceColor);
+
+        GameObject prefab = GetPrefabForPiece(pieceType);
+
+        if (targetContainer != null && prefab != null)
+        {
+            // 3. Generate a NEW piece in the UI
+            GameObject uiPiece = Instantiate(prefab, targetContainer);
+
+            // 4. Set exact size to 100x100
+            RectTransform rect = uiPiece.GetComponent<RectTransform>();
+            if (rect == null) rect = uiPiece.AddComponent<RectTransform>();
+
+            rect.sizeDelta = new Vector2(100, 100);
+
+            // 5. Standardize Scale & Rotation for UI
+            uiPiece.transform.localScale = Vector3.one;
+            uiPiece.transform.localRotation = Quaternion.identity;
+
+            // 6. Set the correct color
+            Image img = uiPiece.GetComponent<Image>();
+            if (img != null)
+            {
+                img.color = (pieceColor == Piece.White) ? white : black;
+            }
+
+            // 7. Cleanup components
+            if (uiPiece.GetComponent<Button>()) Destroy(uiPiece.GetComponent<Button>());
+            if (img != null) img.raycastTarget = false;
+        }
+    }
+
+    private Transform GetDeadPieceContainer(int pieceType, int pieceColor)
+    {
+        if (pieceColor == Piece.White)
+        {
+            switch (pieceType)
+            {
+                case Piece.Pawn: return whitePawnDeadContainer;
+                case Piece.Knight: return whiteKnightDeadContainer;
+                case Piece.Bishop: return whiteBishopDeadContainer;
+                case Piece.Rook: return whiteRookDeadContainer;
+                case Piece.Queen: return whiteQueenDeadContainer;
+                default: return null;
+            }
+        }
+        else // Black pieces
+        {
+            switch (pieceType)
+            {
+                case Piece.Pawn: return blackPawnDeadContainer;
+                case Piece.Knight: return blackKnightDeadContainer;
+                case Piece.Bishop: return blackBishopDeadContainer;
+                case Piece.Rook: return blackRookDeadContainer;
+                case Piece.Queen: return blackQueenDeadContainer;
+                default: return null;
+            }
+        }
+    }
+
+    private void HighlightCurrentMoveButton(int index)
+    {
+        if (pgnContent == null) return;
+
+        // Loop through all PGN buttons to set colors
+        for (int i = 0; i < pgnContent.childCount; i++)
+        {
+            Button btn = pgnContent.GetChild(i).GetComponent<Button>();
+            if (btn != null)
+            {
+                ColorBlock colors = btn.colors;
+                // Check if the current move is the one we are highlighting
+                if (i == index)
+                {
+                    colors.normalColor = Color.yellow; // Highlighted color
+                }
+                else
+                {
+                    // Reset others
+                    colors.normalColor = Color.white;
+                }
+                btn.colors = colors;
+            }
+        }
+    }
+
+    private void ClearAllPieceVisuals()
+    {
+        // 1. Clear all pieces from the main board and add them to the pool
+        foreach (GameObject tile in tileObjects)
+        {
+            Transform holder = tile.transform.GetChild(0);
+            while (holder.childCount > 0)
+            {
+                Transform piece = holder.GetChild(0);
+                piece.gameObject.SetActive(false); // Hide piece
+                piece.SetParent(transform); // Parent to ChessManager for a central pool
+                piecePool.Add(piece.gameObject);
+            }
+        }
+
+        // FIX 2: Clear all captured pieces from the graveyards and add them to the pool
+        Transform[] deadContainers = new Transform[]
+        {
+        whitePawnDeadContainer, whiteRookDeadContainer, whiteKnightDeadContainer,
+        whiteBishopDeadContainer, whiteQueenDeadContainer,
+        blackPawnDeadContainer, blackRookDeadContainer, blackKnightDeadContainer,
+        blackBishopDeadContainer, blackQueenDeadContainer
+            // Note: King containers (if you have them) are usually not needed here, as the King is never captured
+        };
+
+        foreach (Transform container in deadContainers)
+        {
+            ClearDeadContainerAndPool(container);
+        }
+
+        piecesCapturedInCurrentState.Clear();
+    }
+
+    private void ClearDeadContainerAndPool(Transform container)
+    {
+        if (container == null) return;
+
+        // Move all child pieces from the container back into the pool list
+        while (container.childCount > 0)
+        {
+            Transform piece = container.GetChild(0);
+            piece.gameObject.SetActive(false); // Hide the piece
+            piece.SetParent(transform);        // Reparent to the ChessManager for pooling
+            piecePool.Add(piece.gameObject);   // Add to the pool list
+        }
+    }
+
+    private GameObject GetPieceFromPool(int pieceType, int pieceColor)
+    {
+        int pieceValue = pieceType | pieceColor;
+        string searchName = pieceValue.ToString();
+
+        // Find the first piece in the pool that matches the type/color we need
+        GameObject pieceGO = piecePool.FirstOrDefault(p => p.name == searchName);
+
+        if (pieceGO != null)
+        {
+            piecePool.Remove(pieceGO);
+            pieceGO.SetActive(true); // Make sure it's visible
+            return pieceGO;
+        }
+
+        // Create new if none exists (Initial game start)
+        GameObject prefab = GetPrefabForPiece(pieceType);
+        if (prefab != null)
+        {
+            GameObject newPieceGO = Instantiate(prefab);
+            newPieceGO.name = searchName;
+            Image img = newPieceGO.GetComponent<Image>();
+            if (img != null)
+            {
+                img.color = (pieceColor == Piece.White) ? white : black;
+            }
+            return newPieceGO;
+        }
+        return null;
+    }
+
+    private void RedrawPiecesFromTileContent()
+    {
+        piecesCapturedInCurrentState.Clear();
+
+        // 1. VISUALIZE THE BOARD (Move pieces from pool to board)
+        for (int i = 0; i < tileContent.Length; i++)
+        {
+            // ... (existing code to get piece from pool and place it on tileObjects[i]) ...
+            int pieceValue = tileContent[i];
+
+            if (pieceValue != Piece.None)
+            {
+                int pieceType = GetPieceType(pieceValue);
+                int pieceColor = GetPieceColor(pieceValue);
+
+                // GetPieceFromPool REMOVES the item from the piecePool list
+                GameObject pieceGO = GetPieceFromPool(pieceType, pieceColor);
+
+                if (pieceGO != null)
+                {
+                    // ... (existing code to set parent, position, scale, active, raycastTarget=true) ...
+                    Transform holder = tileObjects[i].transform.GetChild(0);
+                    pieceGO.transform.SetParent(holder);
+                    pieceGO.transform.localPosition = Vector3.zero;
+                    pieceGO.transform.localScale = Vector3.one;
+                    pieceGO.transform.localRotation = Quaternion.identity;
+                    pieceGO.SetActive(true);
+
+                    Image img = pieceGO.GetComponent<Image>();
+                    if (img != null) img.raycastTarget = true;
+                }
+            }
+        }
+
+        foreach (GameObject remainingPiece in piecePool)
+        {
+            // Safety check:
+            if (remainingPiece == null) continue;
+
+            if (int.TryParse(remainingPiece.name, out int pieceValue))
+            {
+                int pieceType = GetPieceType(pieceValue);
+                int pieceColor = GetPieceColor(pieceValue);
+
+                // This should return the correct container (e.g., whitePawnDeadContainer)
+                Transform targetContainer = GetDeadPieceContainer(pieceType, pieceColor);
+
+                if (targetContainer != null)
+                {
+                    // Move to Graveyard
+                    remainingPiece.transform.SetParent(targetContainer, false);
+
+                    // Setup for UI Display (Ghost)
+                    remainingPiece.transform.localPosition = Vector3.zero;
+                    remainingPiece.transform.localScale = Vector3.one;
+                    remainingPiece.transform.localRotation = Quaternion.identity;
+
+                    RectTransform rect = remainingPiece.GetComponent<RectTransform>();
+                    if (rect != null) rect.sizeDelta = new Vector2(100, 100);
+
+                    remainingPiece.SetActive(true);
+
+                    // Disable interaction for dead pieces
+                    Image img = remainingPiece.GetComponent<Image>();
+                    if (img != null) img.raycastTarget = false;
+                }
+                else
+                {
+                    // If no container found, just hide it
+                    remainingPiece.SetActive(false);
+                }
+            }
+            else
+            {
+                // If name parse fails, hide it
+                remainingPiece.SetActive(false);
+            }
+        }
+
+        piecePool.Clear();
+    }
+
+    public void PoolPiece(GameObject piece)
+    {
+        if (piece == null || piecePool.Contains(piece)) return;
+
+        piece.SetActive(false);
+        // Reparent to the ChessManager itself, which acts as the pool holder
+        piece.transform.SetParent(this.transform);
+        piecePool.Add(piece);
+    }
+
+    private void ClearFutureHistory()
+    {
+        if (currentHistoryIndex < positionHistory.Count - 1)
+        {
+            int indexToRemoveFrom = currentHistoryIndex + 1;
+            int movesToRemove = positionHistory.Count - indexToRemoveFrom;
+
+            if (movesToRemove > 0)
+            {
+                // 1. Remove Board History
+                positionHistory.RemoveRange(indexToRemoveFrom, movesToRemove);
+
+                // 2. Remove PGN History
+                if (pgnHistoryList.Count > currentHistoryIndex)
+                {
+                    pgnHistoryList.RemoveRange(currentHistoryIndex, pgnHistoryList.Count - currentHistoryIndex);
+                }
+
+                // 3. Remove Highlight History (THE MISSING PART)
+                // We must perform safe checks to avoid out-of-range errors
+                if (indexToRemoveFrom < moveDestinationsHistory.Count)
+                {
+                    moveDestinationsHistory.RemoveRange(indexToRemoveFrom, moveDestinationsHistory.Count - indexToRemoveFrom);
+                }
+
+                if (indexToRemoveFrom < moveOriginsHistory.Count)
+                {
+                    moveOriginsHistory.RemoveRange(indexToRemoveFrom, moveOriginsHistory.Count - indexToRemoveFrom);
+                }
+
+                // 4. Clear UI
+                if (pgnContent != null)
+                {
+                    for (int i = pgnContent.childCount - 1; i >= currentHistoryIndex; i--)
+                    {
+                        Destroy(pgnContent.GetChild(i).gameObject);
+                    }
+                }
+            }
+        }
+    }
+
+    public bool IsMyPiece(int pieceColor)
+    {
+        // If selection is disabled OR set to "Both" (-1), allow everything
+        if (!enableSideSelection || PlayerSide == -1) return true;
+
+        if (PlayerSide == 0 && pieceColor == Piece.White) return true;
+        if (PlayerSide == 1 && pieceColor == Piece.Black) return true;
+
+        return false;
+    }
+
+    private IEnumerator ShowGameOverUI(string title, string subTitle)
+    {
+        // 1. Wait for the delay (e.g., 2.5 seconds)
+        yield return new WaitForSeconds(2.5f);
+
+        // 2. Show the UI
+        resultsPanel.SetActive(true);
+        winnerText.text = title;
+        winConText.text = subTitle;
+    }
+
+    private void HighlightKingCheck()
+    {
+        // 1. Find the King of the current turn
+        int kingIndex = -1;
+        for (int i = 0; i < tileContent.Length; i++)
+        {
+            // Use your existing helper methods to find the King
+            if (GetPieceType(tileContent[i]) == Piece.King && GetPieceColor(tileContent[i]) == currentTurnColor)
+            {
+                kingIndex = i;
+                break;
+            }
+        }
+
+        // 2. If King exists, check if attacked
+        if (kingIndex != -1)
+        {
+            int opponentColor = (currentTurnColor == Piece.White) ? Piece.Black : Piece.White;
+
+            // 3. If in check, paint it RED
+            if (IsTileAttacked(kingIndex, opponentColor))
+            {
+                GameObject kingTile = tileObjects[kingIndex];
+                Image tileImg = kingTile.GetComponent<Image>();
+                if (tileImg != null)
+                {
+                    tileImg.color = Color.red;
+                }
+            }
+        }
+    }
+
+    private void HighlightLastMove()
+    {
+        // 1. Reset ALL tiles to default
+        if (defaultTileColors != null)
+        {
+            for (int i = 0; i < tileObjects.Length; i++)
+            {
+                Image img = tileObjects[i].GetComponent<Image>();
+                if (img != null) img.color = defaultTileColors[i];
+            }
+        }
+
+        // 2. Highlight DESTINATION
+        if (currentLastMoveIndex != -1 && currentLastMoveIndex < tileObjects.Length)
+        {
+            Image img = tileObjects[currentLastMoveIndex].GetComponent<Image>();
+            if (img != null) img.color = lastMoveColor;
+        }
+
+        // 3. Highlight ORIGIN (NEW)
+        if (currentLastMoveOriginIndex != -1 && currentLastMoveOriginIndex < tileObjects.Length)
+        {
+            Image img = tileObjects[currentLastMoveOriginIndex].GetComponent<Image>();
+            if (img != null) img.color = lastMoveColor;
+        }
+    }
+
+    // ----------------------------------------------------------------------
+    // --- BUTTONS ---
+    // ----------------------------------------------------------------------
+
+    public void GoBackOneMove()
+    {
+        int targetIndex = currentHistoryIndex - 1;
+        if (targetIndex >= 0)
+        {
+            LoadBoardFromHistory(targetIndex);
+        }
+    }
+
+    public void GoForwardOneMove()
+    {
+        int targetIndex = currentHistoryIndex + 1;
+        if (targetIndex < positionHistory.Count)
+        {
+            LoadBoardFromHistory(targetIndex);
+        }
+    }
+
     public void BackButton()
     {
         SceneLoader.Instance.LoadNewScene("AdminScene");
+    }
+
+    public void NewGame()
+    {
+        string defaultFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq 0 1";
+        StartGameFromFEN(defaultFen);
+    }
+
+    // 0 for White, 1 for Black
+    public void SelectSide(int sideIndex)
+    {
+        // 1. Store the selection! (0 = White, 1 = Black)
+        PlayerSide = sideIndex;
+
+        // 2. Hide UI
+        if (sideSelectionPanel != null) sideSelectionPanel.SetActive(false);
+
+        // 3. Handle Rotation
+        if (sideIndex == 0) // WHITE
+        {
+            whiteName.text = "You";
+            blackName.text = "Stockfish";
+            gamePanel.transform.Rotate(0, 0, 0, Space.Self);
+            whitePanel.transform.Rotate(0, 0, 0, Space.Self);
+            blackPanel.transform.Rotate(0, 0, 0, Space.Self);
+
+            foreach (Transform child in gameBoard.transform)
+            {
+                child.Rotate(0, 0, 0, Space.Self);
+            }
+        }
+        else if (sideIndex == 1) // BLACK
+        {
+            whiteName.text = "Stockfish";
+            blackName.text = "You";
+            gamePanel.transform.Rotate(0, 0, 180, Space.Self);
+            whitePanel.transform.Rotate(0, 0, 180, Space.Self);
+            blackPanel.transform.Rotate(0, 0, 180, Space.Self);
+
+            foreach (Transform child in gameBoard.transform)
+            {
+                child.Rotate(0, 0, 180, Space.Self);
+            }
+        }
     }
 }

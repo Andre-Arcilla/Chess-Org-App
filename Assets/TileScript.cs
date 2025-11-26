@@ -15,16 +15,17 @@ public class TileScript : MonoBehaviour, IDropHandler, IPointerDownHandler
             dropped.GetComponent<MovePieceScript>().newParent = transform;
         }
         // Temporary, add logic to allow capture of pieces
-        else
+        else // Dropping on a tile with a piece
         {
             GameObject dropped = eventData.pointerDrag;
             dropped.GetComponent<MovePieceScript>().newParent = transform;
 
             if (ChessManager.Instance.Moves.Contains(gameObject))
             {
+                // --- FIX: Pool the captured piece instead of Destroying it ---
                 foreach (Transform child in transform.GetChild(0))
                 {
-                    Destroy(child.gameObject);
+                    ChessManager.Instance.PoolPiece(child.gameObject); // ADD THIS LINE
                 }
             }
         }
@@ -35,15 +36,17 @@ public class TileScript : MonoBehaviour, IDropHandler, IPointerDownHandler
         // Move piece if selected tile is in list of moveable tiles
         if (ChessManager.Instance.Moves.Contains(gameObject))
         {
-            // Clear any object in the tile's wrapper
+            // Clear any object in the tile's wrapper (Capture logic for touch/click moves)
             if (transform.GetChild(0).transform.childCount > 0)
             {
+                // --- FIX: Pool the captured piece instead of Destroying it ---
                 foreach (Transform child in transform.GetChild(0))
                 {
-                    Destroy(child.gameObject);
+                    // Destroy(child.gameObject); // DELETE THIS LINE
+                    ChessManager.Instance.PoolPiece(child.gameObject); // ADD THIS LINE
                 }
             }
-                        
+
             ChessManager.Instance.MovePiece(ChessManager.Instance.SelectedPiece.transform.parent.transform.parent.gameObject, this.gameObject);
         }
 
