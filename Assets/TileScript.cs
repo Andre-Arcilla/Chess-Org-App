@@ -20,7 +20,7 @@ public class TileScript : MonoBehaviour, IDropHandler, IPointerDownHandler
             GameObject dropped = eventData.pointerDrag;
             dropped.GetComponent<MovePieceScript>().newParent = transform;
 
-            if (ChessManager.Instance.Moves.Contains(gameObject))
+            if (ChessManager.Instance.moves.Contains(gameObject))
             {
                 // --- FIX: Pool the captured piece instead of Destroying it ---
                 foreach (Transform child in transform.GetChild(0))
@@ -34,7 +34,7 @@ public class TileScript : MonoBehaviour, IDropHandler, IPointerDownHandler
     public void OnPointerDown(PointerEventData eventData)
     {
         // Move piece if selected tile is in list of moveable tiles
-        if (ChessManager.Instance.Moves.Contains(gameObject))
+        if (ChessManager.Instance.moves.Contains(gameObject))
         {
             // Clear any object in the tile's wrapper (Capture logic for touch/click moves)
             if (transform.GetChild(0).transform.childCount > 0)
@@ -47,7 +47,7 @@ public class TileScript : MonoBehaviour, IDropHandler, IPointerDownHandler
                 }
             }
 
-            ChessManager.Instance.MovePiece(ChessManager.Instance.SelectedPiece.transform.parent.transform.parent.gameObject, this.gameObject);
+            ChessManager.Instance.MovePiece(ChessManager.Instance.selectedPiece.transform.parent.transform.parent.gameObject, this.gameObject);
         }
 
         // Remove tile highlights if piece loses focus

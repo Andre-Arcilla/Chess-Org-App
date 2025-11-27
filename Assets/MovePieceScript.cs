@@ -26,7 +26,7 @@ public class MovePieceScript : MonoBehaviour, IBeginDragHandler, IDragHandler, I
         }
 
         // 2. CHECK TURN: If it's not this piece's turn, abort the drag immediately.
-        if (pieceColor != ChessManager.Instance.CurrentTurnColor)
+        if (pieceColor != ChessManager.Instance.currentTurnColor)
         {
             isDragLegal = false;
             return;
@@ -70,7 +70,7 @@ public class MovePieceScript : MonoBehaviour, IBeginDragHandler, IDragHandler, I
         bool isMoveMade = false;
 
         // 1. Check if selected tile is in list of moveable tiles
-        if (ChessManager.Instance.Moves.Contains(newParent.gameObject))
+        if (ChessManager.Instance.moves.Contains(newParent.gameObject))
         {
             // Move piece to new tile
             ChessManager.Instance.MovePiece(originalTile, newParent.gameObject);

@@ -41,13 +41,13 @@ public class ChessManager : MonoBehaviour
 
     [Header("Board State")]
     [SerializeField] public GameObject focus;
-    [SerializeField] private GameObject selectedPiece;
+    [SerializeField] public GameObject selectedPiece;
     [SerializeField] private int enPassantIndex = -1;
-    [SerializeField] private bool isPromotionPending = false;
+    [SerializeField] public bool isPromotionPending = false;
     [SerializeField] private int capturedPieceValue = Piece.None;
     [SerializeField] private int promotionOriginIndex = -1;
     [SerializeField] private int promotionDestinationIndex = -1;
-    [SerializeField] private int currentTurnColor = Piece.White;
+    [SerializeField] public int currentTurnColor = Piece.White;
     [SerializeField] private int halfMoveClock = 0;
     public int PlayerSide { get; private set; } = -1;
 
@@ -79,10 +79,10 @@ public class ChessManager : MonoBehaviour
     [SerializeField] private TextMeshProUGUI whiteName;
     [SerializeField] private GameObject blackPanel;
     [SerializeField] private TextMeshProUGUI blackName;
-    [SerializeField] private GameObject gameBoard;
-    [SerializeField] private Transform pgnContent;       // The Content object inside your ScrollView
-    [SerializeField] private GameObject pgnMoveButtonPrefab; // Prefab with a Button & TextMeshProUGUI component
-    [SerializeField] private ScrollRect pgnScrollRect;   // The ScrollRect component of your ScrollView
+    [SerializeField] public GameObject gameBoard;
+    [SerializeField] private Transform pgnContent;
+    [SerializeField] private GameObject pgnMoveButtonPrefab;
+    [SerializeField] private ScrollRect pgnScrollRect;
     [SerializeField] private Scrollbar pgnScrollBar;
 
     [Header("Captured Pieces UI (Trays)")]
@@ -109,15 +109,11 @@ public class ChessManager : MonoBehaviour
     [SerializeField] private bool blackCanQSC = true;
 
     // tileContent stores the Piece integer value (Type | Color)
-    [SerializeField] private int[] tileContent;
-    [SerializeField] private GameObject[] tileObjects;
-    [SerializeField] private List<GameObject> moves;
+    [SerializeField] public int[] tileContent;
+    [SerializeField] public GameObject[] tileObjects;
+    [SerializeField] public List<GameObject> moves;
 
     [SerializeField] private Transform mainView;
-    [SerializeField] public int CurrentTurnColor => currentTurnColor;
-    [SerializeField] public GameObject SelectedPiece => selectedPiece;
-    [SerializeField] public GameObject[] TileObjects => tileObjects;
-    [SerializeField] public List<GameObject> Moves => moves;
     [SerializeField] public Transform MainView => mainView;
 
     // Direction Vectors (based on array index 0-63)
@@ -697,7 +693,7 @@ public class ChessManager : MonoBehaviour
     // --- MOVEMENT GENERATION ---
     // ----------------------------------------------------------------------
 
-    private void GetRookMoves(GameObject originGO, GameObject pieceGO)
+    public void GetRookMoves(GameObject originGO, GameObject pieceGO)
     {
         int color = GetPieceColor(int.Parse(pieceGO.name));
         moves.Clear();
@@ -751,7 +747,7 @@ public class ChessManager : MonoBehaviour
         }
     }
 
-    private void GetBishopMoves(GameObject originGO, GameObject pieceGO)
+    public void GetBishopMoves(GameObject originGO, GameObject pieceGO)
     {
         int color = GetPieceColor(int.Parse(pieceGO.name));
         moves.Clear();
@@ -806,7 +802,7 @@ public class ChessManager : MonoBehaviour
         }
     }
 
-    private void GetKnightMoves(GameObject originGO, GameObject pieceGO)
+    public void GetKnightMoves(GameObject originGO, GameObject pieceGO)
     {
         int color = GetPieceColor(int.Parse(pieceGO.name));
         moves.Clear();
@@ -847,7 +843,7 @@ public class ChessManager : MonoBehaviour
         }
     }
 
-    private void GetQueenMoves(GameObject originGO, GameObject pieceGO)
+    public void GetQueenMoves(GameObject originGO, GameObject pieceGO)
     {
         int color = GetPieceColor(int.Parse(pieceGO.name));
         moves.Clear();
@@ -906,7 +902,7 @@ public class ChessManager : MonoBehaviour
         }
     }
 
-    private void GetKingMoves(GameObject originGO, GameObject pieceGO)
+    public void GetKingMoves(GameObject originGO, GameObject pieceGO)
     {
         int color = GetPieceColor(int.Parse(pieceGO.name));
         int opponentColor = (color == Piece.White) ? Piece.Black : Piece.White;
@@ -1023,7 +1019,7 @@ public class ChessManager : MonoBehaviour
         }
     }
 
-    private void GetPawnMoves(GameObject originGO, GameObject pieceGO)
+    public void GetPawnMoves(GameObject originGO, GameObject pieceGO)
     {
         int color = GetPieceColor(int.Parse(pieceGO.name));
         moves.Clear();
@@ -2050,7 +2046,7 @@ public class ChessManager : MonoBehaviour
         }
     }
 
-    private void ClearAllPieceVisuals()
+    public void ClearAllPieceVisuals()
     {
         // 1. Clear all pieces from the main board and add them to the pool
         foreach (GameObject tile in tileObjects)
@@ -2128,7 +2124,7 @@ public class ChessManager : MonoBehaviour
         return null;
     }
 
-    private void RedrawPiecesFromTileContent()
+    public void RedrawPiecesFromTileContent()
     {
         piecesCapturedInCurrentState.Clear();
 
@@ -2341,6 +2337,109 @@ public class ChessManager : MonoBehaviour
             Image img = tileObjects[currentLastMoveOriginIndex].GetComponent<Image>();
             if (img != null) img.color = lastMoveColor;
         }
+    }
+
+    // ---------------------------------------------------------
+    // --- UCI MOVE HANDLING ---
+    // ---------------------------------------------------------
+
+    public void PlayUCIMove(string uci)
+    {
+        if (uci.Length < 4)
+        {
+            Debug.LogError("Invalid UCI string: " + uci);
+            return;
+        }
+
+        // ------------------------------------------
+        // 1. Parse ORIGIN (e2)
+        // ------------------------------------------
+        string originStr = uci.Substring(0, 2);
+        int originIndex = SquareToIndex(originStr);
+        if (originIndex < 0)
+        {
+            Debug.LogError("Invalid origin square: " + originStr);
+            return;
+        }
+
+        // ------------------------------------------
+        // 2. Parse DESTINATION (e4)
+        // ------------------------------------------
+        string destStr = uci.Substring(2, 2);
+        int destIndex = SquareToIndex(destStr);
+        if (destIndex < 0)
+        {
+            Debug.LogError("Invalid destination square: " + destStr);
+            return;
+        }
+
+        GameObject originGO = tileObjects[originIndex];
+        GameObject destGO = tileObjects[destIndex];
+
+        // ------------------------------------------
+        // 3. Get piece GO from origin
+        // ------------------------------------------
+        Transform holder = originGO.transform.GetChild(0);
+        if (holder.childCount == 0)
+        {
+            Debug.LogError("No piece on " + originStr);
+            return;
+        }
+
+        GameObject pieceGO = holder.GetChild(0).gameObject;
+        selectedPiece = pieceGO;
+
+        // ------------------------------------------
+        // 4. Handle promotion (e.g., "e7e8q")
+        // ------------------------------------------
+        bool isPromotion = (uci.Length == 5);
+        int promotionType = Piece.None;
+
+        if (isPromotion)
+        {
+            char promoChar = char.ToLower(uci[4]);
+            switch (promoChar)
+            {
+                case 'q': promotionType = Piece.Queen; break;
+                case 'r': promotionType = Piece.Rook; break;
+                case 'b': promotionType = Piece.Bishop; break;
+                case 'n': promotionType = Piece.Knight; break;
+                default:
+                    Debug.LogError("Invalid promotion character: " + promoChar);
+                    return;
+            }
+        }
+
+        // ------------------------------------------
+        // 5. Perform the move
+        // ------------------------------------------
+        MovePiece(originGO, destGO);
+
+        // ------------------------------------------
+        // 6. Apply promotion automatically
+        // ------------------------------------------
+        if (isPromotion && isPromotionPending)
+        {
+            PromoteAndFinalizeMove(promotionType);
+        }
+    }
+
+    private int SquareToIndex(string sq)
+    {
+        if (sq.Length != 2) return -1;
+
+        char fileChar = sq[0];
+        char rankChar = sq[1];
+
+        int file = fileChar - 'a';
+        int rank = rankChar - '1';
+
+        if (file < 0 || file > 7 || rank < 0 || rank > 7)
+            return -1;
+
+        // Your indexing: rank 0 = row 7, rank 7 = row 0
+        int boardRow = 7 - rank;
+        return boardRow * 8 + file;
     }
 
     // ----------------------------------------------------------------------
