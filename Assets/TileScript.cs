@@ -47,13 +47,25 @@ public class TileScript : MonoBehaviour, IDropHandler, IPointerDownHandler
                 }
             }
 
+            GameObject movingPiece = ChessManager.Instance.selectedPiece;
+
             ChessManager.Instance.MovePiece(ChessManager.Instance.selectedPiece.transform.parent.transform.parent.gameObject, this.gameObject);
+
+            if (ChessManager.Instance.isPromotionPending)
+            {
+                ChessManager.Instance.selectedPiece = movingPiece;
+            }
         }
 
         // Remove tile highlights if piece loses focus
         if (ChessManager.Instance.focus != this.gameObject)
         {
-            ChessManager.Instance.ResetObjects();
+            // Promotion cancellation must handle its own cleanup to preserve selectedPiece.
+            if (!ChessManager.Instance.isPromotionPending)
+            {
+                ChessManager.Instance.ResetObjects();
+            }
+
             ChessManager.Instance.focus = this.gameObject;
         }
     }

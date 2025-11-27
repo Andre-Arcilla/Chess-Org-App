@@ -65,8 +65,8 @@ public class ChessManager : MonoBehaviour
     private bool isReviewing = false;
 
     [Header("Piece Pooling & State")]
-    private List<GameObject> piecePool = new List<GameObject>();
-    private List<int> piecesCapturedInCurrentState = new List<int>();
+    [SerializeField] private List<GameObject> piecePool = new List<GameObject>();
+    [SerializeField] private List<int> piecesCapturedInCurrentState = new List<int>();
 
     [Header("UI References")]
     [SerializeField] private GameObject promotionPanel;
@@ -341,8 +341,6 @@ public class ChessManager : MonoBehaviour
         enPassantIndex = -1;
 
         // --- Castling Rights & En Passant Setup (Same as before) ---
-        // (Omitted for brevity, logic remains identical to your existing code)
-        // ... [Keep your Castling Rights Logic here] ...
         if (pieceType == Piece.Pawn && Math.Abs((originIndex / 8) - (destinationIndex / 8)) == 2)
         {
             enPassantIndex = (originIndex + destinationIndex) / 2;
@@ -366,6 +364,7 @@ public class ChessManager : MonoBehaviour
             promotionDestinationIndex = destinationIndex;
             tileContent[originIndex] = Piece.None;
             tileContent[destinationIndex] = pieceValue;
+            Debug.Log($"movePiece {selectedPiece == null}");
             if (promotionPanel != null) promotionPanel.SetActive(true);
             else PromoteToQueen();
             return;
@@ -1158,7 +1157,7 @@ public class ChessManager : MonoBehaviour
         if (holder.childCount > 0)
         {
             GameObject pawnGO = holder.GetChild(0).gameObject;
-            Destroy(pawnGO);
+            PoolPiece(pawnGO);
         }
 
         // --- 2. Update the final board state ---
@@ -1245,6 +1244,7 @@ public class ChessManager : MonoBehaviour
         // --- 6. Reset UI and Highlights ---
         if (promotionPanel != null) promotionPanel.SetActive(false);
         ResetObjects();
+        //LoadBoardFromHistory(pgnButtonContainer.childCount);
     }
 
     // ----------------------------------------------------------------------
@@ -1955,10 +1955,9 @@ public class ChessManager : MonoBehaviour
 
     private void HandleCapturedVisuals(GameObject capturedBoardGO, int pieceValue)
     {
-        // 1. Destroy the actual piece on the board
         if (capturedBoardGO != null)
         {
-            Destroy(capturedBoardGO);
+            PoolPiece(capturedBoardGO);
         }
 
         if (pieceValue == Piece.None) return;
@@ -2084,20 +2083,6 @@ public class ChessManager : MonoBehaviour
             {
                 PoolPiece(container.GetChild(0).gameObject);
             }
-        }
-    }
-
-    private void ClearDeadContainerAndPool(Transform container)
-    {
-        if (container == null) return;
-
-        // Move all child pieces from the container back into the pool list
-        while (container.childCount > 0)
-        {
-            Transform piece = container.GetChild(0);
-            piece.gameObject.SetActive(false); // Hide the piece
-            piece.SetParent(transform);        // Reparent to the ChessManager for pooling
-            piecePool.Add(piece.gameObject);   // Add to the pool list
         }
     }
 
