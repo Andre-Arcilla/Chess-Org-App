@@ -1149,44 +1149,34 @@ public class ChessManager : MonoBehaviour
         int newPieceValue = newType | pieceColor;
 
         // Check if the move that caused promotion was a capture
-        // We stored the captured value in capturedPieceValue before pausing
         bool isCapture = (capturedPieceValue != Piece.None);
 
-        // --- 1. Pool the existing Pawn instead of destroying it ---
+        // --- 1. Pool the existing Pawn ---
+        // We find the pawn object on the tile and Pool it.
+        // This prevents it from being treated as "Dead" or appearing in the captured UI.
         Transform holder = tileObjects[promotionDestinationIndex].transform.GetChild(0);
-        GameObject pawnGO = null;
         if (holder.childCount > 0)
         {
-            pawnGO = holder.GetChild(0).gameObject;
+            GameObject pawnGO = holder.GetChild(0).gameObject;
+            Destroy(pawnGO);
         }
 
-        if (pawnGO != null)
-        {
-            // Pool the Pawn, so it can be retrieved if we move backward
-            PoolPiece(pawnGO);
-        }
-
-        // --- 2. Update the final board state (LOGIC) ---
+        // --- 2. Update the final board state ---
         tileContent[promotionDestinationIndex] = newPieceValue;
 
-        // --- 3. PGN UPDATE (Promotion Specific) ---
+        // --- 3. PGN UPDATE ---
         UpdatePGN(promotionOriginIndex, promotionDestinationIndex, tileContent[promotionOriginIndex], isCapture, false, true, newType);
 
-        // --- 4. Update Highlights & Turn (MISSING LOGIC FIXED HERE) ---
-        // Set the highlight indices so the yellow highlight appears
+        // --- 4. Update Highlights & Turn ---
         currentLastMoveIndex = promotionDestinationIndex;
         currentLastMoveOriginIndex = promotionOriginIndex;
 
-        // Switch the turn
         currentTurnColor = (currentTurnColor == Piece.White) ? Piece.Black : Piece.White;
-
-        // Reset the Halfmove clock (Promotion is a pawn move, so it resets to 0)
         halfMoveClock = 0;
 
         // --- 5. Record History & Cleanup ---
         RecordPosition();
 
-        // Clear the promotion state flags
         isPromotionPending = false;
         promotionDestinationIndex = -1;
         promotionOriginIndex = -1;
@@ -1195,13 +1185,9 @@ public class ChessManager : MonoBehaviour
         if (promotionPanel != null) promotionPanel.SetActive(false);
 
         // --- 6. Visual Refresh ---
-        ClearAllPieceVisuals();
-        RedrawPiecesFromTileContent(); // This will spawn the new Queen/Rook/etc. visual
-
-        // Reset Objects applies the highlights (Yellow square) and clears blue move hints
+        ClearAllPieceVisuals(); // This cleans the board
+        RedrawPiecesFromTileContent(); // This puts the new Queen/Rook on the board
         ResetObjects();
-
-        // Check for Checkmate/Stalemate now that the new piece is on the board
         CheckGameEnd();
     }
 
@@ -2069,35 +2055,36 @@ public class ChessManager : MonoBehaviour
 
     public void ClearAllPieceVisuals()
     {
-        // 1. Clear all pieces from the main board and add them to the pool
+        // 1. Clear Active Pieces from the Board
         foreach (GameObject tile in tileObjects)
         {
             Transform holder = tile.transform.GetChild(0);
             while (holder.childCount > 0)
             {
-                Transform piece = holder.GetChild(0);
-                piece.gameObject.SetActive(false); // Hide piece
-                piece.SetParent(transform); // Parent to ChessManager for a central pool
-                piecePool.Add(piece.gameObject);
+                // Get the piece
+                GameObject piece = holder.GetChild(0).gameObject;
+
+                // FIX: Send to Pool instead of Dead Container
+                PoolPiece(piece);
             }
         }
 
-        // FIX 2: Clear all captured pieces from the graveyards and add them to the pool
-        Transform[] deadContainers = new Transform[]
-        {
-        whitePawnDeadContainer, whiteRookDeadContainer, whiteKnightDeadContainer,
-        whiteBishopDeadContainer, whiteQueenDeadContainer,
-        blackPawnDeadContainer, blackRookDeadContainer, blackKnightDeadContainer,
-        blackBishopDeadContainer, blackQueenDeadContainer
-            // Note: King containers (if you have them) are usually not needed here, as the King is never captured
+        // 2. Clear the Graveyards (Dead Containers)
+        // We also want to pool any pieces currently shown in the dead containers
+        // so that the UI is clean when we redraw.
+        Transform[] deadContainers = new Transform[] {
+            whitePawnDeadContainer, whiteRookDeadContainer, whiteKnightDeadContainer, whiteBishopDeadContainer, whiteQueenDeadContainer, whiteKingDeadContainer,
+            blackPawnDeadContainer, blackRookDeadContainer, blackKnightDeadContainer, blackBishopDeadContainer, blackQueenDeadContainer, blackKingDeadContainer
         };
 
         foreach (Transform container in deadContainers)
         {
-            ClearDeadContainerAndPool(container);
+            if (container == null) continue;
+            while (container.childCount > 0)
+            {
+                PoolPiece(container.GetChild(0).gameObject);
+            }
         }
-
-        piecesCapturedInCurrentState.Clear();
     }
 
     private void ClearDeadContainerAndPool(Transform container)
@@ -2149,10 +2136,12 @@ public class ChessManager : MonoBehaviour
     {
         piecesCapturedInCurrentState.Clear();
 
+        // Track how many pieces we send to graveyard during this redraw
+        Dictionary<int, int> graveyardCounts = new Dictionary<int, int>();
+
         // 1. VISUALIZE THE BOARD (Move pieces from pool to board)
         for (int i = 0; i < tileContent.Length; i++)
         {
-            // ... (existing code to get piece from pool and place it on tileObjects[i]) ...
             int pieceValue = tileContent[i];
 
             if (pieceValue != Piece.None)
@@ -2160,12 +2149,10 @@ public class ChessManager : MonoBehaviour
                 int pieceType = GetPieceType(pieceValue);
                 int pieceColor = GetPieceColor(pieceValue);
 
-                // GetPieceFromPool REMOVES the item from the piecePool list
                 GameObject pieceGO = GetPieceFromPool(pieceType, pieceColor);
 
                 if (pieceGO != null)
                 {
-                    // ... (existing code to set parent, position, scale, active, raycastTarget=true) ...
                     Transform holder = tileObjects[i].transform.GetChild(0);
                     pieceGO.transform.SetParent(holder);
                     pieceGO.transform.localPosition = Vector3.zero;
@@ -2179,9 +2166,9 @@ public class ChessManager : MonoBehaviour
             }
         }
 
+        // 2. HANDLE LEFTOVERS (Graveyard vs Destroy)
         foreach (GameObject remainingPiece in piecePool)
         {
-            // Safety check:
             if (remainingPiece == null) continue;
 
             if (int.TryParse(remainingPiece.name, out int pieceValue))
@@ -2189,38 +2176,72 @@ public class ChessManager : MonoBehaviour
                 int pieceType = GetPieceType(pieceValue);
                 int pieceColor = GetPieceColor(pieceValue);
 
-                // This should return the correct container (e.g., whitePawnDeadContainer)
-                Transform targetContainer = GetDeadPieceContainer(pieceType, pieceColor);
-
-                if (targetContainer != null)
+                // --- NEW LOGIC START ---
+                // Count how many of this specific piece are currently on the board
+                int countOnBoard = 0;
+                for (int i = 0; i < tileContent.Length; i++)
                 {
-                    // Move to Graveyard
-                    remainingPiece.transform.SetParent(targetContainer, false);
+                    if (tileContent[i] != Piece.None &&
+                        GetPieceType(tileContent[i]) == pieceType &&
+                        GetPieceColor(tileContent[i]) == pieceColor)
+                    {
+                        countOnBoard++;
+                    }
+                }
 
-                    // Setup for UI Display (Ghost)
-                    remainingPiece.transform.localPosition = Vector3.zero;
-                    remainingPiece.transform.localScale = Vector3.one;
-                    remainingPiece.transform.localRotation = Quaternion.identity;
+                // Define standard chess limits
+                int standardLimit = 0;
+                switch (pieceType)
+                {
+                    case Piece.Pawn: standardLimit = 8; break;
+                    case Piece.Knight: standardLimit = 2; break;
+                    case Piece.Bishop: standardLimit = 2; break;
+                    case Piece.Rook: standardLimit = 2; break;
+                    case Piece.Queen: standardLimit = 1; break;
+                    case Piece.King: standardLimit = 1; break;
+                }
 
-                    RectTransform rect = remainingPiece.GetComponent<RectTransform>();
-                    if (rect != null) rect.sizeDelta = new Vector2(100, 100);
+                // Check how many we have already sent to graveyard in this specific loop
+                if (!graveyardCounts.ContainsKey(pieceValue)) graveyardCounts[pieceValue] = 0;
+                int currentlyInGraveyard = graveyardCounts[pieceValue];
 
-                    remainingPiece.SetActive(true);
+                // Only move to graveyard if we are actually missing pieces from the standard set
+                // logic: (OnBoard + InGraveyard) < StandardLimit
+                if ((countOnBoard + currentlyInGraveyard) < standardLimit)
+                {
+                    Transform targetContainer = GetDeadPieceContainer(pieceType, pieceColor);
 
-                    // Disable interaction for dead pieces
-                    Image img = remainingPiece.GetComponent<Image>();
-                    if (img != null) img.raycastTarget = false;
+                    if (targetContainer != null)
+                    {
+                        remainingPiece.transform.SetParent(targetContainer, false);
+                        remainingPiece.transform.localPosition = Vector3.zero;
+                        remainingPiece.transform.localScale = Vector3.one;
+                        remainingPiece.transform.localRotation = Quaternion.identity;
+                        RectTransform rect = remainingPiece.GetComponent<RectTransform>();
+                        if (rect != null) rect.sizeDelta = new Vector2(100, 100);
+                        remainingPiece.SetActive(true);
+
+                        Image img = remainingPiece.GetComponent<Image>();
+                        if (img != null) img.raycastTarget = false;
+
+                        // Increment our tracking so we don't overfill the graveyard
+                        graveyardCounts[pieceValue]++;
+                    }
+                    else
+                    {
+                        Destroy(remainingPiece);
+                    }
                 }
                 else
                 {
-                    // If no container found, just hide it
-                    remainingPiece.SetActive(false);
+                    // If we have excess pieces (e.g. the Queen created by promotion after we undid the move), destroy it.
+                    Destroy(remainingPiece);
                 }
+                // --- NEW LOGIC END ---
             }
             else
             {
-                // If name parse fails, hide it
-                remainingPiece.SetActive(false);
+                Destroy(remainingPiece);
             }
         }
 
