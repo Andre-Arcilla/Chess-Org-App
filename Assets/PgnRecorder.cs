@@ -250,8 +250,7 @@ public class PGNRecorder : MonoBehaviour
             }
 
             // reduce s to a pawn capture/move form for matching destination
-            s = s.Substring(0, s.Length - promoMatch.Groups[2].Length);
-            s = s.TrimEnd('=');
+            s = s.Substring(0, promoMatch.Groups[1].Index + promoMatch.Groups[1].Length);
         }
 
         // Determine piece type

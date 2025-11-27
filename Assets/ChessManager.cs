@@ -1152,10 +1152,9 @@ public class ChessManager : MonoBehaviour
         // We stored the captured value in capturedPieceValue before pausing
         bool isCapture = (capturedPieceValue != Piece.None);
 
-        // --- FIX 1: Pool the existing Pawn instead of destroying it ---
+        // --- 1. Pool the existing Pawn instead of destroying it ---
         Transform holder = tileObjects[promotionDestinationIndex].transform.GetChild(0);
         GameObject pawnGO = null;
-
         if (holder.childCount > 0)
         {
             pawnGO = holder.GetChild(0).gameObject;
@@ -1164,14 +1163,28 @@ public class ChessManager : MonoBehaviour
         if (pawnGO != null)
         {
             // Pool the Pawn, so it can be retrieved if we move backward
-            PoolPiece(pawnGO); // Use the public PoolPiece method we added earlier
+            PoolPiece(pawnGO);
         }
 
-        // --- 2. Update the final board state and clear flags (LOGIC) ---
+        // --- 2. Update the final board state (LOGIC) ---
         tileContent[promotionDestinationIndex] = newPieceValue;
 
-        // --- PGN UPDATE (Promotion Specific) ---
+        // --- 3. PGN UPDATE (Promotion Specific) ---
         UpdatePGN(promotionOriginIndex, promotionDestinationIndex, tileContent[promotionOriginIndex], isCapture, false, true, newType);
+
+        // --- 4. Update Highlights & Turn (MISSING LOGIC FIXED HERE) ---
+        // Set the highlight indices so the yellow highlight appears
+        currentLastMoveIndex = promotionDestinationIndex;
+        currentLastMoveOriginIndex = promotionOriginIndex;
+
+        // Switch the turn
+        currentTurnColor = (currentTurnColor == Piece.White) ? Piece.Black : Piece.White;
+
+        // Reset the Halfmove clock (Promotion is a pawn move, so it resets to 0)
+        halfMoveClock = 0;
+
+        // --- 5. Record History & Cleanup ---
+        RecordPosition();
 
         // Clear the promotion state flags
         isPromotionPending = false;
@@ -1179,32 +1192,16 @@ public class ChessManager : MonoBehaviour
         promotionOriginIndex = -1;
         capturedPieceValue = Piece.None;
 
-        if (promotionPanel != null)
-        {
-            promotionPanel.SetActive(false);
-        }
+        if (promotionPanel != null) promotionPanel.SetActive(false);
 
-        // Clear highlights and selection state
+        // --- 6. Visual Refresh ---
+        ClearAllPieceVisuals();
+        RedrawPiecesFromTileContent(); // This will spawn the new Queen/Rook/etc. visual
+
+        // Reset Objects applies the highlights (Yellow square) and clears blue move hints
         ResetObjects();
 
-        // --- CRITICAL FIX 2: Synchronize Visuals with Logical State ---
-
-        // 1. Switch Turn (CRITICAL for FEN history)
-        currentTurnColor = (currentTurnColor == Piece.White) ? Piece.Black : Piece.White;
-
-        // 2. Record Position (Save FEN with new active color)
-        RecordPosition();
-
-        // 3. FORCE VISUAL REDRAW: This is what you were missing.
-        // It clears the board, finds the captured piece(s) and the pooled pawn, 
-        // and places the new Queen and all captured pieces correctly.
-        if (!isReviewing)
-        {
-            ClearAllPieceVisuals(); // Move everything to the pool
-            RedrawPiecesFromTileContent(); // Move pieces from pool to correct positions (board/graveyard)
-        }
-
-        // 4. Check Game End
+        // Check for Checkmate/Stalemate now that the new piece is on the board
         CheckGameEnd();
     }
 
