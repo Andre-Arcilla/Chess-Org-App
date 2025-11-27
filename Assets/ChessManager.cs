@@ -82,8 +82,10 @@ public class ChessManager : MonoBehaviour
     [SerializeField] public GameObject gameBoard;
     [SerializeField] private Transform pgnContent;
     [SerializeField] private GameObject pgnMoveButtonPrefab;
-    [SerializeField] private ScrollRect pgnScrollRect;
+    [SerializeField] public ScrollRect pgnScrollRect;
     [SerializeField] private Scrollbar pgnScrollBar;
+    [SerializeField] public Transform pgnButtonContainer;
+    [SerializeField] private GameObject selectedPGNButton;
 
     [Header("Captured Pieces UI (Trays)")]
     [SerializeField] private Transform whitePawnDeadContainer;
@@ -377,6 +379,16 @@ public class ChessManager : MonoBehaviour
         else halfMoveClock++;
 
         UpdatePGN(originIndex, destinationIndex, pieceValue, isCapture, isCastling);
+
+        if (selectedPGNButton != null)
+            selectedPGNButton.GetComponent<Image>().enabled = false;
+
+        if (pgnButtonContainer.childCount > 0)
+        {
+            selectedPGNButton = pgnButtonContainer.GetChild(pgnButtonContainer.childCount - 1).gameObject;
+            selectedPGNButton.GetComponent<Image>().enabled = true;
+        }
+
         currentTurnColor = (currentTurnColor == Piece.White) ? Piece.Black : Piece.White;
 
         // Update the highlight index
@@ -1592,7 +1604,7 @@ public class ChessManager : MonoBehaviour
             GameObject newButton = Instantiate(pgnMoveButtonPrefab, pgnContent);
 
             // Get the index of the move AFTER it's added to the list
-            int moveIndex = pgnHistoryList.Count - 1;
+            int moveIndex = pgnHistoryList.Count;
 
             // Add listener to the button
             Button btn = newButton.GetComponent<Button>();
@@ -1675,12 +1687,21 @@ public class ChessManager : MonoBehaviour
             }
         }
 
-        HighlightKingCheck();
         HighlightLastMove();
+        HighlightKingCheck();
     }
 
     public void LoadBoardFromHistory(int index)
     {
+        if (selectedPGNButton != null)
+            selectedPGNButton.GetComponent<Image>().enabled = false;
+
+        if (index != 0)
+        {
+            selectedPGNButton = pgnButtonContainer.GetChild(index - 1).gameObject;
+            selectedPGNButton.GetComponent<Image>().enabled = true;
+        }
+
         if (index < 0 || index >= positionHistory.Count) return;
 
         currentHistoryIndex = index;
@@ -1705,6 +1726,7 @@ public class ChessManager : MonoBehaviour
         RedrawPiecesFromTileContent();
 
         HighlightLastMove();
+        HighlightKingCheck();
         HighlightCurrentMoveButton(index);
     }
 
@@ -1851,9 +1873,11 @@ public class ChessManager : MonoBehaviour
         // 5. Halfmove Clock (required for 50-move rule, but is part of position history)
         string halfMove = halfMoveClock.ToString();
 
-        // NOTE: We omit the fullmove number for simplicity in the repetition check
-        // The repetition rule only cares about these 5 fields.
-        return $"{piecePlacement} {activeColor} {castling} {enPassantSquare} {halfMove}";
+        // 6. Fullmove Number
+        string fullMove = fullMoveNumber.ToString();
+
+        // Include fullMove at the end
+        return $"{piecePlacement} {activeColor} {castling} {enPassantSquare} {halfMove} {fullMove}";
     }
 
     private void RestoreCapturedPieceVisuals(int tileIndex, int pieceValue)

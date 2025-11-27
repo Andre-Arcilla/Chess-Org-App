@@ -132,6 +132,10 @@ public class PGNRecorder : MonoBehaviour
         }
 
         Debug.Log("PGNRecorder: Finished playback.");
+        cm.LoadBoardFromHistory(0);
+        cm.LoadBoardFromHistory(cm.pgnButtonContainer.childCount);
+        //cm.pgnScrollRect.horizontalNormalizedPosition = 0f;
+        //cm.GoBackOneMove();
     }
 
     // -------------------------
