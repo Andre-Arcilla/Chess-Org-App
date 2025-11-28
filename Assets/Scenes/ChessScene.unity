@@ -24982,8 +24982,27 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dd3be36c4cb5fca4b93fa51a8f2d9298, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  importPGN: 
-  moveDelay: 0.5
+  importPGN: '[Event "Casual Game"]
+
+    [Site "Unity Chess"]
+
+    [Date "2025.11.28"]
+
+    [Round
+    "1"]
+
+    [White "Player 1"]
+
+    [Black "Player 2"]
+
+    [Result "0-1"]
+
+    
+
+    1.
+    h4 g5 2. g3 gxh4 3. Bg2 hxg3 4. Rh2 gxh2 5. Bf1 Nf6 6. Bg2 Ng4 7. Be4 hxg1=R#
+    0-1'
+  moveDelay: 0
   exportPGN: 
   chessManager: {fileID: 0}
 --- !u!1 &2077064362
@@ -25965,6 +25984,7 @@ MonoBehaviour:
   queenPrefab: {fileID: 5842882566861597792, guid: 241b0f1d4cd58b44a87fe077d432d7a0, type: 3}
   black: {r: 0.25, g: 0.25, b: 0.25, a: 1}
   white: {r: 1, g: 1, b: 1, a: 1}
+  CurrentState: 0
   focus: {fileID: 0}
   selectedPiece: {fileID: 0}
   enPassantIndex: -1

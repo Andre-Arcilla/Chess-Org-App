@@ -8,7 +8,7 @@ using UnityEngine;
 /// <summary>
 /// PGNRecorder - Handles both PGN Playback (Import) and PGN Export.
 /// 1. RunPGN(): Plays the 'pgnInput' string on the board.
-/// 2. CopyToClipboard(): Exports the current ChessManager history to clipboard AND 'currentPGNExport' variable.
+/// 2. CopyToClipboard(): Exports the current ChessManager history to clipboard AND 'exportPGN' variable.
 /// </summary>
 public class PGNRecorder : MonoBehaviour
 {
@@ -41,7 +41,6 @@ public class PGNRecorder : MonoBehaviour
     //  SECTION 1: EXPORT PGN (Output)
     // ===================================================================================
 
-    // Method 1: Updates the 'currentPGNExport' string variable with the latest PGN
     public void SavePGNToVariable()
     {
         if (EnsureManager())
@@ -51,11 +50,8 @@ public class PGNRecorder : MonoBehaviour
         }
     }
 
-    // Method 2: Copies the current PGN to the system clipboard
-    // (It updates the variable first to ensure you get the latest game state)
     public void CopyToClipboard()
     {
-        // Ensure the variable is up to date before copying
         SavePGNToVariable();
 
         if (!string.IsNullOrEmpty(exportPGN))
@@ -71,6 +67,9 @@ public class PGNRecorder : MonoBehaviour
 
         StringBuilder sb = new StringBuilder();
 
+        // 1. Determine Result String based on GameState
+        string resultStr = GetGameResult();
+
         // --- Headers ---
         sb.AppendLine("[Event \"Casual Game\"]");
         sb.AppendLine("[Site \"Unity Chess\"]");
@@ -80,17 +79,16 @@ public class PGNRecorder : MonoBehaviour
         string whiteName = "White";
         string blackName = "Black";
 
-        // Attempt to grab names from ChessManager UI
         if (chessManager.whiteName != null) whiteName = chessManager.whiteName.text;
         if (chessManager.blackName != null) blackName = chessManager.blackName.text;
 
         sb.AppendLine($"[White \"{whiteName}\"]");
         sb.AppendLine($"[Black \"{blackName}\"]");
-        sb.AppendLine("[Result \"*\"]");
-        sb.AppendLine("");
+        sb.AppendLine($"[Result \"{resultStr}\"]");
+        sb.AppendLine(""); // Blank line required between headers and moves
 
         // --- Move Text ---
-        // NOTE: Ensure 'moveList' is the correct public variable in your ChessManager
+        // Ensure 'pgnHistoryList' is PUBLIC in ChessManager.cs
         List<string> moves = chessManager.PgnHistoryList;
 
         if (moves != null && moves.Count > 0)
@@ -98,28 +96,58 @@ public class PGNRecorder : MonoBehaviour
             int turnCount = 1;
             for (int i = 0; i < moves.Count; i++)
             {
-                // If it's White's turn (even indices), add the move number "1. "
+                // Remove existing numbering if present
+                string rawMove = moves[i];
+                string cleanMove = Regex.Replace(rawMove, @"^\d+\.+\s*", "");
+
+                // Add "1. " before White's moves (even indices)
                 if (i % 2 == 0)
                 {
                     sb.Append($"{turnCount}. ");
                 }
 
-                sb.Append(moves[i]);
+                sb.Append(cleanMove);
                 sb.Append(" ");
 
-                // Increment turn counter after Black's move
+                // Increment turn count after Black's move
                 if (i % 2 != 0)
                 {
                     turnCount++;
                 }
             }
+
+            // Append result at the end of the moves
+            sb.Append(resultStr);
         }
         else
         {
-            sb.Append("{No moves found}");
+            sb.Append(resultStr);
         }
 
         return sb.ToString();
+    }
+
+    private string GetGameResult()
+    {
+        if (chessManager == null) return "*";
+
+        // Access the public CurrentState from ChessManager
+        // Ensure you have defined 'public enum GameState' and 'public GameState CurrentState' in ChessManager
+        switch (chessManager.CurrentState)
+        {
+            case GameState.WhiteWin:
+                return "1-0";
+            case GameState.BlackWin:
+                return "0-1";
+            case GameState.Draw:
+                return "1/2-1/2";
+            case GameState.InProgress:
+                return "*";
+            case GameState.NotStarted:
+                return "*";
+            default:
+                return "*";
+        }
     }
 
     // ===================================================================================
@@ -134,6 +162,7 @@ public class PGNRecorder : MonoBehaviour
             return;
         }
 
+        chessManager.NewGame();
         ParsePGN();
         StartCoroutine(PlayMovesCoroutine());
     }
@@ -144,30 +173,23 @@ public class PGNRecorder : MonoBehaviour
 
         string s = importPGN;
 
-        // Remove tag pairs like [Event "x"]
+        // Remove tag pairs, comments, annotation glyphs, NAGs
         s = Regex.Replace(s, "\\[.*?\\]", string.Empty, RegexOptions.Singleline);
-
-        // Remove comments { ... } and ; to end-of-line comments
         s = Regex.Replace(s, "\\{.*?\\}", string.Empty, RegexOptions.Singleline);
         s = Regex.Replace(s, ";.*?(\\r?\\n)", "$1");
-
-        // Remove numeric annotation glyphs ($n)
         s = Regex.Replace(s, "\\$\\d+", string.Empty);
-
-        // Remove NAGs like ?! etc (optional)
         s = Regex.Replace(s, "(\\?|!|\\?\\!|\\!\\?)", string.Empty);
 
-        // Remove move numbers (e.g., "1.", "23...")
+        // Remove move numbers
         s = Regex.Replace(s, "\\d+\\.+", string.Empty);
 
-        // Normalize whitespace and split
         string[] parts = Regex.Split(s, "\\s+");
         foreach (string p in parts)
         {
             string trimmed = p.Trim();
             if (string.IsNullOrEmpty(trimmed)) continue;
 
-            // Skip results
+            // Skip result markers in the input string
             if (trimmed == "1-0" || trimmed == "0-1" || trimmed == "1/2-1/2" || trimmed == "*") continue;
 
             sanMoves.Add(trimmed);
@@ -182,36 +204,27 @@ public class PGNRecorder : MonoBehaviour
 
         foreach (string san in sanMoves)
         {
-            // compute legal moves at current position (list of origin/dest pairs)
             List<(int origin, int dest)> legal = BuildLegalMoveList(chessManager);
 
-            // parse SAN and find matching legal move
             if (!TryMatchSANToLegalMove(san, legal, chessManager, out (int origin, int dest, int promotionType) match))
             {
                 Debug.LogError($"PGNRecorder: Failed to match SAN '{san}' to any legal move.");
                 yield break;
             }
 
-            // Perform the move: set selectedPiece then call MovePiece(originGO, destGO)
             int originIndex = match.origin;
             int destIndex = match.dest;
-            int promotionType = match.promotionType; // Piece.* or Piece.None
+            int promotionType = match.promotionType;
 
             GameObject originTile = chessManager.tileObjects[originIndex];
             Transform originHolder = originTile.transform.GetChild(0);
-            if (originHolder.childCount == 0)
-            {
-                Debug.LogError($"PGNRecorder: no piece found on origin index {originIndex} for SAN '{san}'.");
-                yield break;
-            }
+            if (originHolder.childCount == 0) yield break;
 
             GameObject pieceGO = originHolder.GetChild(0).gameObject;
 
-            // Set selectedPiece and call MovePiece
             chessManager.selectedPiece = pieceGO;
             chessManager.MovePiece(originTile, chessManager.tileObjects[destIndex]);
 
-            // If promotion was requested in SAN, finalize promotion explicitly
             if (promotionType != Piece.None)
             {
                 switch (promotionType)
@@ -224,18 +237,10 @@ public class PGNRecorder : MonoBehaviour
                 }
             }
 
-            // Wait between moves
             yield return new WaitForSeconds(moveDelay);
         }
 
         Debug.Log("PGNRecorder: Finished playback.");
-
-        // Optional: Refresh board state logic if needed
-        if (chessManager.pgnButtonContainer != null)
-        {
-            // Force UI update if needed
-            // chessManager.LoadBoardFromHistory(chessManager.pgnButtonContainer.childCount);
-        }
     }
 
     // -------------------------
@@ -256,32 +261,22 @@ public class PGNRecorder : MonoBehaviour
         {
             int pieceVal = cm.tileContent[i];
             if (pieceVal == Piece.None) continue;
-
-            int color = cm.GetPieceColor(pieceVal);
-            if (color != cm.currentTurnColor) continue;
+            if (cm.GetPieceColor(pieceVal) != cm.currentTurnColor) continue;
 
             GameObject originTile = cm.tileObjects[i];
             Transform holder = originTile.transform.GetChild(0);
             if (holder.childCount == 0) continue;
-
             GameObject pieceGO = holder.GetChild(0).gameObject;
 
-            // This will populate cm.moves with destination tile GameObjects
             cm.CheckMove(originTile, pieceGO);
 
             foreach (GameObject destGO in cm.moves)
             {
                 int destIndex = Array.IndexOf(cm.tileObjects, destGO);
-                if (destIndex >= 0)
-                {
-                    outList.Add((i, destIndex));
-                }
+                if (destIndex >= 0) outList.Add((i, destIndex));
             }
         }
-
-        // Clear highlights created by CheckMove
         cm.ResetObjects();
-
         return outList;
     }
 
@@ -289,25 +284,16 @@ public class PGNRecorder : MonoBehaviour
     {
         result = (-1, -1, Piece.None);
         string s = san.Trim();
-
-        // strip check/mate symbols
         s = s.Replace("+", "").Replace("#", "");
 
-        // Handle castling
         if (s == "O-O" || s == "0-0")
         {
-            // find king move that moves two squares to the right (White: e1->g1 +2, Black: e8->g8 +2)
             foreach (var m in legal)
             {
-                int pieceVal = cm.tileContent[m.origin];
-                if (cm.GetPieceType(pieceVal) == Piece.King)
+                if (cm.GetPieceType(cm.tileContent[m.origin]) == Piece.King)
                 {
                     int diff = m.dest - m.origin;
-                    if (diff == 2) // Kingside is +2 for both sides (60->62, 4->6)
-                    {
-                        result = (m.origin, m.dest, Piece.None);
-                        return true;
-                    }
+                    if (diff == 2) { result = (m.origin, m.dest, Piece.None); return true; }
                 }
             }
             return false;
@@ -316,127 +302,75 @@ public class PGNRecorder : MonoBehaviour
         {
             foreach (var m in legal)
             {
-                int pieceVal = cm.tileContent[m.origin];
-                if (cm.GetPieceType(pieceVal) == Piece.King)
+                if (cm.GetPieceType(cm.tileContent[m.origin]) == Piece.King)
                 {
                     int diff = m.dest - m.origin;
-                    if (diff == -2) // Queenside is -2 (60->58, 4->2)
-                    {
-                        result = (m.origin, m.dest, Piece.None);
-                        return true;
-                    }
+                    if (diff == -2) { result = (m.origin, m.dest, Piece.None); return true; }
                 }
             }
             return false;
         }
 
-        // Detect promotion (e8=Q or e8Q)
         int promotionType = Piece.None;
         Match promoMatch = Regex.Match(s, "([a-h][1-8])=?(Q|R|B|N)$", RegexOptions.IgnoreCase);
         if (promoMatch.Success)
         {
-            string destSq = promoMatch.Groups[1].Value;
-            string promoChar = promoMatch.Groups[2].Value.ToUpper();
-            switch (promoChar)
-            {
-                case "Q": promotionType = Piece.Queen; break;
-                case "R": promotionType = Piece.Rook; break;
-                case "B": promotionType = Piece.Bishop; break;
-                case "N": promotionType = Piece.Knight; break;
-            }
-
-            // reduce s to a pawn capture/move form for matching destination
             s = s.Substring(0, promoMatch.Groups[1].Index + promoMatch.Groups[1].Length);
+            string promoChar = promoMatch.Groups[2].Value.ToUpper();
+            if (promoChar == "Q") promotionType = Piece.Queen;
+            else if (promoChar == "R") promotionType = Piece.Rook;
+            else if (promoChar == "B") promotionType = Piece.Bishop;
+            else if (promoChar == "N") promotionType = Piece.Knight;
         }
 
-        // Determine piece type
         int wantedPieceType = Piece.Pawn;
         int idx = 0;
         char c0 = s.Length > 0 ? s[0] : '\0';
-        if ("KQRBN".IndexOf(c0) >= 0)
-        {
-            wantedPieceType = CharToPieceType(c0);
-            idx++;
-        }
+        if ("KQRBN".IndexOf(c0) >= 0) { wantedPieceType = CharToPieceType(c0); idx++; }
 
-        // Now find if this is a capture (contains 'x')
-        bool isCapture = s.Contains("x");
-
-        // Extract destination square (last 2 chars that look like file+rank)
         Match destMatch = Regex.Match(s, "([a-h][1-8])$", RegexOptions.IgnoreCase);
-        if (!destMatch.Success)
-        {
-            Debug.LogError("PGNRecorder: Could not parse destination square from SAN '" + san + "'");
-            return false;
-        }
+        if (!destMatch.Success) return false;
         string destSquare = destMatch.Groups[1].Value.ToLower();
+        string between = s.Substring(idx, s.Length - idx - destSquare.Length).Replace("x", "");
 
-        // Extract disambiguation (between piece letter and 'x' or destination)
-        // Example: Nbd2 -> disamb = 'b' ; R1a3 -> '1' ; Qh4e1 -> 'h4' (rare)
-        string between = s.Substring(idx, s.Length - idx - destSquare.Length);
-        between = between.Replace("x", "");
-
-        // Candidate legal moves: those with matching destination and piece type
         List<(int origin, int dest)> candidates = new List<(int, int)>();
         int destIndex = SquareToIndex(destSquare);
 
         foreach (var m in legal)
         {
             if (m.dest != destIndex) continue;
-
-            int originPieceVal = cm.tileContent[m.origin];
-            int originPieceType = cm.GetPieceType(originPieceVal);
-
-            if (originPieceType != wantedPieceType) continue;
-
+            if (cm.GetPieceType(cm.tileContent[m.origin]) != wantedPieceType) continue;
             candidates.Add(m);
         }
 
-        // Apply disambiguation filter if any
         if (!string.IsNullOrEmpty(between) && candidates.Count > 1)
         {
             List<(int origin, int dest)> filtered = new List<(int, int)>();
             foreach (var c in candidates)
             {
                 int file = c.origin % 8;
-                int rank = 8 - (c.origin / 8); // 1..8
-
+                int rank = 8 - (c.origin / 8);
                 string fChar = ((char)('a' + file)).ToString();
                 string rChar = rank.ToString();
 
-                if (between.Length == 2)
-                {
-                    // file+rank disambiguation
-                    if (between == (fChar + rChar)) filtered.Add(c);
-                }
-                else if (char.IsDigit(between, 0))
-                {
-                    if (between == rChar) filtered.Add(c);
-                }
-                else
-                {
-                    if (between == fChar) filtered.Add(c);
-                }
+                if (between == (fChar + rChar)) filtered.Add(c);
+                else if (between == rChar) filtered.Add(c);
+                else if (between == fChar) filtered.Add(c);
             }
             if (filtered.Count > 0) candidates = filtered;
         }
 
         if (candidates.Count >= 1)
         {
-            // If multiple candidates remain, typically implies ambiguity, but usually resolved by "isCapture" or specific chess rules. 
-            // For now, we take the first match.
             result = (candidates[0].origin, candidates[0].dest, promotionType);
             return true;
         }
-
-        // No candidates found
         return false;
     }
 
     private static int CharToPieceType(char c)
     {
-        c = char.ToUpper(c);
-        switch (c)
+        switch (char.ToUpper(c))
         {
             case 'K': return Piece.King;
             case 'Q': return Piece.Queen;

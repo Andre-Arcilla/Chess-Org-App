@@ -40,6 +40,7 @@ public class ChessManager : MonoBehaviour
     [SerializeField] private Color white;
 
     [Header("Board State")]
+    [SerializeField] public GameState CurrentState = GameState.NotStarted;
     [SerializeField] public GameObject focus;
     [SerializeField] public GameObject selectedPiece;
     [SerializeField] private int enPassantIndex = -1;
@@ -148,6 +149,8 @@ public class ChessManager : MonoBehaviour
 
     public void StartGameFromFEN(string fen)
     {
+        CurrentState = GameState.NotStarted;
+
         // 1. Reset History Lists & Flags
         positionHistory.Clear();
         pgnHistoryList.Clear();
@@ -284,6 +287,9 @@ public class ChessManager : MonoBehaviour
     public void MovePiece(GameObject origin, GameObject destination)
     {
         if (selectedPiece == null) return;
+
+        if (CurrentState == GameState.NotStarted)
+            CurrentState = GameState.InProgress;
 
         isReviewing = false;
 
@@ -487,24 +493,30 @@ public class ChessManager : MonoBehaviour
 
             int playerPieceColor = (PlayerSide == 0) ? Piece.White : Piece.Black;
 
+            CurrentState = (winnerColor == Piece.White) ? GameState.WhiteWin : GameState.BlackWin;
+
             string winnerMsg = winnerColor == playerPieceColor ? "You Win!" : "Opponent Wins!";
 
             StartCoroutine(ShowGameOverUI(winnerMsg, "by Checkmate."));
         }
         else if (!inCheck && IsStalemate(currentTurnColor))
         {
+            CurrentState = GameState.Draw;
             StartCoroutine(ShowGameOverUI("It's a draw!", "by Stalemate."));
         }
         else if (IsInsufficientMaterial())
         {
+            CurrentState = GameState.Draw;
             StartCoroutine(ShowGameOverUI("It's a draw!", "by Insufficient Material."));
         }
         else if (IsThreefoldRepetition())
         {
+            CurrentState = GameState.Draw;
             StartCoroutine(ShowGameOverUI("It's a draw!", "by Threefold Repetition."));
         }
         else if (halfMoveClock >= 100)
         {
+            CurrentState = GameState.Draw;
             StartCoroutine(ShowGameOverUI("It's a draw!", "by 50-Move Rule."));
         }
     }
@@ -1520,6 +1532,11 @@ public class ChessManager : MonoBehaviour
         string moveString = "";
         int pieceType = GetPieceType(pieceValue);
         int pieceColor = GetPieceColor(pieceValue);
+
+        if (isPromotion)
+        {
+            pieceType = Piece.Pawn;
+        }
 
         // --- 1. Construct the Move String ---
         if (isCastling)
@@ -2580,4 +2597,13 @@ public class ChessManager : MonoBehaviour
             FlipBoard(0);
         }
     }
+}
+
+public enum GameState
+{
+    NotStarted,
+    InProgress,
+    WhiteWin,
+    BlackWin,
+    Draw
 }

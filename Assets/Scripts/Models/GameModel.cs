@@ -15,7 +15,7 @@ public class GameModel
 
     public DateTime Date { get; set; }
 
-    public string Moves { get; set; }
+    public string PGN { get; set; }
 
     public string Result { get; set; }
 
