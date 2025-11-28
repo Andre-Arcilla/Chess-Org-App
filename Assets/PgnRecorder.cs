@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Text; // Required for StringBuilder
 using System.Text.RegularExpressions;
+using TMPro;
 using UnityEngine;
 
 /// <summary>
@@ -15,6 +16,7 @@ public class PGNRecorder : MonoBehaviour
     [Header("Playback Settings")]
     [TextArea(4, 20)]
     public string importPGN;
+    [SerializeField] private TMP_InputField importInput;
 
     [Tooltip("Seconds between moves during playback")]
     public float moveDelay = 0.5f;
@@ -156,6 +158,8 @@ public class PGNRecorder : MonoBehaviour
 
     public void RunPGN()
     {
+        importPGN = importInput.text;
+
         if (string.IsNullOrWhiteSpace(importPGN))
         {
             Debug.LogWarning("PGNRecorder: no PGN provided in inspector.");

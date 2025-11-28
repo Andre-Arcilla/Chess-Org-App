@@ -2332,9 +2332,12 @@ public class ChessManager : MonoBehaviour
         yield return new WaitForSeconds(delay);
 
         // 2. Show the UI
-        resultsPanel.SetActive(true);
-        winnerText.text = title;
-        winConText.text = subTitle;
+        if (resultsPanel != null)
+        {
+            resultsPanel.SetActive(true);
+            winnerText.text = title;
+            winConText.text = subTitle;
+        }
     }
 
     private void HighlightKingCheck()
@@ -2596,6 +2599,15 @@ public class ChessManager : MonoBehaviour
         {
             FlipBoard(0);
         }
+    }
+
+    // ----------------------------------------------------------------------
+    // --- ANALYSIS BUTTONS ---
+    // ----------------------------------------------------------------------
+
+    public void AnalyzeGameButton()
+    {
+        SceneLoader.Instance.LoadNewScene("AnalysisScene");
     }
 }
 

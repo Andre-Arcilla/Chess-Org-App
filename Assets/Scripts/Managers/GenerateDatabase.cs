@@ -240,23 +240,55 @@ Nulla facilisi. Donec sit amet eros a sem pulvinar tincidunt. Phasellus elementu
         if (database.Table<GameModel>().FirstOrDefault() == null)
         {
             database.Execute(@"
-                INSERT INTO ChessGames (GameNum, StudNum, PlayerColor, Moves, Result)
-                VALUES ('1', 'A12346169', 'White', 'N/A', 'Win');
+                INSERT INTO ChessGames (GameNum, StudNum, PlayerColor, PGN, Result)
+                VALUES ('1', 'A12346169', 'White', '[Event ""Casual Game""]
+                [Site ""Unity Chess""]
+                [Date ""2025.11.28""]
+                [Round ""1""]
+                [White ""Player 1""]
+                [Black ""Player 2""]
+                [Result ""*""]
+
+                1. h4 g5 2. g3 gxh4 3. Bg2 hxg3 4. Rh2 gxh2 5. Bf1 ', 'Win');
             ");
 
             database.Execute(@"
-                INSERT INTO ChessGames (GameNum, StudNum, PlayerColor, Moves, Result)
-                VALUES ('2', 'A12346169', 'White', 'N/A', 'Win');
+                INSERT INTO ChessGames (GameNum, StudNum, PlayerColor, PGN, Result)
+                VALUES ('2', 'A12346169', 'White', '[Event ""Casual Game""]
+                [Site ""Unity Chess""]
+                [Date ""2025.11.28""]
+                [Round ""1""]
+                [White ""Player 1""]
+                [Black ""Player 2""]
+                [Result ""*""]
+
+                1. h4 g5 2. g3 gxh4 3. Bg2 hxg3 4. Rh2 gxh2 5. Bf1 ', 'Win');
             ");
 
             database.Execute(@"
-                INSERT INTO ChessGames (GameNum, StudNum, PlayerColor, Moves, Result)
-                VALUES ('3', 'A12346169', 'White', 'N/A', 'Win');
+                INSERT INTO ChessGames (GameNum, StudNum, PlayerColor, PGN, Result)
+                VALUES ('3', 'A12346169', 'White', '[Event ""Casual Game""]
+                [Site ""Unity Chess""]
+                [Date ""2025.11.28""]
+                [Round ""1""]
+                [White ""Player 1""]
+                [Black ""Player 2""]
+                [Result ""*""]
+
+                1. h4 g5 2. g3 gxh4 3. Bg2 hxg3 4. Rh2 gxh2 5. Bf1 ', 'Win');
             ");
 
             database.Execute(@"
-                INSERT INTO ChessGames (GameNum, StudNum, PlayerColor, Moves, Result)
-                VALUES ('4', 'A12346169', 'White', 'N/A', 'Win');
+                INSERT INTO ChessGames (GameNum, StudNum, PlayerColor, PGN, Result)
+                VALUES ('4', 'A12346169', 'White', '[Event ""Casual Game""]
+                [Site ""Unity Chess""]
+                [Date ""2025.11.28""]
+                [Round ""1""]
+                [White ""Player 1""]
+                [Black ""Player 2""]
+                [Result ""*""]
+
+                1. h4 g5 2. g3 gxh4 3. Bg2 hxg3 4. Rh2 gxh2 5. Bf1 ', 'Win');
             ");
         }
     }
