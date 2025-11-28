@@ -76,9 +76,9 @@ public class ChessManager : MonoBehaviour
     [SerializeField] private TextMeshProUGUI winConText;
     [SerializeField] private GameObject gamePanel;
     [SerializeField] private GameObject whitePanel;
-    [SerializeField] private TextMeshProUGUI whiteName;
+    [SerializeField] public TextMeshProUGUI whiteName;
     [SerializeField] private GameObject blackPanel;
-    [SerializeField] private TextMeshProUGUI blackName;
+    [SerializeField] public TextMeshProUGUI blackName;
     [SerializeField] public GameObject gameBoard;
     [SerializeField] private Transform pgnContent;
     [SerializeField] private GameObject pgnMoveButtonPrefab;
@@ -104,6 +104,7 @@ public class ChessManager : MonoBehaviour
 
     [SerializeField] private int fullMoveNumber = 1;
     [SerializeField] private List<string> pgnHistoryList = new List<string>();
+    [SerializeField] public List<string> PgnHistoryList => pgnHistoryList;
 
     [SerializeField] private bool whiteCanKSC = true;
     [SerializeField] private bool whiteCanQSC = true;
@@ -192,8 +193,8 @@ public class ChessManager : MonoBehaviour
         else
         {
             PlayerSide = -1;
-            whiteName.text = "You";
-            blackName.text = "Opponent";
+            whiteName.text = "Player 1";
+            blackName.text = "Player 2";
 
             FlipBoard(0);
         }
