@@ -1161,7 +1161,7 @@ public class ChessManager : MonoBehaviour
         tileContent[promotionDestinationIndex] = newPieceValue;
 
         // --- 3. PGN UPDATE ---
-        UpdatePGN(promotionOriginIndex, promotionDestinationIndex, tileContent[promotionOriginIndex], isCapture, false, true, newType);
+        UpdatePGN(promotionOriginIndex, promotionDestinationIndex, newPieceValue, isCapture, false, true, newType);
 
         // --- 4. Update Highlights & Turn ---
         currentLastMoveIndex = promotionDestinationIndex;
@@ -1181,6 +1181,15 @@ public class ChessManager : MonoBehaviour
         if (promotionPanel != null) promotionPanel.SetActive(false);
 
         // --- 6. Visual Refresh ---
+        if (selectedPGNButton != null)
+            selectedPGNButton.GetComponent<Image>().enabled = false;
+
+        if (pgnButtonContainer.childCount > 0)
+        {
+            selectedPGNButton = pgnButtonContainer.GetChild(pgnButtonContainer.childCount - 1).gameObject;
+            selectedPGNButton.GetComponent<Image>().enabled = true;
+        }
+
         ClearAllPieceVisuals(); // This cleans the board
         RedrawPiecesFromTileContent(); // This puts the new Queen/Rook on the board
         ResetObjects();
