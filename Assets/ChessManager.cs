@@ -293,7 +293,7 @@ public class ChessManager : MonoBehaviour
         // --- History & Logic (Same as before) ---
         if (currentHistoryIndex < positionHistory.Count - 1)
         {
-            ClearFutureHistory();
+            // ClearFutureHistory(); // Logic will be executed inside RecordPosition
         }
 
         int originIndex = Array.IndexOf(tileObjects, origin);
@@ -364,7 +364,6 @@ public class ChessManager : MonoBehaviour
             promotionDestinationIndex = destinationIndex;
             tileContent[originIndex] = Piece.None;
             tileContent[destinationIndex] = pieceValue;
-            Debug.Log($"movePiece {selectedPiece == null}");
             if (promotionPanel != null) promotionPanel.SetActive(true);
             else PromoteToQueen();
             return;
@@ -402,7 +401,6 @@ public class ChessManager : MonoBehaviour
             RedrawPiecesFromTileContent();
         }
 
-        // --- CRITICAL ORDER ---
         // 1. ResetObjects: Clears blue moves, Applies Yellow Highlight
         ResetObjects();
 
@@ -1955,12 +1953,15 @@ public class ChessManager : MonoBehaviour
 
     private void HandleCapturedVisuals(GameObject capturedBoardGO, int pieceValue)
     {
+        if (pieceValue == Piece.None)
+        {
+            return;
+        }
+
         if (capturedBoardGO != null)
         {
             PoolPiece(capturedBoardGO);
         }
-
-        if (pieceValue == Piece.None) return;
 
         int pieceType = GetPieceType(pieceValue);
         int pieceColor = GetPieceColor(pieceValue);
@@ -1969,6 +1970,12 @@ public class ChessManager : MonoBehaviour
         Transform targetContainer = GetDeadPieceContainer(pieceType, pieceColor);
 
         GameObject prefab = GetPrefabForPiece(pieceType);
+
+        if (targetContainer == null || prefab == null)
+        {
+            Debug.LogError($"[DEBUG: Capture] Failed to find target container or prefab for piece: {pieceValue}. This piece will not appear in the graveyard.");
+            return;
+        }
 
         if (targetContainer != null && prefab != null)
         {
@@ -2063,14 +2070,12 @@ public class ChessManager : MonoBehaviour
                 // Get the piece
                 GameObject piece = holder.GetChild(0).gameObject;
 
-                // FIX: Send to Pool instead of Dead Container
+                // Send to Pool instead of Dead Container
                 PoolPiece(piece);
             }
         }
 
         // 2. Clear the Graveyards (Dead Containers)
-        // We also want to pool any pieces currently shown in the dead containers
-        // so that the UI is clean when we redraw.
         Transform[] deadContainers = new Transform[] {
             whitePawnDeadContainer, whiteRookDeadContainer, whiteKnightDeadContainer, whiteBishopDeadContainer, whiteQueenDeadContainer, whiteKingDeadContainer,
             blackPawnDeadContainer, blackRookDeadContainer, blackKnightDeadContainer, blackBishopDeadContainer, blackQueenDeadContainer, blackKingDeadContainer
@@ -2079,9 +2084,15 @@ public class ChessManager : MonoBehaviour
         foreach (Transform container in deadContainers)
         {
             if (container == null) continue;
-            while (container.childCount > 0)
+
+            // FIX: Iterate backward using a for loop to safely remove children from the Transform
+            for (int i = container.childCount - 1; i >= 0; i--)
             {
-                PoolPiece(container.GetChild(0).gameObject);
+                // Get the piece using the current index 'i'
+                GameObject piece = container.GetChild(i).gameObject;
+
+                // PoolPiece reparents the piece, removing it from this container
+                PoolPiece(piece);
             }
         }
     }

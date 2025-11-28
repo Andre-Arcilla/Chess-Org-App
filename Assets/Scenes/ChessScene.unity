@@ -944,7 +944,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: dc5b9cce4120bd049855cdf1f422d3b1, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 8aeda7a53bda7f94585f3b5836f58668, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -3764,8 +3764,8 @@ RectTransform:
   m_GameObject: {fileID: 224949605}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
+  m_LocalScale: {x: 1.7500001, y: 1.7500001, z: 1.7500001}
+  m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 656141410}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -3794,7 +3794,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: e21f12731bb1b0f4d9f85507f4abde06, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 653d6f25a06df174c806d625b0aa4965, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -4836,10 +4836,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Padding:
-    m_Left: 15
-    m_Right: 15
-    m_Top: 15
-    m_Bottom: 10
+    m_Left: 0
+    m_Right: 0
+    m_Top: 0
+    m_Bottom: 0
   m_ChildAlignment: 7
   m_Spacing: 0
   m_ChildForceExpandWidth: 1
@@ -7572,7 +7572,7 @@ RectTransform:
   m_GameObject: {fileID: 640956539}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 1.5, y: 1.5, z: 1.5}
   m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 12805742}
@@ -8077,10 +8077,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Padding:
-    m_Left: 15
-    m_Right: 15
-    m_Top: 15
-    m_Bottom: 10
+    m_Left: 0
+    m_Right: 0
+    m_Top: 0
+    m_Bottom: 0
   m_ChildAlignment: 7
   m_Spacing: 0
   m_ChildForceExpandWidth: 1
@@ -8662,10 +8662,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Padding:
-    m_Left: 20
-    m_Right: 20
+    m_Left: 60
+    m_Right: 60
     m_Top: 20
-    m_Bottom: 20
+    m_Bottom: 10
   m_ChildAlignment: 4
   m_Spacing: 0
   m_ChildForceExpandWidth: 1
@@ -9175,10 +9175,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Padding:
-    m_Left: 20
-    m_Right: 20
+    m_Left: 60
+    m_Right: 60
     m_Top: 20
-    m_Bottom: 20
+    m_Bottom: 10
   m_ChildAlignment: 4
   m_Spacing: 0
   m_ChildForceExpandWidth: 1
@@ -9280,9 +9280,9 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
-      - m_Target: {fileID: 2133111162}
-        m_TargetAssemblyTypeName: ChessManager, Assembly-CSharp
-        m_MethodName: LoadPGNFromInput
+      - m_Target: {fileID: 2068348573}
+        m_TargetAssemblyTypeName: PGNRecorder, Assembly-CSharp
+        m_MethodName: RunPGN
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -10393,10 +10393,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Padding:
-    m_Left: 20
-    m_Right: 20
+    m_Left: 60
+    m_Right: 60
     m_Top: 20
-    m_Bottom: 20
+    m_Bottom: 10
   m_ChildAlignment: 4
   m_Spacing: 0
   m_ChildForceExpandWidth: 1
@@ -11481,10 +11481,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Padding:
-    m_Left: 15
-    m_Right: 15
-    m_Top: 15
-    m_Bottom: 10
+    m_Left: 0
+    m_Right: 0
+    m_Top: 0
+    m_Bottom: 0
   m_ChildAlignment: 7
   m_Spacing: 0
   m_ChildForceExpandWidth: 1
@@ -16756,10 +16756,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Padding:
-    m_Left: 15
-    m_Right: 15
-    m_Top: 15
-    m_Bottom: 10
+    m_Left: 0
+    m_Right: 0
+    m_Top: 0
+    m_Bottom: 0
   m_ChildAlignment: 7
   m_Spacing: 0
   m_ChildForceExpandWidth: 1
@@ -18109,10 +18109,10 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1600924422}
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
+  m_LocalScale: {x: 1.25, y: 1.25, z: 1.25}
+  m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 1405302978}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -18141,7 +18141,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 8d8c5ea28f6cab64990e5dfa74f90d0f, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 2a56af23e8e90a94c8b2fc4a219f43b2, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -23825,6 +23825,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dd3be36c4cb5fca4b93fa51a8f2d9298, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  pgnInput: 1. a4 b5 2. axb5 a6 3. bxa6 Bb7 4. axb7 Nc6 5. bxa8=Q
+  moveDelay: 0.5
 --- !u!1 &2077064362
 GameObject:
   m_ObjectHideFlags: 0
@@ -24554,8 +24556,8 @@ RectTransform:
   m_GameObject: {fileID: 2131540630}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
+  m_LocalScale: {x: 1.7500001, y: 1.7500001, z: 1.7500001}
+  m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 356491552}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -24584,7 +24586,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: e21f12731bb1b0f4d9f85507f4abde06, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 7379788002bb98c44a55f198ef41db6a, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -24661,7 +24663,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   canRewriteHistory: 1
-  enableSideSelection: 0
+  enableSideSelection: 1
   kingPrefab: {fileID: 1141363921830114156, guid: 3e3d94def4335234696a0890224ca272, type: 3}
   pawnPrefab: {fileID: 4124972534793839248, guid: 7e4360a81e5211f46b0084002901461a, type: 3}
   knightPrefab: {fileID: 4164791484736290080, guid: 202ca15ffbb4f8240a50922555a018c3, type: 3}
@@ -24682,14 +24684,8 @@ MonoBehaviour:
   lastMoveColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
   moveDestinationsHistory: 
   moveOriginsHistory: 
-  pgnInputString: 1. c4 e5 2. Nc3 Nf6 3. g3 g6 4. Bg2 Bg7 5. d3 d6 6. Nf3 Nc6 7.
-    O-O O-O 8. Bd2 Ne7 9. b4 c6 10. h3 Ne8 11. Rb1 f5 12. Qc1 d5 13. cxd5 Nxd5 14.
-    b5 Bd7 15. Nxd5 cxd5 16. Qc5 Qb6 17. Bb4 e4 18. dxe4 dxe4 19. Ng5 Qxc5 20. Bxc5
-    h6 21. Rfd1 Nf6 22. Be7 hxg5 23. Bxf6 Be6 24. Bxg7 Kxg7 25. a4 Rfc8 26. Rb4 Rc2
-    27. e3 Rac8 28. Rbd4 Ra2 29. R1d2 Rxd2 30. Rxd2 Rc4 31. a5 Rc1+ 32. Kh2 Ra1 33.
-    Rc2 Rxa5 34. Rc7+ Kf6 35. Rxb7 Bc4 36. b6 a6 37. Rc7 Bd3 38. b7 Rb5 39. Rc6+
-    Kg7 40. Rxa6 Rxb7 41. Ra1 Rb2 42. Kg1 Kh6 1/2-1/2
-  pgnMoveDelay: 0.01
+  piecePool: []
+  piecesCapturedInCurrentState: 
   promotionPanel: {fileID: 1555462260}
   sideSelectionPanel: {fileID: 1955443628}
   resultsPanel: {fileID: 635276290}
@@ -24705,6 +24701,8 @@ MonoBehaviour:
   pgnMoveButtonPrefab: {fileID: 8355101448384485778, guid: b562ed87c7c34954cb7bf19d4868bf63, type: 3}
   pgnScrollRect: {fileID: 400619271}
   pgnScrollBar: {fileID: 552649018}
+  pgnButtonContainer: {fileID: 1858480770}
+  selectedPGNButton: {fileID: 0}
   whitePawnDeadContainer: {fileID: 983357089}
   whiteRookDeadContainer: {fileID: 1409588348}
   whiteKnightDeadContainer: {fileID: 40687392}
@@ -24826,10 +24824,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Padding:
-    m_Left: 20
-    m_Right: 20
+    m_Left: 60
+    m_Right: 60
     m_Top: 20
-    m_Bottom: 20
+    m_Bottom: 10
   m_ChildAlignment: 4
   m_Spacing: 0
   m_ChildForceExpandWidth: 1
