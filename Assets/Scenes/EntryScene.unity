@@ -6434,6 +6434,7 @@ MonoBehaviour:
   - AdminScene
   - ChessScene
   - AnalysisScene
+  - PuzzleScene
 --- !u!1 &1576748647
 GameObject:
   m_ObjectHideFlags: 0

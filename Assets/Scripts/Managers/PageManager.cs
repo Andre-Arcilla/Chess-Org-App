@@ -30,13 +30,8 @@ public class PageManager : MonoBehaviour
         announcementButton.onClick.Invoke();
     }
 
-    public void PlayChess()
+    public void GoToScene(string sceneName)
     {
-        SceneLoader.Instance.LoadNewScene("ChessScene");
-    }
-
-    public void AnalyzeChess()
-    {
-        SceneLoader.Instance.LoadNewScene("AnalysisScene");
+        SceneLoader.Instance.LoadNewScene(sceneName);
     }
 }

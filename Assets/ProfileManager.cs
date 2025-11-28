@@ -51,6 +51,7 @@ public class ProfileManager : MonoBehaviour
     [SerializeField] private TextMeshProUGUI annDate;
     [SerializeField] private TextMeshProUGUI annText;
     [SerializeField] private List<GameCard> gameCards;
+    [SerializeField] private GameObject noGamesPlaceholder;
 
     [Header("Profile Edit References")]
     [SerializeField] private TMP_InputField studNameInput;
@@ -275,23 +276,52 @@ public class ProfileManager : MonoBehaviour
     {
         AnnouncementModel announcement = GenerateDatabase.Instance.database.Table<AnnouncementModel>().FirstOrDefault();
 
-        headerGreeting.text = $"Welcome, {currentProfile.StudName}!";
+        if (headerGreeting != null) headerGreeting.text = $"Welcome, {currentProfile.StudName}!";
+        if (annTitle != null) annTitle.text = announcement.Title;
+        if (annDate != null) annDate.text = announcement.Date.ToString("MMMM dd, yyyy hh:mm:ss tt");
+        if (annText != null) annText.text = announcement.Text;
 
-        annTitle.text = announcement.Title;
-        annDate.text = announcement.Date.ToString("MMMM dd, yyyy hh:mm:ss tt");
-        annText.text = announcement.Text;
+        // --- UPDATED QUERY HERE ---
+        // 1. Filter by the current user's StudNum
+        // 2. Order by newest
+        // 3. Take top 3
+        var recentGames = GenerateDatabase.Instance.database.Table<GameModel>()
+                            .Where(g => g.StudNum == currentProfile.StudNum) // This filters for the specific user
+                            .OrderByDescending(a => a.GameNum)
+                            .Take(3)
+                            .ToList();
 
-        var recentGames = GenerateDatabase.Instance.database.Table<GameModel>().OrderByDescending(a => a.GameNum).Take(3).ToList();
-
-        for (int i = 0; i < 3; i++)
+        if (noGamesPlaceholder != null)
         {
-            if (recentGames.Contains(recentGames[i]))
+            noGamesPlaceholder.SetActive(recentGames.Count == 0);
+        }
+
+        for (int i = 0; i < gameCards.Count; i++)
+        {
+            if (i < recentGames.Count)
             {
+                gameCards[i].gameObject.SetActive(true);
                 gameCards[i].SetInformation(recentGames[i]);
+            }
+            else
+            {
+                gameCards[i].gameObject.SetActive(false);
             }
         }
 
         // last 3 games
         // game stats
+    }
+
+    public void Logout()
+    {
+        // 1. Clear Global User Reference
+        if (GenerateDatabase.Instance != null)
+        {
+            GenerateDatabase.Instance.currentUser = null;
+        }
+
+        // 2. Clear Local User Reference
+        currentProfile = null;
     }
 }

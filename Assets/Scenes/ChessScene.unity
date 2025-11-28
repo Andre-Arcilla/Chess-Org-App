@@ -10493,6 +10493,8 @@ MonoBehaviour:
   - CoachScene
   - AdminScene
   - ChessScene
+  - AnalysisScene
+  - PuzzleScene
 --- !u!1 &778816287
 GameObject:
   m_ObjectHideFlags: 0
@@ -25033,11 +25035,12 @@ MonoBehaviour:
 
     [Result "0-1"]
 
-    
+
 
     1.
     h4 g5 2. g3 gxh4 3. Bg2 hxg3 4. Rh2 gxh2 5. Bf1 Nf6 6. Bg2 Ng4 7. Be4 hxg1=R#
     0-1'
+  importInput: {fileID: 0}
   moveDelay: 0
   exportPGN: 
   chessManager: {fileID: 0}
@@ -26012,6 +26015,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   canRewriteHistory: 1
   enableSideSelection: 0
+  isViewOnly: 0
   kingPrefab: {fileID: 1141363921830114156, guid: 3e3d94def4335234696a0890224ca272, type: 3}
   pawnPrefab: {fileID: 4124972534793839248, guid: 7e4360a81e5211f46b0084002901461a, type: 3}
   knightPrefab: {fileID: 4164791484736290080, guid: 202ca15ffbb4f8240a50922555a018c3, type: 3}
