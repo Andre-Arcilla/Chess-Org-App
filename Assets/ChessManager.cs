@@ -30,6 +30,13 @@ public class ChessManager : MonoBehaviour
     [SerializeField] private bool enableSideSelection = true;
     [SerializeField] public bool isViewOnly = false;
 
+    [Header("Puzzle Mode")]
+    [SerializeField] private GameObject puzzleOptions;
+    [SerializeField] private GameObject puzzleResults;
+    public bool isPuzzleActive = false;
+    private List<string> puzzleSolution = new List<string>();
+    private int puzzleIndex = 0;
+
     [Header("Chess Pieces")]
     [SerializeField] private GameObject kingPrefab;
     [SerializeField] private GameObject pawnPrefab;
@@ -396,7 +403,19 @@ public class ChessManager : MonoBehaviour
         if (pieceType == Piece.Pawn || isCapture) halfMoveClock = 0;
         else halfMoveClock++;
 
-        UpdatePGN(originIndex, destinationIndex, pieceValue, isCapture, isCastling);
+        bool isMoveValid = UpdatePGN(originIndex, destinationIndex, pieceValue, isCapture, isCastling);
+
+        if (!isMoveValid)
+        {
+            // 1. Revert to the state exactly before this move was attempted
+            LoadBoardFromHistory(currentHistoryIndex);
+
+            // 2. Reset highlights so the board is clean
+            ResetObjects();
+
+            // 3. Stop execution so we don't switch turns or record this bad position
+            return;
+        }
 
         if (selectedPGNButton != null)
             selectedPGNButton.GetComponent<Image>().enabled = false;
@@ -544,7 +563,6 @@ public class ChessManager : MonoBehaviour
     // --- KING SAFETY IMPLEMENTATION ---
     // ----------------------------------------------------------------------
 
-    // Core validation: Simulates a move and checks if the King is attacked afterwards (i.e., checks for pins/self-check)
     private bool IsMoveLegal(int originIndex, int destinationIndex)
     {
         int piece = tileContent[originIndex];
@@ -573,7 +591,6 @@ public class ChessManager : MonoBehaviour
         return !isKingInCheck;
     }
 
-    // Castling Safety: Checks if any square the King moves through or lands on is attacked.
     private bool CanCastlePathBeAttacked(int startTile, int endTile, int color)
     {
         int opponentColor = (color == Piece.White) ? Piece.Black : Piece.White;
@@ -601,7 +618,6 @@ public class ChessManager : MonoBehaviour
         return false; // Path is NOT attacked
     }
 
-    // Checks if a tile is attacked by the attackerColor using ray-tracing
     public bool IsTileAttacked(int targetIndex, int attackerColor)
     {
         // These remain the starting coordinates (used for Knight/King/Pawn checks later)
@@ -1192,7 +1208,19 @@ public class ChessManager : MonoBehaviour
         tileContent[promotionDestinationIndex] = newPieceValue;
 
         // --- 3. PGN UPDATE ---
-        UpdatePGN(promotionOriginIndex, promotionDestinationIndex, newPieceValue, isCapture, false, true, newType);
+        bool isMoveValid = UpdatePGN(promotionOriginIndex, promotionDestinationIndex, newPieceValue, isCapture, false, true, newType);
+
+        if (!isMoveValid)
+        {
+            // Revert board to previous state
+            LoadBoardFromHistory(currentHistoryIndex);
+
+            // Clear promotion flags
+            isPromotionPending = false;
+            promotionPanel.SetActive(false);
+            ResetObjects();
+            return;
+        }
 
         // --- 4. Update Highlights & Turn ---
         currentLastMoveIndex = promotionDestinationIndex;
@@ -1546,18 +1574,18 @@ public class ChessManager : MonoBehaviour
     // --- PGN GENERATION ---
     // ----------------------------------------------------------------------
 
-    private void UpdatePGN(int originIndex, int destIndex, int pieceValue, bool isCapture, bool isCastling, bool isPromotion = false, int promotionType = Piece.None)
+    private bool UpdatePGN(int originIndex, int destIndex, int pieceValue, bool isCapture, bool isCastling, bool isPromotion = false, int promotionType = Piece.None)
     {
         string moveString = "";
         int pieceType = GetPieceType(pieceValue);
         int pieceColor = GetPieceColor(pieceValue);
 
+        // --- 1. Construct the Move String ---
         if (isPromotion)
         {
             pieceType = Piece.Pawn;
         }
 
-        // --- 1. Construct the Move String ---
         if (isCastling)
         {
             int destFile = destIndex % 8;
@@ -1565,13 +1593,11 @@ public class ChessManager : MonoBehaviour
         }
         else
         {
-            // Piece Letter
             if (pieceType != Piece.Pawn)
             {
                 moveString += GetPieceNotation(pieceValue);
             }
 
-            // Capture Notation
             if (isCapture)
             {
                 if (pieceType == Piece.Pawn)
@@ -1582,17 +1608,15 @@ public class ChessManager : MonoBehaviour
                 moveString += "x";
             }
 
-            // Destination Square
             moveString += GetSquareNotation(destIndex);
 
-            // Promotion
             if (isPromotion)
             {
                 moveString += "=" + GetPieceNotation(promotionType | pieceColor);
             }
         }
 
-        // Check / Checkmate Suffix
+        // --- 2. Check / Checkmate Suffix ---
         int opponentColor = (pieceColor == Piece.White) ? Piece.Black : Piece.White;
         if (IsCheckmate(opponentColor))
         {
@@ -1607,7 +1631,58 @@ public class ChessManager : MonoBehaviour
             }
         }
 
-        // --- 2. Format & Store (White adds the number, Black just adds the move) ---
+        // --- 3. PUZZLE VALIDATION ---
+        if (isPuzzleActive)
+        {
+            if (puzzleIndex < puzzleSolution.Count)
+            {
+                string expectedMove = puzzleSolution[puzzleIndex];
+
+                string cleanMoveString = moveString.Replace("+", "").Replace("#", "");
+                string cleanExpectedMove = expectedMove.Replace("+", "").Replace("#", "");
+
+                if (cleanMoveString != cleanExpectedMove)
+                {
+                    return false;
+                }
+                else
+                {
+                    puzzleIndex++;
+
+                    if (puzzleIndex >= puzzleSolution.Count)
+                    {
+                        if (ProfileManager.Instance.currentProfile != null)
+                        {
+                            Debug.Log($"Puzzles Solved (Before): {ProfileManager.Instance.currentProfile.Puzzles}");
+
+                            ProfileManager.Instance.currentProfile.Puzzles++;
+
+                            Debug.Log($"Puzzles Solved (After): {ProfileManager.Instance.currentProfile.Puzzles}");
+
+                            ProfileManager.Instance.currentProfile.LastModified = DateTimeOffset.Now.ToUnixTimeSeconds();
+
+                            GenerateDatabase.Instance.database.Update(ProfileManager.Instance.currentProfile);
+
+                            Debug.Log("Profile updated in database after puzzle solution.");
+                        }
+
+                        if (puzzleOptions != null && puzzleOptions.activeSelf)
+                        {
+                            puzzleOptions.SetActive(false);
+                        }
+
+                        if (puzzleResults != null)
+                        {
+                            puzzleResults.SetActive(true);
+                        }
+
+                        isPuzzleActive = false;
+                    }
+                }
+            }
+        }
+
+        // --- 4. Format & Store ---
         string finalButtonText = "";
 
         if (pieceColor == Piece.White)
@@ -1617,50 +1692,47 @@ public class ChessManager : MonoBehaviour
         else
         {
             finalButtonText = moveString;
-            fullMoveNumber++; // Increment after Black's move
+            fullMoveNumber++;
         }
 
-        // Add to logical list
         pgnHistoryList.Add(finalButtonText);
 
-        // --- 3. Instantiate Button UI ---
+        // --- 5. Instantiate UI Button ---
         if (pgnContent != null && pgnMoveButtonPrefab != null)
         {
             GameObject newButton = Instantiate(pgnMoveButtonPrefab, pgnContent);
-
-            // Get the index of the move AFTER it's added to the list
             int moveIndex = pgnHistoryList.Count;
 
-            // Add listener to the button
             Button btn = newButton.GetComponent<Button>();
             if (btn != null)
             {
-                // Assign the function to load this specific board state
                 btn.onClick.AddListener(() => LoadBoardFromHistory(moveIndex));
             }
 
-            // Try to set text on the button
             TextMeshProUGUI btnText = newButton.GetComponentInChildren<TextMeshProUGUI>();
             if (btnText != null)
             {
                 btnText.text = finalButtonText;
             }
-
-            newButton.name = $"Move_{moveIndex}_{moveString}";
         }
 
-        // --- 4. Auto-Scroll ---
+        // --- 6. Auto-Scroll ---
         if (pgnScrollRect != null && pgnContent != null)
         {
-            // Force the layout to update immediately on the Content RectTransform.
             LayoutRebuilder.ForceRebuildLayoutImmediate(pgnContent.GetComponent<RectTransform>());
-
-            // Set to 1f to scroll to the end (right) for horizontal lists.
             pgnScrollRect.horizontalNormalizedPosition = 1f;
         }
 
-        // Always ensure the current move is highlighted
         HighlightCurrentMoveButton(pgnHistoryList.Count - 1);
+
+        // --- 7. Trigger Opponent Response (Puzzle Mode) ---
+        // Only trigger if puzzle is active, moves remain, and it is an ODD index (Opponent's turn)
+        if (isPuzzleActive && puzzleIndex < puzzleSolution.Count && (puzzleIndex % 2 != 0))
+        {
+            StartCoroutine(PlayOpponentPuzzleMove());
+        }
+
+        return true;
     }
 
     private string GetSquareNotation(int index)
@@ -1692,6 +1764,30 @@ public class ChessManager : MonoBehaviour
     // ----------------------------------------------------------------------
     // --- UTILITIES ---
     // ----------------------------------------------------------------------
+
+    public void StartPuzzleMode(List<string> moves)
+    {
+        isPuzzleActive = true;
+        puzzleSolution = moves;
+        puzzleIndex = 0;
+        Debug.Log("Puzzle Mode Active. Moves: " + string.Join(", ", moves));
+    }
+
+    private IEnumerator PlayOpponentPuzzleMove()
+    {
+        yield return new WaitForSeconds(0.5f);
+
+        if (PGNRecorder.Instance != null && puzzleIndex < puzzleSolution.Count)
+        {
+            string san = puzzleSolution[puzzleIndex];
+
+            PGNRecorder.Instance.importPGN = san;
+            PGNRecorder.Instance.RunPGN(resetBoard: false);
+
+            // FIX: REMOVED 'puzzleIndex++' HERE.
+            // puzzleIndex is already incremented inside UpdatePGN when RunPGN() successfully completes the move.
+        }
+    }
 
     public void ResetObjects()
     {

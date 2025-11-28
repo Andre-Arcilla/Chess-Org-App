@@ -48,14 +48,20 @@ public class SigninManager : MonoBehaviour
         // Load scene based on profile role
         if (user.Role.ToUpper() == "MEMBER")
         {
+            StopAllCoroutines();
+            StartCoroutine(ShowPopup($"MEMBER: {user.StudName}"));
             SceneLoader.LoadNewScene("MemberScene");
         }
         else if (user.Role.ToUpper() == "COACH")
         {
+            StopAllCoroutines();
+            StartCoroutine(ShowPopup($"coach: {user.StudName}"));
             SceneLoader.LoadNewScene("CoachScene");
         }
         else if (user.Role.ToUpper() == "ADMIN")
         {
+            StopAllCoroutines();
+            StartCoroutine(ShowPopup($"admin: {user.StudName}"));
             SceneLoader.LoadNewScene("AdminScene");
         }
         else
@@ -95,6 +101,8 @@ public class SigninManager : MonoBehaviour
             group.alpha = Mathf.Lerp(1f, 0f, elapsed / duration);
             yield return null;
         }
+
+        yield return new WaitForSeconds(5f);
 
         group.alpha = 0f;
     }

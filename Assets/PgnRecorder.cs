@@ -169,7 +169,7 @@ public class PGNRecorder : MonoBehaviour
     //  SECTION 2: IMPORT/PLAYBACK PGN (Input)
     // ===================================================================================
 
-    public void RunPGN()
+    public void RunPGN(bool resetBoard = true)
     {
         if (!string.IsNullOrWhiteSpace(importInput.text))
         {
@@ -182,7 +182,11 @@ public class PGNRecorder : MonoBehaviour
             return;
         }
 
-        chessManager.NewGame();
+        if (resetBoard)
+        {
+            chessManager.NewGame();
+        }
+
         ParsePGN();
         StartCoroutine(PlayMovesCoroutine());
     }
