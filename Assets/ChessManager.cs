@@ -62,7 +62,7 @@ public class ChessManager : MonoBehaviour
     [Header("PGN & FEN History")]
     private List<string> positionHistory = new List<string>();
     private int currentHistoryIndex = -1;
-    private bool isReviewing = false;
+    [SerializeField] private bool isReviewing = false;
 
     [Header("Piece Pooling & State")]
     [SerializeField] private List<GameObject> piecePool = new List<GameObject>();
@@ -284,10 +284,12 @@ public class ChessManager : MonoBehaviour
     {
         if (selectedPiece == null) return;
 
+        isReviewing = false;
+
         // --- History & Logic (Same as before) ---
         if (currentHistoryIndex < positionHistory.Count - 1)
         {
-            // ClearFutureHistory(); // Logic will be executed inside RecordPosition
+            ClearFutureHistory();
         }
 
         int originIndex = Array.IndexOf(tileObjects, origin);
