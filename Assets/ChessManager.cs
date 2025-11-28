@@ -194,14 +194,8 @@ public class ChessManager : MonoBehaviour
             PlayerSide = -1;
             whiteName.text = "You";
             blackName.text = "Opponent";
-            gamePanel.transform.Rotate(0, 0, 0, Space.Self);
-            whitePanel.transform.Rotate(0, 0, 0, Space.Self);
-            blackPanel.transform.Rotate(0, 0, 0, Space.Self);
 
-            foreach (Transform child in gameBoard.transform)
-            {
-                child.Rotate(0, 0, 0, Space.Self);
-            }
+            FlipBoard(0);
         }
     }
 
@@ -486,14 +480,16 @@ public class ChessManager : MonoBehaviour
         // --- 2. LOGIC: Check Game Over States ---
         if (inCheck && IsCheckmate(currentTurnColor))
         {
-            // It is Checkmate (Check + No Moves)
             int winnerColor = (currentTurnColor == Piece.White) ? Piece.Black : Piece.White;
-            string winnerMsg = $"{(winnerColor == Piece.White ? "White" : "Black")} Wins!";
+
+            int playerPieceColor = (PlayerSide == 0) ? Piece.White : Piece.Black;
+
+            string winnerMsg = winnerColor == playerPieceColor ? "You Win!" : "Opponent Wins!";
+
             StartCoroutine(ShowGameOverUI(winnerMsg, "by Checkmate."));
         }
         else if (!inCheck && IsStalemate(currentTurnColor))
         {
-            // It is Stalemate (No Check + No Moves)
             StartCoroutine(ShowGameOverUI("It's a draw!", "by Stalemate."));
         }
         else if (IsInsufficientMaterial())
@@ -1971,12 +1967,6 @@ public class ChessManager : MonoBehaviour
 
         GameObject prefab = GetPrefabForPiece(pieceType);
 
-        if (targetContainer == null || prefab == null)
-        {
-            Debug.LogError($"[DEBUG: Capture] Failed to find target container or prefab for piece: {pieceValue}. This piece will not appear in the graveyard.");
-            return;
-        }
-
         if (targetContainer != null && prefab != null)
         {
             // 3. Generate a NEW piece in the UI
@@ -2307,10 +2297,10 @@ public class ChessManager : MonoBehaviour
         return false;
     }
 
-    private IEnumerator ShowGameOverUI(string title, string subTitle)
+    private IEnumerator ShowGameOverUI(string title, string subTitle, float delay = 2f)
     {
-        // 1. Wait for the delay (e.g., 2.5 seconds)
-        yield return new WaitForSeconds(2.5f);
+        // 1. Wait for the delay
+        yield return new WaitForSeconds(delay);
 
         // 2. Show the UI
         resultsPanel.SetActive(true);
@@ -2513,6 +2503,11 @@ public class ChessManager : MonoBehaviour
         StartGameFromFEN(defaultFen);
     }
 
+    public void ResignGame()
+    {
+        StartCoroutine(ShowGameOverUI("You Lose!", "by Forfeit.", 0.5f));
+    }
+
     // 0 for White, 1 for Black
     public void SelectSide(int sideIndex)
     {
@@ -2527,27 +2522,50 @@ public class ChessManager : MonoBehaviour
         {
             whiteName.text = "You";
             blackName.text = "Stockfish";
-            gamePanel.transform.Rotate(0, 0, 0, Space.Self);
-            whitePanel.transform.Rotate(0, 0, 0, Space.Self);
-            blackPanel.transform.Rotate(0, 0, 0, Space.Self);
-
-            foreach (Transform child in gameBoard.transform)
-            {
-                child.Rotate(0, 0, 0, Space.Self);
-            }
+            FlipBoard(0);
         }
         else if (sideIndex == 1) // BLACK
         {
             whiteName.text = "Stockfish";
             blackName.text = "You";
-            gamePanel.transform.Rotate(0, 0, 180, Space.Self);
-            whitePanel.transform.Rotate(0, 0, 180, Space.Self);
-            blackPanel.transform.Rotate(0, 0, 180, Space.Self);
+            FlipBoard(180);
+        }
+    }
 
-            foreach (Transform child in gameBoard.transform)
-            {
-                child.Rotate(0, 0, 180, Space.Self);
-            }
+    public void FlipBoard(int degrees = 0)
+    {
+        Quaternion targetRotation;
+
+        if (degrees == 180)
+        {
+            targetRotation = Quaternion.Euler(0, 0, 180f);
+        }
+        else
+        {
+            targetRotation = Quaternion.identity;
+        }
+
+        gamePanel.transform.localRotation = targetRotation;
+        whitePanel.transform.localRotation = targetRotation;
+        blackPanel.transform.localRotation = targetRotation;
+
+        foreach (Transform child in gameBoard.transform)
+        {
+            child.localRotation = targetRotation;
+        }
+    }
+
+    public void ToggleBoardRotation()
+    {
+        Quaternion rotation0 = Quaternion.identity;
+
+        if (Quaternion.Angle(gamePanel.transform.localRotation, rotation0) < 1f)
+        {
+            FlipBoard(180);
+        }
+        else
+        {
+            FlipBoard(0);
         }
     }
 }
