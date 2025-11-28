@@ -6433,6 +6433,7 @@ MonoBehaviour:
   - CoachScene
   - AdminScene
   - ChessScene
+  - AnalysisScene
 --- !u!1 &1576748647
 GameObject:
   m_ObjectHideFlags: 0

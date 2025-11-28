@@ -28,6 +28,7 @@ public class ChessManager : MonoBehaviour
     [Header("Toggle Settings")]
     [SerializeField] private bool canRewriteHistory = false;
     [SerializeField] private bool enableSideSelection = true;
+    [SerializeField] public bool isViewOnly = false;
 
     [Header("Chess Pieces")]
     [SerializeField] private GameObject kingPrefab;
@@ -127,6 +128,17 @@ public class ChessManager : MonoBehaviour
 
     private void Start()
     {
+        StartBoard();
+
+        string receivedData = StaticDataString.stringToPass;
+
+        if (!string.IsNullOrWhiteSpace(receivedData))
+        {
+            StartCoroutine(PlayBoardDelay(receivedData));
+        }
+
+        StaticDataString.stringToPass = string.Empty;
+
         // Cache the default colors of the board tiles
         if (tileObjects != null)
         {
@@ -137,8 +149,13 @@ public class ChessManager : MonoBehaviour
                 if (img != null) defaultTileColors[i] = img.color;
             }
         }
+    }
 
-        StartBoard();
+    private IEnumerator PlayBoardDelay(string receivedData)
+    {
+        yield return new WaitForSeconds(0.15f);
+        PGNRecorder.Instance.importPGN = receivedData;
+        PGNRecorder.Instance.RunPGN();
     }
 
     private void StartBoard()
@@ -413,6 +430,8 @@ public class ChessManager : MonoBehaviour
 
     public void CheckMove(GameObject originGO, GameObject pieceGO)
     {
+        if (isViewOnly) return;
+
         // Check if we are currently looking at a past state
         bool isLookingAtPast = currentHistoryIndex < positionHistory.Count - 1;
 
@@ -2605,9 +2624,19 @@ public class ChessManager : MonoBehaviour
     // --- ANALYSIS BUTTONS ---
     // ----------------------------------------------------------------------
 
-    public void AnalyzeGameButton()
+    public void PlayBoardButton()
     {
-        SceneLoader.Instance.LoadNewScene("AnalysisScene");
+        // dont allow if no moves are made
+        if (CurrentState == GameState.NotStarted) return;
+
+        // call to update exportPGN string
+        PGNRecorder.Instance.SavePGNToVariable();
+
+        // hold string to pass
+        StaticDataString.stringToPass = PGNRecorder.Instance.exportPGN;
+
+        // load new scene
+        SceneLoader.Instance.LoadNewScene("ChessScene");
     }
 }
 

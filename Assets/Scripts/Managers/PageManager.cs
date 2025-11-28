@@ -34,4 +34,9 @@ public class PageManager : MonoBehaviour
     {
         SceneLoader.Instance.LoadNewScene("ChessScene");
     }
+
+    public void AnalyzeChess()
+    {
+        SceneLoader.Instance.LoadNewScene("AnalysisScene");
+    }
 }

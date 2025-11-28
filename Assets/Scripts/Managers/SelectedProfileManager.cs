@@ -189,7 +189,16 @@ public class SelectedProfileManager : MonoBehaviour
     // Called by GameCard, show selected game and pass information
     public void ShowItem(GameModel game)
     {
-        Debug.Log($"GameNum: {game.GameNum}\nStudNum: {game.StudNum}");
+        // get PGN of selected game
+        string stringPGN = game.PGN;
+        bool isViewOnly = ProfileManager.Instance.currentProfile.StudNum != game.StudNum;
+
+        // hold string to pass
+        StaticDataString.stringToPass = stringPGN;
+        StaticDataString.isViewOnly = isViewOnly;
+
+        // load new scene
+        SceneLoader.Instance.LoadNewScene("AnalysisScene");
     }
 
     public void EditProfile()

@@ -13,6 +13,20 @@ using UnityEngine;
 /// </summary>
 public class PGNRecorder : MonoBehaviour
 {
+    public static PGNRecorder Instance { get; private set; }
+
+    private void Awake()
+    {
+        if (Instance == null)
+        {
+            Instance = this;
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
+    }
+
     [Header("Playback Settings")]
     [TextArea(4, 20)]
     public string importPGN;
@@ -48,7 +62,6 @@ public class PGNRecorder : MonoBehaviour
         if (EnsureManager())
         {
             exportPGN = GeneratePGNString();
-            Debug.Log("PGN saved to internal variable.");
         }
     }
 
@@ -158,7 +171,10 @@ public class PGNRecorder : MonoBehaviour
 
     public void RunPGN()
     {
-        importPGN = importInput.text;
+        if (!string.IsNullOrWhiteSpace(importInput.text))
+        {
+            importPGN = importInput.text;
+        }
 
         if (string.IsNullOrWhiteSpace(importPGN))
         {
@@ -244,6 +260,8 @@ public class PGNRecorder : MonoBehaviour
             yield return new WaitForSeconds(moveDelay);
         }
 
+        chessManager.isViewOnly = StaticDataString.isViewOnly;
+        StaticDataString.isViewOnly = false;
         Debug.Log("PGNRecorder: Finished playback.");
     }
 

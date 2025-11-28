@@ -22,8 +22,6 @@ public class ProfileManager : MonoBehaviour
         {
             Destroy(gameObject);
         }
-
-        currentProfile = GenerateDatabase.Instance.currentUser;
     }
 
     [Header("Profile UI References")]
@@ -65,7 +63,7 @@ public class ProfileManager : MonoBehaviour
     [SerializeField] private Transform cardContainer;
 
     // Current Profile
-    private ProfileModel currentProfile;
+    public ProfileModel currentProfile { private set; get; }
 
     // Cached data and gameobject, GameNum key + data model/gameobject value
     private Dictionary<int, GameModel> gamesDataCaches = new Dictionary<int, GameModel>();
@@ -73,6 +71,8 @@ public class ProfileManager : MonoBehaviour
 
     void Start()
     {
+        currentProfile = GenerateDatabase.Instance.currentUser;
+
         foreach (Transform child in cardContainer)
         {
             Destroy(child.gameObject);
