@@ -121,7 +121,7 @@ public class RegistrationManager : MonoBehaviour
 
         // show a new window to indicate that registration was successful
         StopAllCoroutines();
-        StartCoroutine(ShowPopup("REGISTRATION DONE, MAKE NEW WINDOW TO SHOW THAT ITS DONE"));
+        StartCoroutine(ShowPopup("Registration Done! Please wait for your registration to be approved"));
     }
 
     private IEnumerator ShowPopup(string message)
