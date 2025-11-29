@@ -3947,7 +3947,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &248728930
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -26714,6 +26714,7 @@ MonoBehaviour:
   pgnButtonContainer: {fileID: 1858480770}
   selectedPGNButton: {fileID: 0}
   feedbackButton: {fileID: 1515123851}
+  feedbackEditButton: {fileID: 248728929}
   feedbackInput: {fileID: 352369241}
   whitePawnDeadContainer: {fileID: 983357089}
   whiteRookDeadContainer: {fileID: 1409588348}

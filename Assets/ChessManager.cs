@@ -96,6 +96,7 @@ public class ChessManager : MonoBehaviour
     [SerializeField] public Transform pgnButtonContainer;
     [SerializeField] private GameObject selectedPGNButton;
     [SerializeField] private GameObject feedbackButton;
+    [SerializeField] private GameObject feedbackEditButton;
     [SerializeField] private TMP_InputField feedbackInput;
 
     [Header("Captured Pieces UI (Trays)")]
@@ -146,13 +147,26 @@ public class ChessManager : MonoBehaviour
             feedbackButton.SetActive(false);
         }
 
+        if (feedbackEditButton != null)
+        {
+            feedbackEditButton.SetActive(false);
+        }
+
         string receivedData = StaticDataString.stringToPass;
         currentGame = null;
 
         if (!string.IsNullOrWhiteSpace(receivedData))
         {
-            currentGame = StaticDataString.game;
+            if (ProfileManager.Instance.currentProfile != null)
+            {
+                if (ProfileManager.Instance.currentProfile.Role.ToUpper() != "MEMBER")
+                {
+                    feedbackEditButton.SetActive(true);
+                }
+            }
+
             feedbackButton.SetActive(true);
+            currentGame = StaticDataString.game;
             StartCoroutine(PlayBoardDelay(receivedData));
         }
 
