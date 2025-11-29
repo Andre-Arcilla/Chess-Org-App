@@ -15,10 +15,11 @@ public class GameModel
 
     public DateTime Date { get; set; }
 
+    public string Result { get; set; }
+
     public string PGN { get; set; }
 
-    public string Result { get; set; }
+    public string Feedback { get; set; }
 
     public long LastModified { get; set; }
 }
-

@@ -95,6 +95,8 @@ public class ChessManager : MonoBehaviour
     [SerializeField] private Scrollbar pgnScrollBar;
     [SerializeField] public Transform pgnButtonContainer;
     [SerializeField] private GameObject selectedPGNButton;
+    [SerializeField] private GameObject feedbackButton;
+    [SerializeField] private TMP_InputField feedbackInput;
 
     [Header("Captured Pieces UI (Trays)")]
     [SerializeField] private Transform whitePawnDeadContainer;
@@ -128,6 +130,8 @@ public class ChessManager : MonoBehaviour
     [SerializeField] private Transform mainView;
     [SerializeField] public Transform MainView => mainView;
 
+    public GameModel currentGame { private set; get; }
+
     // Direction Vectors (based on array index 0-63)
     private int[] lateralDir = { +1, -1, +8, -8 };
     private int[] diagonalDir = { +7, -7, +9, -9 };
@@ -137,10 +141,18 @@ public class ChessManager : MonoBehaviour
     {
         StartBoard();
 
+        if (feedbackButton != null)
+        {
+            feedbackButton.SetActive(false);
+        }
+
         string receivedData = StaticDataString.stringToPass;
+        currentGame = null;
 
         if (!string.IsNullOrWhiteSpace(receivedData))
         {
+            currentGame = StaticDataString.game;
+            feedbackButton.SetActive(true);
             StartCoroutine(PlayBoardDelay(receivedData));
         }
 
@@ -1653,17 +1665,9 @@ public class ChessManager : MonoBehaviour
                     {
                         if (ProfileManager.Instance.currentProfile != null)
                         {
-                            Debug.Log($"Puzzles Solved (Before): {ProfileManager.Instance.currentProfile.Puzzles}");
-
                             ProfileManager.Instance.currentProfile.Puzzles++;
-
-                            Debug.Log($"Puzzles Solved (After): {ProfileManager.Instance.currentProfile.Puzzles}");
-
                             ProfileManager.Instance.currentProfile.LastModified = DateTimeOffset.Now.ToUnixTimeSeconds();
-
                             GenerateDatabase.Instance.database.Update(ProfileManager.Instance.currentProfile);
-
-                            Debug.Log("Profile updated in database after puzzle solution.");
                         }
 
                         if (puzzleOptions != null && puzzleOptions.activeSelf)
@@ -2733,6 +2737,18 @@ public class ChessManager : MonoBehaviour
 
         // load new scene
         SceneLoader.Instance.LoadNewScene("ChessScene");
+    }
+
+    public void SetFeedback()
+    {
+        feedbackInput.text = currentGame.Feedback;
+    }
+
+    public void SaveFeedback()
+    {
+        currentGame.Feedback = feedbackInput.text;
+        currentGame.LastModified = DateTimeOffset.Now.ToUnixTimeSeconds();
+        GenerateDatabase.Instance.database.Update(currentGame);
     }
 }
 

@@ -196,6 +196,7 @@ public class SelectedProfileManager : MonoBehaviour
         // hold string to pass
         StaticDataString.stringToPass = stringPGN;
         StaticDataString.isViewOnly = isViewOnly;
+        StaticDataString.game = game;
 
         // load new scene
         SceneLoader.Instance.LoadNewScene("AnalysisScene");
