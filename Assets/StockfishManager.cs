@@ -1,111 +1,201 @@
 using System.Collections;
-using System.Collections.Concurrent;
 using UnityEngine;
 using System.IO;
 using Debug = UnityEngine.Debug;
 using TMPro;
 using System;
 using System.Threading;
+using System.Threading.Tasks;
+using System.Diagnostics; // Required for Process (Editor)
 
 public class StockfishManager : MonoBehaviour
 {
+    // --- EDITOR PROCESS (Windows/Mac) ---
+    private Process editorProcess;
+
+    // --- ANDROID PROCESS (JNI) ---
+    private AndroidJavaObject javaProcess;
+    private AndroidJavaObject outputStream;
+    private AndroidJavaObject inputStream;
+    private AndroidJavaObject errorStream;
     private Thread outputThread;
     private Thread errorThread;
     private volatile bool isRunning = false;
 
-    // JNI Objects
-    private AndroidJavaObject javaProcess;
-    private AndroidJavaObject outputStream; // stdin (Write to process)
-    private AndroidJavaObject inputStream;  // stdout (Read from process)
-    private AndroidJavaObject errorStream;  // stderr (Read errors)
+    // --- SHARED STATE ---
+    private string latestMessage = null;
+    private volatile string lastEngineLine = "";
+    private long lastMessageTick = 0;
 
-    private ConcurrentQueue<string> logQueue = new ConcurrentQueue<string>();
+    // Concurrency control
+    private long currentCommandId = 0;
 
-    [Header("Popup")]
-    [SerializeField] private TextMeshProUGUI popupObject;
-
-    void Start()
+    async void Start()
     {
-        if (popupObject != null) popupObject.text = "Starting Engine...";
-        StartStockfish();
+        bool success = StartStockfish();
+
+        if (success)
+        {
+            // Init Sequence
+            await SendCommandAwaitResult("uci");
+            await SendCommandAwaitResult("isready");
+        }
     }
 
     void Update()
     {
-        while (logQueue.TryDequeue(out string message))
+        // Update UI from the shared 'latestMessage' variable
+        string message = System.Threading.Interlocked.Exchange(ref latestMessage, null);
+
+        if (message != null)
         {
-            if (popupObject != null)
+            Debug.Log("SF: " + message);
+        }
+    }
+
+    // --- test method, how to talk to stockfish ---
+
+    public async void TestInputAsync(string input)
+    {
+        if (input == null) return;
+        string command = input;
+
+        string finalMessage = await SendCommandAwaitResult(command, 0.5f);
+
+        //if (finalMessage != null)
+        //{
+        //    if (popupObject != null) popupObject.text = "Final: " + finalMessage;
+        //}
+    }
+
+    public async Task<string> SendCommandAwaitResult(string command, float silenceTimeout = 0.2f)
+    {
+        currentCommandId++;
+        long myId = currentCommandId;
+        long timeBeforeSend = DateTime.UtcNow.Ticks;
+
+        SendUciCommand(command);
+
+        while (true)
+        {
+            await Task.Delay(25);
+
+            // 1. Cancellation Check
+            if (myId != currentCommandId) return null;
+
+            // 2. Silence Check
+            long now = DateTime.UtcNow.Ticks;
+            long lastTick = Interlocked.Read(ref lastMessageTick);
+            TimeSpan timeSinceLastMsg = new TimeSpan(now - lastTick);
+
+            if (lastTick > timeBeforeSend && timeSinceLastMsg.TotalSeconds > silenceTimeout)
             {
-                if (message.StartsWith("info"))
-                    popupObject.text = "Thinking...";
-                else
-                {
-                    // Keeping your requested debug format
-                    Debug.Log("aaaaaaaaaaaaa " + message);
-                    popupObject.text = "aaaaaaaaaaaaa " + message;
-                }
+                return lastEngineLine;
             }
         }
     }
 
-    public void StartStockfish()
+    public bool StartStockfish()
     {
-#if UNITY_ANDROID && !UNITY_EDITOR
-        StartStockfishAndroid();
+#if UNITY_EDITOR
+        return StartStockfishEditor();
+#elif UNITY_ANDROID
+        return StartStockfishAndroid();
 #else
-        logQueue.Enqueue("Use Editor Version on PC.");
+        return false;
 #endif
     }
 
-    private void StartStockfishAndroid()
+    // --- EDITOR IMPLEMENTATION (C# Process) ---
+    private bool StartStockfishEditor()
     {
-        string binaryPath = GetNativeLibPath();
-        string binaryDir = Path.GetDirectoryName(binaryPath);
+        string binaryName = "stockfish.exe"; // Windows
+        // On Mac, you might need just "stockfish"
+        string path = Path.Combine(Application.streamingAssetsPath, binaryName);
 
-        Debug.Log($"[Java] Launching: {binaryPath}");
-
-        if (!File.Exists(binaryPath))
+        if (!File.Exists(path))
         {
-            logQueue.Enqueue($"Error: File missing at {binaryPath}");
-            return;
+            latestMessage = $"Editor Error: Missing {path}";
+            return false;
         }
 
         try
         {
-            // 1. Setup Command List
+            editorProcess = new Process();
+            editorProcess.StartInfo.FileName = path;
+            editorProcess.StartInfo.UseShellExecute = false;
+            editorProcess.StartInfo.RedirectStandardInput = true;
+            editorProcess.StartInfo.RedirectStandardOutput = true;
+            editorProcess.StartInfo.RedirectStandardError = true;
+            editorProcess.StartInfo.CreateNoWindow = true;
+
+            // Hook up events (Simpler than threads for Editor)
+            editorProcess.OutputDataReceived += (s, e) => HandleEditorOutput(e.Data, false);
+            editorProcess.ErrorDataReceived += (s, e) => HandleEditorOutput(e.Data, true);
+
+            editorProcess.Start();
+            editorProcess.BeginOutputReadLine();
+            editorProcess.BeginErrorReadLine();
+
+            return true;
+        }
+        catch (Exception e)
+        {
+            latestMessage = "Editor Launch Failed: " + e.Message;
+            return false;
+        }
+    }
+
+    private void HandleEditorOutput(string line, bool isError)
+    {
+        if (string.IsNullOrEmpty(line)) return;
+
+        // 1. Update Timer
+        Interlocked.Exchange(ref lastMessageTick, DateTime.UtcNow.Ticks);
+
+        // 2. Update Logic State
+        lastEngineLine = line;
+
+        // 3. Update UI
+        if (isError) latestMessage = $"<color=red>{line}</color>";
+        else latestMessage = line;
+    }
+
+    // --- ANDROID IMPLEMENTATION (Java/JNI) ---
+    private bool StartStockfishAndroid()
+    {
+        string binaryPath = GetNativeLibPath();
+        string binaryDir = Path.GetDirectoryName(binaryPath);
+
+        if (!File.Exists(binaryPath))
+        {
+            latestMessage = $"Error: File missing at {binaryPath}";
+            return false;
+        }
+
+        try
+        {
             AndroidJavaClass listClass = new AndroidJavaClass("java.util.ArrayList");
             AndroidJavaObject commandList = new AndroidJavaObject("java.util.ArrayList");
             commandList.Call<bool>("add", "/system/bin/sh");
             commandList.Call<bool>("add", "-c");
             commandList.Call<bool>("add", $"export LD_LIBRARY_PATH={binaryDir}; \"{binaryPath}\"");
 
-            // 2. ProcessBuilder
             AndroidJavaObject processBuilder = new AndroidJavaObject("java.lang.ProcessBuilder", commandList);
-            processBuilder.Call<AndroidJavaObject>("redirectErrorStream", false); // Keep streams separate
+            processBuilder.Call<AndroidJavaObject>("redirectErrorStream", false);
 
-            // 3. Start Process
             javaProcess = processBuilder.Call<AndroidJavaObject>("start");
 
-            if (javaProcess == null)
-            {
-                logQueue.Enqueue("Fatal: Java Process is null.");
-                return;
-            }
+            if (javaProcess == null) return false;
 
-            // 4. Get Streams
             outputStream = javaProcess.Call<AndroidJavaObject>("getOutputStream");
             inputStream = javaProcess.Call<AndroidJavaObject>("getInputStream");
             errorStream = javaProcess.Call<AndroidJavaObject>("getErrorStream");
 
-            if (outputStream == null || inputStream == null || errorStream == null)
-            {
-                logQueue.Enqueue("Fatal: One or more streams are null.");
-                return;
-            }
+            if (outputStream == null || inputStream == null || errorStream == null) return false;
 
             isRunning = true;
 
-            // 5. Start Reader Threads
             outputThread = new Thread(() => ReadStream(inputStream, "OUT"));
             outputThread.IsBackground = true;
             outputThread.Start();
@@ -114,24 +204,18 @@ public class StockfishManager : MonoBehaviour
             errorThread.IsBackground = true;
             errorThread.Start();
 
-            // 6. Test
-            logQueue.Enqueue("Process Started. Sending 'uci'...");
-            SendUciCommand("uci");
-            StartCoroutine(RunCalculationTest());
+            return true;
         }
-        catch (System.Exception e)
+        catch (Exception e)
         {
             Debug.LogError(e);
-            logQueue.Enqueue($"Crash: {e.Message}");
+            latestMessage = $"Crash: {e.Message}";
+            return false;
         }
     }
 
-    // Generic Stream Reader
     private void ReadStream(AndroidJavaObject stream, string tag)
     {
-        // --- CRITICAL FIX START ---
-        // This attaches the C# Thread to the Android Java VM.
-        // Without this, using AndroidJavaObject causes "Object reference not set..." crash.
         AndroidJNI.AttachCurrentThread();
         try
         {
@@ -143,58 +227,55 @@ public class StockfishManager : MonoBehaviour
                 string line = reader.Call<string>("readLine");
                 if (line == null) break;
 
-                if (tag == "OUT")
-                {
-                    if (line.StartsWith("bestmove") || line == "readyok" || line == "uciok" || line.StartsWith("id"))
-                    {
-                        logQueue.Enqueue(line);
-                    }
-                }
-                else // ERROR STREAM
-                {
-                    logQueue.Enqueue($"<color=red>{line}</color>");
-                }
+                // 1. Update Timer
+                Interlocked.Exchange(ref lastMessageTick, DateTime.UtcNow.Ticks);
+
+                // 2. Update Logic State
+                lastEngineLine = line;
+
+                // 3. Update UI
+                if (tag == "ERR") latestMessage = $"<color=red>{line}</color>";
+                else latestMessage = line;
             }
         }
-        catch (System.Exception e)
+        catch (Exception e)
         {
-            if (isRunning) logQueue.Enqueue($"{tag} Read Error: {e.Message}");
+            if (isRunning) latestMessage = $"{tag} Read Error: {e.Message}";
         }
         finally
         {
-            // Must detach to prevent memory leaks or crashes on app close
             AndroidJNI.DetachCurrentThread();
         }
-        // --- CRITICAL FIX END ---
     }
+
+    // --- SHARED HELPER METHODS ---
 
     private void SendUciCommand(string command)
     {
+#if UNITY_EDITOR
+        if (editorProcess != null && !editorProcess.HasExited)
+        {
+            editorProcess.StandardInput.WriteLine(command);
+            editorProcess.StandardInput.Flush();
+        }
+#elif UNITY_ANDROID
         if (javaProcess != null && outputStream != null)
         {
             try
             {
-                // Write command + \n
                 AndroidJavaObject writer = new AndroidJavaObject("java.io.OutputStreamWriter", outputStream);
                 AndroidJavaObject bufferedWriter = new AndroidJavaObject("java.io.BufferedWriter", writer);
-
+                
                 bufferedWriter.Call("write", command);
                 bufferedWriter.Call("newLine");
                 bufferedWriter.Call("flush");
             }
             catch (Exception e)
             {
-                logQueue.Enqueue($"Write Failed: {e.Message}");
+                latestMessage = $"Write Failed: {e.Message}";
             }
         }
-    }
-
-    IEnumerator RunCalculationTest()
-    {
-        yield return new WaitForSeconds(1.0f);
-        SendUciCommand("isready");
-        yield return new WaitForSeconds(1.0f);
-        SendUciCommand("go depth 2");
+#endif
     }
 
     private string GetNativeLibPath()
@@ -208,10 +289,18 @@ public class StockfishManager : MonoBehaviour
 
     void OnDestroy()
     {
+        // 1. Cleanup Android
         isRunning = false;
         if (javaProcess != null)
         {
             try { javaProcess.Call("destroy"); } catch { }
+        }
+
+        // 2. Cleanup Editor
+        if (editorProcess != null && !editorProcess.HasExited)
+        {
+            editorProcess.Kill();
+            editorProcess.Dispose();
         }
     }
 }
