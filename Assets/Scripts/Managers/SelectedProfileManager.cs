@@ -98,15 +98,19 @@ public class SelectedProfileManager : MonoBehaviour
         studNumText.text = currentProfile.StudNum;
         studRatingText.text = currentProfile.Rating.ToString();
 
-        var toggle = profRole.GetComponentsInChildren<Toggle>().FirstOrDefault(t => t.name == currentProfile.Role);
+        var toggles = profRole.GetComponentsInChildren<Toggle>(true);
 
-        if (toggle != null)
+        foreach (var t in toggles)
         {
-            toggle.isOn = true;
-        }
-        else
-        {
-            toggle.isOn = false;
+            if (t.name == currentProfile.Role)
+            {
+                t.SetIsOnWithoutNotify(true);
+            }
+            else
+            {
+                // Found a different role -> Force it OFF
+                t.SetIsOnWithoutNotify(false);
+            }
         }
 
         if (!allProfileGameCaches.ContainsKey(currentProfile.StudNum))

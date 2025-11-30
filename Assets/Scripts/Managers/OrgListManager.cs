@@ -59,6 +59,11 @@ public class OrgListManager : MonoBehaviour
         // Check if data is cached, if not, generate it
         foreach (var orgMember in dbOrgList)
         {
+            if (CheckRegistrations(orgMember))
+            {
+                continue;
+            }
+
             if (orgDataCache.TryGetValue(orgMember.StudNum, out var cached))
             {
                 if (orgMember.LastModified > cached.LastModified)
@@ -109,7 +114,13 @@ public class OrgListManager : MonoBehaviour
 
     public void SaveChanges()
     {
-        //verify studnum if unique
+        //verify studname/studnum if unique
+        if (GenerateDatabase.Instance.database.Table<OrgMemberModel>().Any(profile => profile.StudName == studNameInput.text) && currentOrgMember.StudNum != studNumInput.text)
+        {
+            Debug.Log("StudName already exists");
+            return;
+        }
+
         if (GenerateDatabase.Instance.database.Table<OrgMemberModel>().Any(profile => profile.StudNum == studNumInput.text) && currentOrgMember.StudNum != studNumInput.text)
         {
             Debug.Log("StudNum already exists");
@@ -154,5 +165,27 @@ public class OrgListManager : MonoBehaviour
         newStudNumInput.text = "";
 
         GenerateList();
+    }
+
+    public bool CheckRegistrations(OrgMemberModel entry)
+    {
+        var studentExists = GenerateDatabase.Instance.database.Table<RegisterModel>()
+            .Where(account => account.StudName.ToUpper() == entry.StudName.ToUpper()).FirstOrDefault();
+
+        var numberExists = GenerateDatabase.Instance.database.Table<RegisterModel>()
+            .Where(account => account.StudNum.ToUpper() == entry.StudNum.ToUpper()).FirstOrDefault();
+
+        if (studentExists != null && numberExists != null)
+        {
+            GenerateDatabase.Instance.database.Execute(
+                "INSERT INTO Profiles (StudName, StudNum, Email, Password) VALUES (?, ?, ?, ?)",
+                numberExists.StudName, numberExists.StudNum, numberExists.Email, numberExists.Password
+            );
+
+            GenerateDatabase.Instance.database.Delete(entry);
+            GenerateDatabase.Instance.database.Delete(studentExists);
+            return true; // Successfully moved and deleted
+        }
+        return false; // Not found in registrations, keep in list
     }
 }

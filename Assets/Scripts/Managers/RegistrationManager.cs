@@ -60,10 +60,6 @@ public class RegistrationManager : MonoBehaviour
             return;
         }
 
-        //check if studname, studnum, or email are already in use
-
-        var user = GenerateDatabase.Instance.database.Table<ProfileModel>().Where(profile => profile.StudNum.ToUpper() == inputStudNum.ToUpper()).FirstOrDefault();
-
         // Check if name is already in Profiles table
         if (GenerateDatabase.Instance.database.Table<ProfileModel>().Where(account => account.StudName.ToUpper() == inputStudName.ToUpper()).FirstOrDefault() != null)
         {
@@ -112,16 +108,31 @@ public class RegistrationManager : MonoBehaviour
             return;
         }
 
-        //add new item in registrations table
+        // Check if studName and studID is in org roster
+        if (GenerateDatabase.Instance.database.Table<OrgMemberModel>().Where(account => account.StudName.ToUpper() == inputStudName.ToUpper()).FirstOrDefault() != null &&
+            GenerateDatabase.Instance.database.Table<OrgMemberModel>().Where(account => account.StudNum.ToUpper() == inputStudNum.ToUpper()).FirstOrDefault() != null)
+            {
+            // Else add new item in registrations table
+            GenerateDatabase.Instance.database.Execute(
+                "INSERT INTO Profiles (StudName, StudNum, Email, Password) VALUES (?, ?, ?, ?)",
+                inputStudName, inputStudNum, inputEmail, inputPassword1
+            );
 
-        GenerateDatabase.Instance.database.Execute(
-            "INSERT INTO Registrations (StudName, StudNum, Email, Password) VALUES (?, ?, ?, ?)",
-            inputStudName, inputStudNum, inputEmail, inputPassword1
-        );
+            StopAllCoroutines();
+            StartCoroutine(ShowPopup("Registration Done! Account autonatically approved, you can now login."));
+        }
+        else
+        {
+            // Else add new item in registrations table
+            GenerateDatabase.Instance.database.Execute(
+                "INSERT INTO Registrations (StudName, StudNum, Email, Password) VALUES (?, ?, ?, ?)",
+                inputStudName, inputStudNum, inputEmail, inputPassword1
+            );
 
-        // show a new window to indicate that registration was successful
-        StopAllCoroutines();
-        StartCoroutine(ShowPopup("Registration Done! Please wait for your registration to be approved"));
+            StopAllCoroutines();
+            StartCoroutine(ShowPopup("Registration Done! Please wait for your registration to be approved"));
+        }
+
     }
 
     private IEnumerator ShowPopup(string message)
