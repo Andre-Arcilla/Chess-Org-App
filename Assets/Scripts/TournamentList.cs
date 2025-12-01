@@ -112,7 +112,6 @@ public class TournamentList : MonoBehaviour
             Title = tournament.Title,
             Date = tournament.Date,
             Text = tournament.Text,
-            IsEditing = tournament.IsEditing,
             LastModified = tournament.LastModified
         };
 
@@ -181,7 +180,6 @@ public class TournamentList : MonoBehaviour
         newEntry.Text = newPostText.text;
         newEntry.Author = "A12346169"; //replace with current user
         newEntry.LastEditor = "A12346169"; //replace with current user
-        newEntry.IsEditing = 0;
         newEntry.LastModified = DateTimeOffset.Now.ToUnixTimeSeconds();
 
         GenerateDatabase.Instance.database.Insert(newEntry);

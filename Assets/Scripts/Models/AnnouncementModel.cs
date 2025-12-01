@@ -17,7 +17,5 @@ public class AnnouncementModel
 
     public string Text { get; set; }
 
-    public int IsEditing { get; set; }
-
     public long LastModified { get; set; }
 }

@@ -114,7 +114,6 @@ public class AnnouncementList : MonoBehaviour
             Title = announcement.Title,
             Date = announcement.Date,
             Text = announcement.Text,
-            IsEditing = announcement.IsEditing,
             LastModified = announcement.LastModified
         };
 
@@ -187,7 +186,6 @@ public class AnnouncementList : MonoBehaviour
         newEntry.Text = newPostText.text;
         newEntry.Author = "A12346169"; //replace with current user
         newEntry.LastEditor = "A12346169"; //replace with current user
-        newEntry.IsEditing = 0;
         newEntry.LastModified = DateTimeOffset.Now.ToUnixTimeSeconds();
 
         GenerateDatabase.Instance.database.Insert(newEntry);
