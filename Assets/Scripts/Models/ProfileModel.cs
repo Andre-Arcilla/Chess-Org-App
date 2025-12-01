@@ -17,7 +17,9 @@ public class ProfileModel
 
     public int Rating { get; set; }
 
-    public int Puzzles { get; set; }
+    public int PuzzlesWin { get; set; }
+
+    public int PuzzlesTotal { get; set; }
 
     public string Role { get; set; }
 

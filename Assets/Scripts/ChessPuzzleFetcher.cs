@@ -37,8 +37,6 @@ public class ChessPuzzleFetcher : MonoBehaviour
 
     private IEnumerator FetchPuzzleCoroutine()
     {
-        Debug.Log("Fetching random puzzle from Chess.com...");
-
         using (UnityWebRequest webRequest = UnityWebRequest.Get(API_URL))
         {
             // Chess.com requests a User-Agent to identify the app.
@@ -58,16 +56,10 @@ public class ChessPuzzleFetcher : MonoBehaviour
 
                 if (puzzle != null)
                 {
-                    Debug.Log($"Puzzle Fetched: {puzzle.title} | FEN: {puzzle.fen}");
-
                     lastFetchedPGN = puzzle.pgn;
                     lastFetchedFEN = puzzle.fen;
 
                     ProcessPuzzle(puzzle);
-                }
-                else
-                {
-                    Debug.LogError("Failed to parse puzzle data.");
                 }
             }
         }
@@ -77,33 +69,26 @@ public class ChessPuzzleFetcher : MonoBehaviour
     {
         if (ChessManager.Instance != null)
         {
-            // 1. Setup the Board using FEN
             if (!string.IsNullOrEmpty(puzzle.fen))
             {
                 ChessManager.Instance.StartGameFromFEN(puzzle.fen);
 
-                // 2. Flip the Board based on whose turn it is
-                // FEN structure: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
                 string[] parts = puzzle.fen.Split(' ');
                 if (parts.Length > 1)
                 {
                     bool isWhiteTurn = (parts[1] == "w");
-                    int side = isWhiteTurn ? 0 : 1; // 0 = White, 1 = Black
+                    int side = isWhiteTurn ? 0 : 1;
 
-                    // This method handles PlayerSide variable, UI hiding, and Board Rotation
                     ChessManager.Instance.SelectSide(side);
                 }
             }
 
-            // 3. Parse the PGN to get the solution moves
             List<string> solutionMoves = ParsePGNMoves(puzzle.pgn);
 
-            // 4. Start Puzzle Mode in Manager (to validate user moves)
             ChessManager.Instance.StartPuzzleMode(solutionMoves);
         }
         else
         {
-            Debug.LogError("ChessManager not found! Cannot play puzzle.");
         }
     }
 

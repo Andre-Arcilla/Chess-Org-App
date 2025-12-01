@@ -1679,7 +1679,7 @@ public class ChessManager : MonoBehaviour
                     {
                         if (ProfileManager.Instance.currentProfile != null)
                         {
-                            ProfileManager.Instance.currentProfile.Puzzles++;
+                            ProfileManager.Instance.currentProfile.PuzzlesWin++;
                             ProfileManager.Instance.currentProfile.LastModified = DateTimeOffset.Now.ToUnixTimeSeconds();
                             GenerateDatabase.Instance.database.Update(ProfileManager.Instance.currentProfile);
                         }
@@ -1785,6 +1785,7 @@ public class ChessManager : MonoBehaviour
 
     public void StartPuzzleMode(List<string> moves)
     {
+        ProfileManager.Instance.currentProfile.PuzzlesTotal++;
         isPuzzleActive = true;
         puzzleSolution = moves;
         puzzleIndex = 0;

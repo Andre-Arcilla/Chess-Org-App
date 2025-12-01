@@ -1,8 +1,10 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using TMPro;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -34,16 +36,14 @@ public class SelectedProfileManager : MonoBehaviour
     [SerializeField] private TextMeshProUGUI gameWinText;
     [SerializeField] private TextMeshProUGUI gameDrawText;
     [SerializeField] private TextMeshProUGUI gameLoseText;
-    [SerializeField] private LayoutElement gameWinBar;
-    [SerializeField] private LayoutElement gameLoseBar;
-    [SerializeField] private LayoutElement gameDrawBar;
+    [SerializeField] private Image gameWinFill;
+    [SerializeField] private Image gameDrawFill;
 
     [Header("Puzzle Stats UI References")]
     [SerializeField] private TextMeshProUGUI totalPuzzles;
     [SerializeField] private TextMeshProUGUI puzzleWinText;
     [SerializeField] private TextMeshProUGUI puzzleLoseText;
-    [SerializeField] private LayoutElement puzzleWinBar;
-    [SerializeField] private LayoutElement puzzleLoseBar;
+    [SerializeField] private Image puzzleWinFill;
 
     [Header("Profile Edit References")]
     [SerializeField] private TMP_InputField studNameInput;
@@ -57,6 +57,10 @@ public class SelectedProfileManager : MonoBehaviour
 
     [Header("Page References")]
     [SerializeField] private Transform hiddenContainer;
+
+    [Header("Popup")]
+    [SerializeField] private GameObject popupObject;
+    [SerializeField] private Transform canvasView;
 
     // Current Profile
     private ProfileModel currentProfile;
@@ -83,7 +87,8 @@ public class SelectedProfileManager : MonoBehaviour
             StudNum = currentProfile.StudNum,
             Password = currentProfile.Password,
             Rating = currentProfile.Rating,
-            Puzzles = currentProfile.Puzzles,
+            PuzzlesWin = currentProfile.PuzzlesWin,
+            PuzzlesTotal = currentProfile.PuzzlesTotal,
             Role = currentProfile.Role,
             Date = currentProfile.Date,
             LastModified = currentProfile.LastModified
@@ -96,7 +101,7 @@ public class SelectedProfileManager : MonoBehaviour
     {
         studNameText.text = currentProfile.StudName;
         studNumText.text = currentProfile.StudNum;
-        studRatingText.text = currentProfile.Rating.ToString();
+        studRatingText.text = "Rating: " + currentProfile.Rating;
 
         var toggles = profRole.GetComponentsInChildren<Toggle>(true);
 
@@ -211,24 +216,23 @@ public class SelectedProfileManager : MonoBehaviour
         studNameInput.text = currentProfile.StudName;
         studNumInput.text = currentProfile.StudNum;
         studEmailInput.text = currentProfile.Email;
-        studPassInput.text = currentProfile.Password;
     }
 
-    public void SaveProfileChanges()
+    public void SaveProfileChanges(GameObject profileWindow)
     {
         var oldStudNum = currentProfile.StudNum;
 
         //verify studnum if unique
         if (GenerateDatabase.Instance.database.Table<ProfileModel>().Any(profile => profile.StudNum == studNumInput.text) && currentProfile.StudNum != studNumInput.text)
         {
-            Debug.Log("StudNum already exists");
+            StartCoroutine(ShowPopup("Student number already in use"));
             return;
         }
 
         //verify if email is umak
         if (!Regex.IsMatch(studEmailInput.text, @"^[a-z0-9\.]+@umak\.edu\.ph$", RegexOptions.IgnoreCase))
         {
-            Debug.Log("Please use a umak email");
+            StartCoroutine(ShowPopup("Please use a UMAK email"));
             return;
         }
 
@@ -242,7 +246,11 @@ public class SelectedProfileManager : MonoBehaviour
             "UPDATE Profiles SET StudNum = ? WHERE StudNum = ?",
                 newStudNum,
                 oldStudNum
-            );
+        );
+
+        profileWindow.transform.SetParent(canvasView);
+        profileWindow.transform.SetAsFirstSibling();
+        profileWindow.SetActive(false);
 
         currentProfile.LastModified = DateTimeOffset.Now.ToUnixTimeSeconds();
         GenerateDatabase.Instance.database.Update(currentProfile);
@@ -280,19 +288,16 @@ public class SelectedProfileManager : MonoBehaviour
 
         if (total > 0)
         {
-            gameWinBar.flexibleWidth = (gameWin / (float)total) * 100f;
-            gameDrawBar.flexibleWidth = (gameDraw / (float)total) * 100f;
-            gameLoseBar.flexibleWidth = (gameLose / (float)total) * 100f;
+            gameWinFill.fillAmount = (gameWin / (float)total);
+            gameDrawFill.fillAmount = (gameWin / (float)total) + (gameDraw / (float)total);
         }
         else
         {
-            // No games yet, set bars to 0
-            gameWinBar.flexibleWidth = 33;
-            gameDrawBar.flexibleWidth = 33;
-            gameLoseBar.flexibleWidth = 33;
+            gameWinFill.fillAmount = 1f / 3f;
+            gameDrawFill.fillAmount = 2f / 3f;
         }
 
-        totalGames.text = total.ToString();
+        totalGames.text = "Games Played: " + total;
         gameWinText.text = gameWin + " Won";
         gameDrawText.text = gameDraw + " Draw";
         gameLoseText.text = gameLose + " Lose";
@@ -300,44 +305,22 @@ public class SelectedProfileManager : MonoBehaviour
 
     private void SetPuzzleStatistics()
     {
-        // FAKE PUZZLE COUNT, UPDATE
-
-        int gameWin = 0;
-        int gameLose = 0;
-
-        if (allProfileGameCaches.TryGetValue(currentProfile.StudNum, out var gamesDataCaches))
-        {
-            foreach (var game in gamesDataCaches.Values)
-            {
-                switch (game.Result)
-                {
-                    case "Win":
-                        gameWin++;
-                        break;
-                    case "Lose":
-                        gameLose++;
-                        break;
-                }
-            }
-        }
-
-        int total = gameWin + gameLose;
+        var total = currentProfile.PuzzlesTotal;
+        var wins = currentProfile.PuzzlesWin;
+        var loses = total - wins;
 
         if (total > 0)
         {
-            puzzleWinBar.flexibleWidth = (gameWin / (float)total) * 100f;
-            puzzleLoseBar.flexibleWidth = (gameLose / (float)total) * 100f;
+            puzzleWinFill.fillAmount = (wins / (float)total);
         }
         else
         {
-            // No games yet, set bars to 0
-            puzzleWinBar.flexibleWidth = 75;
-            puzzleLoseBar.flexibleWidth = 25;
+            puzzleWinFill.fillAmount = 1f / 2f;
         }
 
-        totalPuzzles.text = total.ToString();
-        puzzleWinText.text = gameWin + " Won";
-        puzzleLoseText.text = gameLose + " Lose";
+        totalPuzzles.text = "Puzzles Played: " + total;
+        puzzleWinText.text = wins + " Won";
+        puzzleLoseText.text = loses + " Lose";
     }
 
     public void SetRoleMember() => SetRole("Member");
@@ -351,5 +334,41 @@ public class SelectedProfileManager : MonoBehaviour
         currentProfile.LastModified = DateTimeOffset.Now.ToUnixTimeSeconds();
         GenerateDatabase.Instance.database.Update(currentProfile);
         ProfileListManager.Instance.GenerateList();
+    }
+
+    private IEnumerator ShowPopup(string message)
+    {
+        var group = popupObject.GetComponent<CanvasGroup>();
+        var text = popupObject.GetComponentInChildren<TextMeshProUGUI>();
+
+        text.text = message;
+
+        // Fade in
+        float duration = 0.25f;
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            group.alpha = Mathf.Lerp(0f, 1f, elapsed / duration);
+            yield return null;
+        }
+
+        group.alpha = 1f;
+
+        // Wait 3 seconds
+        yield return new WaitForSeconds(3f);
+
+        // Fade out
+        elapsed = 0f;
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            group.alpha = Mathf.Lerp(1f, 0f, elapsed / duration);
+            yield return null;
+        }
+
+        yield return new WaitForSeconds(5f);
+
+        group.alpha = 0f;
     }
 }

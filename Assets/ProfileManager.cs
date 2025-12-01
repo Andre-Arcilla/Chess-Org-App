@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using TMPro;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -34,16 +35,14 @@ public class ProfileManager : MonoBehaviour
     [SerializeField] private TextMeshProUGUI gameWinText;
     [SerializeField] private TextMeshProUGUI gameDrawText;
     [SerializeField] private TextMeshProUGUI gameLoseText;
-    [SerializeField] private LayoutElement gameWinBar;
-    [SerializeField] private LayoutElement gameLoseBar;
-    [SerializeField] private LayoutElement gameDrawBar;
+    [SerializeField] private Image gameWinFill;
+    [SerializeField] private Image gameDrawFill;
 
     [Header("Puzzle Stats UI References")]
     [SerializeField] private TextMeshProUGUI totalPuzzles;
     [SerializeField] private TextMeshProUGUI puzzleWinText;
     [SerializeField] private TextMeshProUGUI puzzleLoseText;
-    [SerializeField] private LayoutElement puzzleWinBar;
-    [SerializeField] private LayoutElement puzzleLoseBar;
+    [SerializeField] private Image puzzleWinFill;
 
     [Header("Home Page UI References")]
     [SerializeField] private TextMeshProUGUI headerGreeting;
@@ -52,16 +51,22 @@ public class ProfileManager : MonoBehaviour
     [SerializeField] private TextMeshProUGUI annText;
     [SerializeField] private List<GameCard> gameCards;
     [SerializeField] private GameObject noGamesPlaceholder;
+    [SerializeField] private TextMeshProUGUI statsText;
+    [SerializeField] private Image winFill;
+    [SerializeField] private Image drawFill;
 
     [Header("Profile Edit References")]
-    [SerializeField] private TMP_InputField studNameInput;
-    [SerializeField] private TMP_InputField studNumInput;
-    [SerializeField] private TMP_InputField studEmailInput;
-    [SerializeField] private TMP_InputField studPassInput;
+    [SerializeField] private TMP_InputField origPassInput;
+    [SerializeField] private TMP_InputField newPassInput;
+    [SerializeField] private TMP_InputField newPassConfirmInput;
 
     [Header("Game History References")]
     [SerializeField] private GameObject cardPrefab;
     [SerializeField] private Transform cardContainer;
+
+    [Header("Popup")]
+    [SerializeField] private GameObject popupObject;
+    [SerializeField] private Transform canvasView;
 
     // Current Profile
     public ProfileModel currentProfile { private set; get; }
@@ -96,7 +101,8 @@ public class ProfileManager : MonoBehaviour
             StudNum = currentProfile.StudNum,
             Password = currentProfile.Password,
             Rating = currentProfile.Rating,
-            Puzzles = currentProfile.Puzzles,
+            PuzzlesWin = currentProfile.PuzzlesWin,
+            PuzzlesTotal = currentProfile.PuzzlesTotal,
             Role = currentProfile.Role,
             Date = currentProfile.Date,
             LastModified = currentProfile.LastModified
@@ -109,7 +115,7 @@ public class ProfileManager : MonoBehaviour
     {
         studNameText.text = currentProfile.StudName;
         studNumText.text = currentProfile.StudNum;
-        studRatingText.text = currentProfile.Rating.ToString();
+        studRatingText.text = "Rating: " + currentProfile.Rating;
 
         GenerateList();
         SetGameStatistics();
@@ -155,32 +161,32 @@ public class ProfileManager : MonoBehaviour
 
     public void EditProfile()
     {
-        studNameInput.text = currentProfile.StudName;
-        studNumInput.text = currentProfile.StudNum;
-        studEmailInput.text = currentProfile.Email;
-        studPassInput.text = currentProfile.Password;
+        origPassInput.text = "";
+        newPassInput.text = "";
+        newPassConfirmInput.text = "";
     }
 
-    public void SaveProfileChanges()
+    public void SaveProfileChanges(GameObject profileWindow)
     {
-        //verify studnum if unique
-        if (GenerateDatabase.Instance.database.Table<ProfileModel>().Any(profile => profile.StudNum == studNumInput.text) && currentProfile.StudNum != studNumInput.text)
+        if (origPassInput.text != currentProfile.Password)
         {
-            Debug.Log("StudNum already exists");
+            StartCoroutine(ShowPopup("Incorrect original password"));
             return;
         }
 
-        //verify if email is umak
-        if (!Regex.IsMatch(studEmailInput.text, @"^[a-z0-9\.]+@umak\.edu\.ph$", RegexOptions.IgnoreCase))
+        if (!string.IsNullOrEmpty(newPassInput.text))
         {
-            Debug.Log("Please use a umak email");
-            return;
+            if (newPassInput.text != newPassConfirmInput.text)
+            {
+                StartCoroutine(ShowPopup("Incorrect new password confirmation"));
+                return;
+            }
+            currentProfile.Password = newPassInput.text;
         }
 
-        currentProfile.StudName = studNameInput.text;
-        currentProfile.StudNum = studNumInput.text;
-        currentProfile.Email = studEmailInput.text;
-        currentProfile.Password = studPassInput.text;
+        profileWindow.transform.SetParent(canvasView);
+        profileWindow.transform.SetAsFirstSibling();
+        profileWindow.SetActive(false);
 
         currentProfile.LastModified = DateTimeOffset.Now.ToUnixTimeSeconds();
         GenerateDatabase.Instance.database.Update(currentProfile);
@@ -215,19 +221,16 @@ public class ProfileManager : MonoBehaviour
 
         if (total > 0)
         {
-            gameWinBar.flexibleWidth = (gameWin / (float)total) * 100f;
-            gameDrawBar.flexibleWidth = (gameDraw / (float)total) * 100f;
-            gameLoseBar.flexibleWidth = (gameLose / (float)total) * 100f;
+            gameWinFill.fillAmount = (gameWin / (float)total);
+            gameDrawFill.fillAmount = (gameWin / (float)total) + (gameDraw / (float)total);
         }
         else
         {
-            // No games yet, set bars to 0
-            gameWinBar.flexibleWidth = 33;
-            gameDrawBar.flexibleWidth = 33;
-            gameLoseBar.flexibleWidth = 33;
+            gameWinFill.fillAmount = 1f / 3f;
+            gameDrawFill.fillAmount = 2f / 3f;
         }
 
-        totalGames.text = total.ToString();
+        totalGames.text = "Games Played: " + total;
         gameWinText.text = gameWin + " Won";
         gameDrawText.text = gameDraw + " Draw";
         gameLoseText.text = gameLose + " Lose";
@@ -235,41 +238,22 @@ public class ProfileManager : MonoBehaviour
 
     private void SetPuzzleStatistics()
     {
-        // FAKE PUZZLE COUNT, UPDATE
-
-        int gameWin = 0;
-        int gameLose = 0;
-
-        foreach (var game in gamesDataCaches)
-        {
-            switch (gamesDataCaches[game.Key].Result)
-            {
-                case "Win":
-                    gameWin++;
-                    break;
-                case "Lose":
-                    gameLose++;
-                    break;
-            }
-        }
-
-        int total = gameWin + gameLose;
+        var total = currentProfile.PuzzlesTotal;
+        var wins = currentProfile.PuzzlesWin;
+        var loses = total - wins;
 
         if (total > 0)
         {
-            puzzleWinBar.flexibleWidth = (gameWin / (float)total) * 100f;
-            puzzleLoseBar.flexibleWidth = (gameLose / (float)total) * 100f;
+            puzzleWinFill.fillAmount = (wins / (float)total);
         }
         else
         {
-            // No games yet, set bars to 0
-            puzzleWinBar.flexibleWidth = 75;
-            puzzleLoseBar.flexibleWidth = 25;
+            puzzleWinFill.fillAmount = 1f / 2f;
         }
 
-        totalPuzzles.text = total.ToString();
-        puzzleWinText.text = gameWin + " Won";
-        puzzleLoseText.text = gameLose + " Lose";
+        totalPuzzles.text = "Puzzles Played: " + total;
+        puzzleWinText.text = wins + " Won";
+        puzzleLoseText.text = loses + " Lose";
     }
 
     private void HomePageSetup()
@@ -281,15 +265,8 @@ public class ProfileManager : MonoBehaviour
         if (annDate != null) annDate.text = announcement.Date.ToString("MMMM dd, yyyy hh:mm:ss tt");
         if (annText != null) annText.text = announcement.Text;
 
-        // --- UPDATED QUERY HERE ---
-        // 1. Filter by the current user's StudNum
-        // 2. Order by newest
-        // 3. Take top 3
-        var recentGames = GenerateDatabase.Instance.database.Table<GameModel>()
-                            .Where(g => g.StudNum == currentProfile.StudNum) // This filters for the specific user
-                            .OrderByDescending(a => a.GameNum)
-                            .Take(3)
-                            .ToList();
+        // --- 1. Recent Games (Limit 3) ---
+        var recentGames = GenerateDatabase.Instance.database.Table<GameModel>().Where(g => g.StudNum == currentProfile.StudNum).OrderByDescending(a => a.GameNum).Take(3).ToList();
 
         if (noGamesPlaceholder != null)
         {
@@ -309,8 +286,21 @@ public class ProfileManager : MonoBehaviour
             }
         }
 
-        // last 3 games
-        // game stats
+        // --- 2. Calculate Total Stats (FIXED) ---
+
+        var allUserGames = GenerateDatabase.Instance.database.Table<GameModel>().Where(g => g.StudNum == currentProfile.StudNum).ToList();
+
+        int totalGames = allUserGames.Count;
+        int totalWins = allUserGames.Count(g => g.Result.Equals("Win", StringComparison.OrdinalIgnoreCase));
+        int totalLoses = allUserGames.Count(g => g.Result.Equals("Lose", StringComparison.OrdinalIgnoreCase));
+        int totalDraws = allUserGames.Count(g => g.Result.Equals("Draw", StringComparison.OrdinalIgnoreCase));
+
+        float percWins = ((float)totalWins / totalGames);
+        float percDraws = ((float)totalDraws / totalGames);
+
+        winFill.fillAmount = percWins;
+        drawFill.fillAmount = percWins + percDraws;
+        statsText.text = $"{totalWins} Wins\n{totalDraws} Draws\n{totalLoses} Loses";
     }
 
     public void Logout()
@@ -323,5 +313,41 @@ public class ProfileManager : MonoBehaviour
 
         // 2. Clear Local User Reference
         currentProfile = null;
+    }
+
+    private IEnumerator ShowPopup(string message)
+    {
+        var group = popupObject.GetComponent<CanvasGroup>();
+        var text = popupObject.GetComponentInChildren<TextMeshProUGUI>();
+
+        text.text = message;
+
+        // Fade in
+        float duration = 0.25f;
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            group.alpha = Mathf.Lerp(0f, 1f, elapsed / duration);
+            yield return null;
+        }
+
+        group.alpha = 1f;
+
+        // Wait 3 seconds
+        yield return new WaitForSeconds(3f);
+
+        // Fade out
+        elapsed = 0f;
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            group.alpha = Mathf.Lerp(1f, 0f, elapsed / duration);
+            yield return null;
+        }
+
+        yield return new WaitForSeconds(5f);
+
+        group.alpha = 0f;
     }
 }
