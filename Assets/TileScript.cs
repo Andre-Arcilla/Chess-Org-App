@@ -9,23 +9,35 @@ public class TileScript : MonoBehaviour, IDropHandler, IPointerDownHandler
 {
     public void OnDrop(PointerEventData eventData)
     {
-        if (transform.GetChild(0).transform.childCount == 0)
+        // ensure wrapper exists (child 0 is expected to be wrapper)
+        if (transform.childCount == 0)
         {
-            GameObject dropped = eventData.pointerDrag;
-            dropped.GetComponent<MovePieceScript>().newParent = transform;
+            Debug.LogWarning("Tile has no wrapper child (expected child 0). OnDrop ignored.");
+            return;
         }
-        // Temporary, add logic to allow capture of pieces
-        else // Dropping on a tile with a piece
-        {
-            GameObject dropped = eventData.pointerDrag;
-            dropped.GetComponent<MovePieceScript>().newParent = transform;
 
+        Transform wrapper = transform.GetChild(0);
+
+        GameObject dropped = eventData.pointerDrag;
+        if (dropped == null)
+        {
+            // nothing dropped
+            return;
+        }
+
+        var moveScript = dropped.GetComponent<MovePieceScript>();
+        if (moveScript == null) return;
+
+        moveScript.newParent = transform;
+
+        // if tile already has a piece(s) handle capture via pooling
+        if (wrapper.childCount > 0)
+        {
             if (ChessManager.Instance.moves.Contains(gameObject))
             {
-                // --- FIX: Pool the captured piece instead of Destroying it ---
-                foreach (Transform child in transform.GetChild(0))
+                foreach (Transform child in wrapper)
                 {
-                    ChessManager.Instance.PoolPiece(child.gameObject); // ADD THIS LINE
+                    ChessManager.Instance.PoolPiece(child.gameObject);
                 }
             }
         }
@@ -37,13 +49,15 @@ public class TileScript : MonoBehaviour, IDropHandler, IPointerDownHandler
         if (ChessManager.Instance.moves.Contains(gameObject))
         {
             // Clear any object in the tile's wrapper (Capture logic for touch/click moves)
-            if (transform.GetChild(0).transform.childCount > 0)
+            if (transform.childCount > 0)
             {
-                // --- FIX: Pool the captured piece instead of Destroying it ---
-                foreach (Transform child in transform.GetChild(0))
+                Transform wrapper = transform.GetChild(0);
+                if (wrapper != null && wrapper.childCount > 0)
                 {
-                    // Destroy(child.gameObject); // DELETE THIS LINE
-                    ChessManager.Instance.PoolPiece(child.gameObject); // ADD THIS LINE
+                    foreach (Transform child in wrapper)
+                    {
+                        ChessManager.Instance.PoolPiece(child.gameObject);
+                    }
                 }
             }
 

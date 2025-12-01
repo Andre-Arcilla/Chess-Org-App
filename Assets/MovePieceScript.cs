@@ -13,6 +13,18 @@ public class MovePieceScript : MonoBehaviour, IBeginDragHandler, IDragHandler, I
     // Flag to track if the drag was legal and actually started
     private bool isDragLegal = false;
 
+    // CanvasGroup to allow underlying drops while dragging
+    private CanvasGroup canvasGroup;
+
+    private void Awake()
+    {
+        canvasGroup = GetComponent<CanvasGroup>();
+        if (canvasGroup == null)
+        {
+            canvasGroup = gameObject.AddComponent<CanvasGroup>();
+        }
+    }
+
     public void OnBeginDrag(PointerEventData eventData)
     {
         // 1. Get the piece's color
@@ -35,14 +47,20 @@ public class MovePieceScript : MonoBehaviour, IBeginDragHandler, IDragHandler, I
         // --- If the check passes, proceed with drag setup ---
         isDragLegal = true;
 
-        // Set values to track and use
-        newParent = transform.parent.transform.parent;
-        originalParent = transform.parent.transform.parent;
-        originalTile = transform.parent.transform.parent.gameObject;
+        // Set values to track and use (store original wrapper parent)
+        newParent = null; // we'll rely on OnDrop or pointer raycast to set this
+        originalParent = transform.parent; // wrapper (usually the tile's child)
+        originalTile = transform.parent != null && transform.parent.parent != null
+            ? transform.parent.parent.gameObject
+            : null;
 
-        image.raycastTarget = false;
+        // disable image blocking so underlying UI can receive drop events
+        if (image != null) image.raycastTarget = false;
 
-        // Place piece outside of heirarchy to be above everything
+        // Use CanvasGroup to allow drop to work
+        canvasGroup.blocksRaycasts = false;
+
+        // Place piece outside of hierarchy to be above everything
         transform.SetParent(ChessManager.Instance.MainView);
         transform.SetAsLastSibling();
 
@@ -69,25 +87,56 @@ public class MovePieceScript : MonoBehaviour, IBeginDragHandler, IDragHandler, I
 
         bool isMoveMade = false;
 
+        // If OnDrop successfully set newParent, good. Otherwise try to use the raycast under pointer.
+        if (newParent == null && eventData != null)
+        {
+            var raycastGO = eventData.pointerCurrentRaycast.gameObject;
+            if (raycastGO != null)
+            {
+                // If user released over a child of the tile (e.g. wrapper), walk up to find TileScript or top tile
+                Transform t = raycastGO.transform;
+                while (t != null && t.GetComponent<TileScript>() == null)
+                {
+                    t = t.parent;
+                }
+                if (t != null && t.GetComponent<TileScript>() != null)
+                {
+                    newParent = t;
+                }
+            }
+        }
+
         // 1. Check if selected tile is in list of moveable tiles
-        if (ChessManager.Instance.moves.Contains(newParent.gameObject))
+        if (newParent != null && ChessManager.Instance.moves.Contains(newParent.gameObject))
         {
             // Move piece to new tile
             ChessManager.Instance.MovePiece(originalTile, newParent.gameObject);
-
             isMoveMade = true;
         }
 
         // 2. Handle invalid drop (snap back)
         if (!isMoveMade)
         {
-            transform.SetParent(originalParent.GetChild(0));
-            transform.localPosition = Vector3.zero;
+            // Back to wrapper (originalParent should be the wrapper transform)
+            if (originalParent != null)
+            {
+                transform.SetParent(originalParent);
+                transform.localPosition = Vector3.zero;
+            }
+            else
+            {
+                // as a last resort, parent back to board so it's not lost
+                transform.SetParent(ChessManager.Instance.MainView);
+            }
+
             ChessManager.Instance.ResetObjects();
         }
 
-        image.raycastTarget = true;
+        // Restore blocking so piece is interactable again
+        if (image != null) image.raycastTarget = true;
+        canvasGroup.blocksRaycasts = true;
         isDragLegal = false;
+        newParent = null;
         // return to original size
     }
 
@@ -103,7 +152,9 @@ public class MovePieceScript : MonoBehaviour, IBeginDragHandler, IDragHandler, I
         }
 
         // Highlight possible moves
-        GameObject currenttile = transform.parent.transform.parent.gameObject;
+        GameObject currenttile = transform.parent != null && transform.parent.parent != null
+            ? transform.parent.parent.gameObject
+            : null;
         ChessManager.Instance.CheckMove(currenttile, this.gameObject);
         //ChessManager.Instance.focus = this.gameObject;
     }

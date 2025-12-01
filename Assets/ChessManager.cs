@@ -132,6 +132,7 @@ public class ChessManager : MonoBehaviour
     [SerializeField] private Transform mainView;
     [SerializeField] public Transform MainView => mainView;
 
+    private int depth = 5;
     public GameModel currentGame { private set; get; }
 
     // Direction Vectors (based on array index 0-63)
@@ -205,10 +206,16 @@ public class ChessManager : MonoBehaviour
     {
         if (StockfishGameManager.Instance != null)
         {
-            var depth = StaticDataString.depth;
+            this.depth = StaticDataString.depth;
+
+            if (this.depth <= 0 && this.depth >= 25)
+            {
+                this.depth = 5;
+            }
+
             Debug.Log(StaticDataString.depth);
             StockfishGameManager.Instance.NewGame();
-            StockfishGameManager.Instance.depth = depth;
+            StockfishGameManager.Instance.depth = this.depth;
         }
 
         CurrentState = GameState.NotStarted;

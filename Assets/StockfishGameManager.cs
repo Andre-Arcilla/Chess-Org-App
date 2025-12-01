@@ -37,6 +37,7 @@ public class StockfishGameManager : MonoBehaviour
 
     public async void SendMove(string UCImove)
     {
+        Debug.Log("wtf " + depth);
         // 1. Construct the string
         gameString += " " + UCImove;
 
