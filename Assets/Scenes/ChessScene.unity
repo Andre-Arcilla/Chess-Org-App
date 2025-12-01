@@ -15457,6 +15457,53 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 734869357601547396, guid: 9ab778284587ac44788b705a63270172, type: 3}
   m_PrefabInstance: {fileID: 575080522}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1326992443
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1326992444}
+  - component: {fileID: 1326992445}
+  m_Layer: 0
+  m_Name: Stockfish Game
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1326992444
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1326992443}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1835431156}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1326992445
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1326992443}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 90b2e2ca3b90a4e48b6a343d8e9ed05f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  depth: 5
+  gameString: 
+  reply: 
 --- !u!1 &1328633634
 GameObject:
   m_ObjectHideFlags: 0
@@ -15699,6 +15746,50 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: c2167a2566c2c224d93404cc2f26dbc9, type: 3}
+--- !u!1 &1351106305
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1351106306}
+  - component: {fileID: 1351106307}
+  m_Layer: 0
+  m_Name: Stockfish Connection
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1351106306
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1351106305}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1835431156}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1351106307
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1351106305}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7403c0d7d9467444aaf6ecf67dffd327, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1353793976
 GameObject:
   m_ObjectHideFlags: 0
@@ -22450,6 +22541,8 @@ Transform:
   - {fileID: 774174380}
   - {fileID: 2133111161}
   - {fileID: 2068348572}
+  - {fileID: 1326992444}
+  - {fileID: 1351106306}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1841346105 stripped
@@ -26014,8 +26107,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   canRewriteHistory: 1
-  enableSideSelection: 0
+  enableSideSelection: 1
   isViewOnly: 0
+  puzzleOptions: {fileID: 0}
+  puzzleResults: {fileID: 0}
+  isPuzzleActive: 0
   kingPrefab: {fileID: 1141363921830114156, guid: 3e3d94def4335234696a0890224ca272, type: 3}
   pawnPrefab: {fileID: 4124972534793839248, guid: 7e4360a81e5211f46b0084002901461a, type: 3}
   knightPrefab: {fileID: 4164791484736290080, guid: 202ca15ffbb4f8240a50922555a018c3, type: 3}
@@ -26057,6 +26153,9 @@ MonoBehaviour:
   pgnScrollBar: {fileID: 552649018}
   pgnButtonContainer: {fileID: 1858480770}
   selectedPGNButton: {fileID: 0}
+  feedbackButton: {fileID: 0}
+  feedbackEditButton: {fileID: 0}
+  feedbackInput: {fileID: 0}
   whitePawnDeadContainer: {fileID: 983357089}
   whiteRookDeadContainer: {fileID: 1409588348}
   whiteKnightDeadContainer: {fileID: 40687392}

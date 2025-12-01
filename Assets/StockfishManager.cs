@@ -1,8 +1,6 @@
-using System.Collections;
 using UnityEngine;
 using System.IO;
 using Debug = UnityEngine.Debug;
-using TMPro;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -10,6 +8,22 @@ using System.Diagnostics; // Required for Process (Editor)
 
 public class StockfishManager : MonoBehaviour
 {
+    public static StockfishManager Instance { get; private set; }
+
+    private void Awake()
+    {
+        if (Instance == null)
+        {
+            Instance = this;
+            transform.SetParent(null);
+            DontDestroyOnLoad(gameObject);
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
+    }
+
     // --- EDITOR PROCESS (Windows/Mac) ---
     private Process editorProcess;
 
@@ -93,6 +107,33 @@ public class StockfishManager : MonoBehaviour
                 return lastEngineLine;
             }
         }
+    }
+
+    public async Task<string> SendGoAndWaitForBestMove(string command)
+    {
+        // 1. Reset the last line so we don't read data from the previous turn
+        lastEngineLine = "";
+
+        // 2. Send the command (e.g., "go depth 5")
+        SendUciCommand(command);
+
+        // 3. Wait specifically for the line starting with "bestmove"
+        // We add a safety timeout (e.g., 10 seconds) to prevent infinite hanging
+        float timeWaited = 0;
+        while (!lastEngineLine.StartsWith("bestmove"))
+        {
+            await Task.Delay(10); // Check every 10ms
+            timeWaited += 0.01f;
+
+            if (timeWaited > 10.0f)
+            {
+                Debug.LogError("Stockfish timed out waiting for bestmove.");
+                return null;
+            }
+        }
+
+        // 4. Return the specific line containing the move
+        return lastEngineLine;
     }
 
     public bool StartStockfish()
@@ -250,7 +291,7 @@ public class StockfishManager : MonoBehaviour
 
     // --- SHARED HELPER METHODS ---
 
-    private void SendUciCommand(string command)
+    public void SendUciCommand(string command)
     {
 #if UNITY_EDITOR
         if (editorProcess != null && !editorProcess.HasExited)

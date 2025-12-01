@@ -279,7 +279,7 @@ public class PGNRecorder : MonoBehaviour
         return chessManager != null;
     }
 
-    private List<(int origin, int dest)> BuildLegalMoveList(ChessManager cm)
+    public List<(int origin, int dest)> BuildLegalMoveList(ChessManager cm)
     {
         List<(int origin, int dest)> outList = new List<(int, int)>();
 
@@ -306,7 +306,7 @@ public class PGNRecorder : MonoBehaviour
         return outList;
     }
 
-    private bool TryMatchSANToLegalMove(string san, List<(int origin, int dest)> legal, ChessManager cm, out (int origin, int dest, int promotionType) result)
+    public bool TryMatchSANToLegalMove(string san, List<(int origin, int dest)> legal, ChessManager cm, out (int origin, int dest, int promotionType) result)
     {
         result = (-1, -1, Piece.None);
         string s = san.Trim();

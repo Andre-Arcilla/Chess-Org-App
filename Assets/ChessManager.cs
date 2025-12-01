@@ -5,6 +5,7 @@ using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using static UnityEngine.Rendering.DebugManager;
 
 public class ChessManager : MonoBehaviour
 {
@@ -161,7 +162,10 @@ public class ChessManager : MonoBehaviour
             {
                 if (ProfileManager.Instance.currentProfile.Role.ToUpper() != "MEMBER")
                 {
-                    feedbackEditButton.SetActive(true);
+                    if (feedbackEditButton != null)
+                    {
+                        feedbackEditButton.SetActive(true);
+                    }
                 }
             }
 
@@ -199,6 +203,12 @@ public class ChessManager : MonoBehaviour
 
     public void StartGameFromFEN(string fen)
     {
+        if (StockfishGameManager.Instance != null)
+        {
+            StockfishGameManager.Instance.NewGame();
+            StockfishGameManager.Instance.depth = 5;
+        }
+
         CurrentState = GameState.NotStarted;
 
         // 1. Reset History Lists & Flags
@@ -471,6 +481,16 @@ public class ChessManager : MonoBehaviour
 
         // 2. CheckGameEnd: Checks for mate and Applies Red King Highlight (on top of yellow if needed)
         CheckGameEnd();
+
+        int playerColorValue = (PlayerSide == 0) ? Piece.White : Piece.Black;
+
+        // Only send if the piece that moved matches the player's side
+        if (StockfishGameManager.Instance != null && pieceColor == playerColorValue)
+        {
+            // Construct UCI string (e.g., "e2e4")
+            string uciMove = GetSquareNotation(originIndex) + GetSquareNotation(destinationIndex);
+            StockfishGameManager.Instance.SendMove(uciMove);
+        }
     }
 
     public void CheckMove(GameObject originGO, GameObject pieceGO)
@@ -1779,6 +1799,68 @@ public class ChessManager : MonoBehaviour
         }
     }
 
+    public void ToggleHints()
+    {
+        // 1. Basic Checks
+        if (!isPuzzleActive)
+        {
+            Debug.Log("Hints are only available in Puzzle Mode.");
+            return;
+        }
+
+        if (puzzleIndex >= puzzleSolution.Count)
+        {
+            Debug.Log("Puzzle is already solved!");
+            return;
+        }
+
+        // 2. Identify the piece that needs to move
+        string expectedMove = puzzleSolution[puzzleIndex];
+
+        // Use PGNRecorder's logic (now public) to find the piece
+        if (PGNRecorder.Instance != null)
+        {
+            // Generate all legal moves for current position
+            var legalMoves = PGNRecorder.Instance.BuildLegalMoveList(this);
+
+            // Find which legal move matches the expected PGN string
+            if (PGNRecorder.Instance.TryMatchSANToLegalMove(expectedMove, legalMoves, this, out var match))
+            {
+                int originIndex = match.origin;
+
+                if (originIndex >= 0 && originIndex < tileObjects.Length)
+                {
+                    GameObject tileObj = tileObjects[originIndex];
+                    Image tileImg = tileObj.GetComponent<Image>();
+
+                    if (tileImg != null)
+                    {
+                        // 3. Toggle Logic
+                        // If it's already yellow, reset board colors (turn hint off)
+                        // If it's not yellow, reset board colors (clear mess) AND turn hint on
+                        if (tileImg.color == Color.yellow)
+                        {
+                            HighlightLastMove(); // Resets all tiles to default colors
+                        }
+                        else
+                        {
+                            HighlightLastMove(); // Clean board first
+                            tileImg.color = Color.yellow; // Apply hint
+                        }
+                    }
+                }
+            }
+            else
+            {
+                Debug.LogWarning($"Could not find a legal move matching hint: {expectedMove}");
+            }
+        }
+        else
+        {
+            Debug.LogError("PGNRecorder Instance missing. Cannot generate hint.");
+        }
+    }
+
     // ----------------------------------------------------------------------
     // --- UTILITIES ---
     // ----------------------------------------------------------------------
@@ -2533,6 +2615,66 @@ public class ChessManager : MonoBehaviour
         }
     }
 
+    public string GetRandomLegalUCIMove()
+    {
+        List<string> allLegalMoves = new List<string>();
+
+        // 1. Loop through all tiles to find current player's pieces
+        for (int i = 0; i < tileObjects.Length; i++)
+        {
+            // Check if there is a piece and it belongs to the current turn color
+            if (tileContent[i] != Piece.None && GetPieceColor(tileContent[i]) == currentTurnColor)
+            {
+                GameObject originObj = tileObjects[i];
+
+                // Safety check: ensure the visual piece exists
+                if (originObj.transform.GetChild(0).childCount == 0) continue;
+                GameObject pieceObj = originObj.transform.GetChild(0).GetChild(0).gameObject;
+
+                // 2. Generate moves for this piece
+                // This populates the public 'moves' list using your existing logic
+                CheckMove(originObj, pieceObj);
+
+                // 3. Convert all found destination tiles to UCI strings
+                foreach (GameObject destObj in moves)
+                {
+                    int destIndex = System.Array.IndexOf(tileObjects, destObj);
+
+                    // Use your existing helper to get "e2", "e4", etc.
+                    string uci = GetSquareNotation(i) + GetSquareNotation(destIndex);
+
+                    // 4. Handle Promotion Suffix (Important for UCI)
+                    // If a pawn moves to the last rank, we must append a promotion char (usually 'q')
+                    if (GetPieceType(tileContent[i]) == Piece.Pawn)
+                    {
+                        bool whiteProm = (currentTurnColor == Piece.White && destIndex >= 0 && destIndex <= 7);
+                        bool blackProm = (currentTurnColor == Piece.Black && destIndex >= 56 && destIndex <= 63);
+
+                        if (whiteProm || blackProm)
+                        {
+                            uci += "q"; // Default to Queen promotion for random moves
+                        }
+                    }
+
+                    allLegalMoves.Add(uci);
+                }
+            }
+        }
+
+        // 5. Cleanup the board visuals (CheckMove highlights tiles blue, we want to clear that)
+        ResetObjects();
+
+        // 6. Pick a random move
+        if (allLegalMoves.Count > 0)
+        {
+            string randomMove = allLegalMoves[UnityEngine.Random.Range(0, allLegalMoves.Count)];
+            Debug.LogWarning("Stockfish unavailable. Playing Random Move: " + randomMove);
+            return randomMove;
+        }
+
+        return null; // No legal moves available (Checkmate/Stalemate)
+    }
+
     // ---------------------------------------------------------
     // --- UCI MOVE HANDLING ---
     // ---------------------------------------------------------
@@ -2695,6 +2837,7 @@ public class ChessManager : MonoBehaviour
             whiteName.text = "Stockfish";
             blackName.text = "You";
             FlipBoard(180);
+            StockfishGameManager.Instance.SendMove("");
         }
     }
 
