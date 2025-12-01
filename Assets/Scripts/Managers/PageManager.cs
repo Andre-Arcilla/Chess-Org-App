@@ -34,4 +34,10 @@ public class PageManager : MonoBehaviour
     {
         SceneLoader.Instance.LoadNewScene(sceneName);
     }
+
+    public void GoToChessScene(int depth)
+    {
+        SceneLoader.Instance.LoadNewScene("ChessScene");
+        StaticDataString.depth = depth;
+    }
 }

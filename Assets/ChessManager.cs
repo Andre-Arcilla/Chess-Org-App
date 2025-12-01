@@ -205,8 +205,10 @@ public class ChessManager : MonoBehaviour
     {
         if (StockfishGameManager.Instance != null)
         {
+            var depth = StaticDataString.depth;
+            Debug.Log(StaticDataString.depth);
             StockfishGameManager.Instance.NewGame();
-            StockfishGameManager.Instance.depth = 5;
+            StockfishGameManager.Instance.depth = depth;
         }
 
         CurrentState = GameState.NotStarted;
@@ -2542,20 +2544,6 @@ public class ChessManager : MonoBehaviour
         return false;
     }
 
-    private IEnumerator ShowGameOverUI(string title, string subTitle, float delay = 2f)
-    {
-        // 1. Wait for the delay
-        yield return new WaitForSeconds(delay);
-
-        // 2. Show the UI
-        if (resultsPanel != null)
-        {
-            resultsPanel.SetActive(true);
-            winnerText.text = title;
-            winConText.text = subTitle;
-        }
-    }
-
     private void HighlightKingCheck()
     {
         // 1. Find the King of the current turn
@@ -2673,6 +2661,66 @@ public class ChessManager : MonoBehaviour
         }
 
         return null; // No legal moves available (Checkmate/Stalemate)
+    }
+
+    private IEnumerator ShowGameOverUI(string title, string subTitle, float delay = 2f)
+    {
+        // 1. Wait for the delay
+        yield return new WaitForSeconds(delay);
+
+        // 2. Show the UI
+        if (resultsPanel != null)
+        {
+            resultsPanel.SetActive(true);
+            winnerText.text = title;
+            winConText.text = subTitle;
+        }
+
+        SaveGame();
+    }
+
+    private void SaveGame()
+    {
+        PGNRecorder.Instance.SavePGNToVariable();
+        var pgn = PGNRecorder.Instance.exportPGN;
+
+        int winnerColor = (currentTurnColor == Piece.White) ? Piece.Black : Piece.White;
+        int playerPieceColor = (PlayerSide == 0) ? Piece.White : Piece.Black;
+        CurrentState = (winnerColor == Piece.White) ? GameState.WhiteWin : GameState.BlackWin;
+        string playerColorStr = (playerPieceColor == Piece.White) ? "White" : "Black";
+        string resultStr;
+
+        if (winnerColor == playerPieceColor)
+        {
+            resultStr = "Win";
+        }
+        else
+        {
+            resultStr = "Lose";
+        }
+
+        GameModel newEntry = new GameModel
+        {
+            GameNum = GenerateDatabase.Instance.database.Table<GameModel>().Count() + 1,
+            StudNum = ProfileManager.Instance.currentProfile.StudNum,
+            PlayerColor = playerColorStr,
+            Result = resultStr,
+            PGN = pgn,
+            Feedback = "",
+            Date = DateTime.Now,
+            LastModified = DateTimeOffset.Now.ToUnixTimeSeconds()
+        };
+
+        GenerateDatabase.Instance.database.Insert(newEntry);
+
+        int rating = ProfileManager.Instance.currentProfile.Rating / 2;
+
+        if (ProfileManager.Instance.currentProfile != null)
+        {
+            ProfileManager.Instance.currentProfile.Rating += rating;
+            ProfileManager.Instance.currentProfile.LastModified = DateTimeOffset.Now.ToUnixTimeSeconds();
+            GenerateDatabase.Instance.database.Update(ProfileManager.Instance.currentProfile);
+        }
     }
 
     // ---------------------------------------------------------
