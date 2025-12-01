@@ -37,7 +37,7 @@ public class TournamentList : MonoBehaviour
     [Header("Post References")]
     [SerializeField] private TextMeshProUGUI postTitle;
     [SerializeField] private TextMeshProUGUI postDate;
-    [SerializeField] private TextMeshProUGUI postContent;
+    [SerializeField] private TMP_InputField postContent;
 
     [Header("Edit Page References")]
     [SerializeField] private TMP_InputField inputTitle;
