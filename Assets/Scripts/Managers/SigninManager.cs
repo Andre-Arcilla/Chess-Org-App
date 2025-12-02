@@ -35,8 +35,15 @@ public class SigninManager : MonoBehaviour
             return;
         }
 
-        // Check if inputpassword and profile password match
-        if (user.Password != inputPassword || string.IsNullOrWhiteSpace(inputPassword))
+        if (string.IsNullOrWhiteSpace(inputPassword))
+        {
+            StopAllCoroutines();
+            StartCoroutine(ShowPopup("Invalid password"));
+            return;
+        }
+
+        string inputHash = HashScript.Hash(inputPassword);
+        if (user.Password != inputHash)
         {
             StopAllCoroutines();
             StartCoroutine(ShowPopup("Invalid password"));

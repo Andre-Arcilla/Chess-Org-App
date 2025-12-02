@@ -177,9 +177,11 @@ public class OrgListManager : MonoBehaviour
 
         if (studentExists != null && numberExists != null)
         {
+            string newPass = HashScript.Hash(numberExists.Password);
+
             GenerateDatabase.Instance.database.Execute(
                 "INSERT INTO Profiles (StudName, StudNum, Email, Password) VALUES (?, ?, ?, ?)",
-                numberExists.StudName, numberExists.StudNum, numberExists.Email, numberExists.Password
+                numberExists.StudName, numberExists.StudNum, numberExists.Email, newPass
             );
 
             GenerateDatabase.Instance.database.Delete(entry);

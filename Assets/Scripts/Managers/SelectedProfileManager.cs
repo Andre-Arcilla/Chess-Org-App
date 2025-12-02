@@ -239,7 +239,8 @@ public class SelectedProfileManager : MonoBehaviour
         currentProfile.StudName = studNameInput.text;
         currentProfile.StudNum = studNumInput.text;
         currentProfile.Email = studEmailInput.text;
-        currentProfile.Password = studPassInput.text;
+        if (!string.IsNullOrWhiteSpace(studPassInput.text))
+            currentProfile.Password = HashScript.Hash(studPassInput.text);
         var newStudNum = currentProfile.StudNum;
 
         GenerateDatabase.Instance.database.Execute(

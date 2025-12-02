@@ -172,29 +172,31 @@ public class GenerateDatabase : MonoBehaviour
     {
         if (database.Table<ProfileModel>().FirstOrDefault() == null)
         {
-            database.Execute(@"
+            string hash = HashScript.Hash("123");
+
+            database.Execute(@$"
                 INSERT INTO Profiles (StudName, StudNum, Email, Password, Rating, Puzzles, Role)
-                VALUES ('John Softeng', 'A12346169', 'asd@umak.edu.ph', '123', 100, 1, 'Admin');
+                VALUES ('John Softeng', 'A12346169', 'asd@umak.edu.ph', '{hash}', 100, 1, 'Admin');
             ");
 
-            database.Execute(@"
+            database.Execute(@$"
                 INSERT INTO Profiles (StudName, StudNum, Email, Password, Rating, Puzzles, Role)
-                VALUES ('Hugh G. Rektion', '222', 'asd@umak.edu.ph', '123', 100, 1, 'Admin');
+                VALUES ('Hugh G. Rektion', '222', 'asd@umak.edu.ph', '{hash}', 100, 1, 'Admin');
             ");
 
-            database.Execute(@"
+            database.Execute(@$"
                 INSERT INTO Profiles (StudName, StudNum, Email, Password, Rating, Puzzles, Role)
-                VALUES ('ahjid Fajram', '333', 'asd@umak.edu.ph', '123', 100, 1, 'Admin');
+                VALUES ('ahjid Fajram', '333', 'asd@umak.edu.ph', '{hash}', 100, 1, 'Admin');
             ");
 
-            database.Execute(@"
+            database.Execute(@$"
                 INSERT INTO Profiles (StudName, StudNum, Email, Password, Rating, Puzzles, Role)
-                VALUES ('Mhalac E. Taeteh', '444', 'asd@umak.edu.ph', '123', 100, 1, 'Coach');
+                VALUES ('Mhalac E. Taeteh', '444', 'asd@umak.edu.ph', '{hash}', 100, 1, 'Coach');
             ");
 
-            database.Execute(@"
+            database.Execute(@$"
                 INSERT INTO Profiles (StudName, StudNum, Email, Password, Rating, Puzzles, Role)
-                VALUES ('Fhuc Mae A. Noues', '555', 'asd@umak.edu.ph', '123', 100, 1, 'Member');
+                VALUES ('Fhuc Mae A. Noues', '555', 'asd@umak.edu.ph', '{hash}', 100, 1, 'Member');
             ");
         }
     }

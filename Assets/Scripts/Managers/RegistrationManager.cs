@@ -111,11 +111,12 @@ public class RegistrationManager : MonoBehaviour
         // Check if studName and studID is in org roster
         if (GenerateDatabase.Instance.database.Table<OrgMemberModel>().Where(account => account.StudName.ToUpper() == inputStudName.ToUpper()).FirstOrDefault() != null &&
             GenerateDatabase.Instance.database.Table<OrgMemberModel>().Where(account => account.StudNum.ToUpper() == inputStudNum.ToUpper()).FirstOrDefault() != null)
-            {
+        {
+            string hashPass = HashScript.Hash(inputPassword1);
             // Else add new item in registrations table
             GenerateDatabase.Instance.database.Execute(
                 "INSERT INTO Profiles (StudName, StudNum, Email, Password) VALUES (?, ?, ?, ?)",
-                inputStudName, inputStudNum, inputEmail, inputPassword1
+                inputStudName, inputStudNum, inputEmail, hashPass
             );
 
             StopAllCoroutines();
@@ -123,10 +124,11 @@ public class RegistrationManager : MonoBehaviour
         }
         else
         {
+            string hashPass = HashScript.Hash(inputPassword1);
             // Else add new item in registrations table
             GenerateDatabase.Instance.database.Execute(
                 "INSERT INTO Registrations (StudName, StudNum, Email, Password) VALUES (?, ?, ?, ?)",
-                inputStudName, inputStudNum, inputEmail, inputPassword1
+                inputStudName, inputStudNum, inputEmail, hashPass
             );
 
             StopAllCoroutines();

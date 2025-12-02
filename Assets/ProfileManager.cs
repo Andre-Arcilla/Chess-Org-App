@@ -168,7 +168,9 @@ public class ProfileManager : MonoBehaviour
 
     public void SaveProfileChanges(GameObject profileWindow)
     {
-        if (origPassInput.text != currentProfile.Password)
+        string origHash = HashScript.Hash(origPassInput.text);
+
+        if (origHash != currentProfile.Password)
         {
             StartCoroutine(ShowPopup("Incorrect original password"));
             return;
@@ -181,7 +183,9 @@ public class ProfileManager : MonoBehaviour
                 StartCoroutine(ShowPopup("Incorrect new password confirmation"));
                 return;
             }
-            currentProfile.Password = newPassInput.text;
+
+            string newPass = HashScript.Hash(newPassInput.text);
+            currentProfile.Password = newPass;
         }
 
         profileWindow.transform.SetParent(canvasView);
