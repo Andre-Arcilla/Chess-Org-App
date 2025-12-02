@@ -735,7 +735,7 @@ GameObject:
   - component: {fileID: 171380324}
   m_Layer: 5
   m_Name: Email  input
-  m_TagString: Untagged
+  m_TagString: Accent
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -2001,7 +2001,7 @@ GameObject:
   - component: {fileID: 586964573}
   m_Layer: 5
   m_Name: Password Input
-  m_TagString: Untagged
+  m_TagString: Accent
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -2599,7 +2599,7 @@ GameObject:
   - component: {fileID: 680640282}
   m_Layer: 5
   m_Name: Password2 Input
-  m_TagString: Untagged
+  m_TagString: Accent
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -4075,7 +4075,7 @@ GameObject:
   - component: {fileID: 955444029}
   m_Layer: 5
   m_Name: Name input
-  m_TagString: Untagged
+  m_TagString: Accent
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -4517,7 +4517,7 @@ GameObject:
   - component: {fileID: 1036834977}
   m_Layer: 5
   m_Name: StudNum input
-  m_TagString: Untagged
+  m_TagString: Accent
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -5819,7 +5819,7 @@ GameObject:
   - component: {fileID: 1384869802}
   m_Layer: 5
   m_Name: StudNum input
-  m_TagString: Untagged
+  m_TagString: Accent
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -6494,7 +6494,7 @@ GameObject:
   - component: {fileID: 1576748649}
   m_Layer: 5
   m_Name: Password1 Input
-  m_TagString: Untagged
+  m_TagString: Accent
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -6892,7 +6892,7 @@ GameObject:
   - component: {fileID: 1717792734}
   m_Layer: 5
   m_Name: Sign-in Button
-  m_TagString: Untagged
+  m_TagString: Primary
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -8446,7 +8446,7 @@ GameObject:
   - component: {fileID: 2086514382}
   m_Layer: 5
   m_Name: Register Button
-  m_TagString: Untagged
+  m_TagString: Primary
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0

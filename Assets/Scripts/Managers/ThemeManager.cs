@@ -40,91 +40,51 @@ public class ThemeManager : MonoBehaviour
         ChangeTheme(themes[3]);
     }
 
-    // add animation to hide/cover screen while doing this =================================================
+    public void Theme05()
+    {
+        currentTheme = themes[4];
+        ChangeTheme(themes[4]);
+    }
+    
+    public void Theme06()
+    {
+        currentTheme = themes[5];
+        ChangeTheme(themes[5]);
+    }
+
     private void ChangeTheme(ColorPaletteSO theme)
     {
-        // Change background theme
-        foreach (var item in GameObject.FindGameObjectsWithTag("Background"))
-        {
-            var image = item.GetComponent<Image>();
-            if (image != null)
-            {
-                Color curColor = image.color;
-                Color newColor = theme.Background;
-                image.color = new Color(newColor.r, newColor.g, newColor.b, curColor.a);
-            }
-        }
+        // 1. Find ALL Images in the scene, passing 'true' to include Inactive ones
+        Image[] allImages = FindObjectsOfType<Image>(true);
 
-        // Change header theme
-        foreach (var item in GameObject.FindGameObjectsWithTag("Header"))
+        // 2. Loop through them once and apply colors based on their tag
+        foreach (Image image in allImages)
         {
-            var image = item.GetComponent<Image>();
-            if (image != null)
-            {
-                Color curColor = image.color;
-                Color newColor = theme.Header;
-                image.color = new Color(newColor.r, newColor.g, newColor.b, curColor.a);
-            }
-        }
+            // Skip if the image component is somehow null (rare but safe)
+            if (image == null) continue;
 
-        // Change primary theme
-        foreach (var item in GameObject.FindGameObjectsWithTag("Primary"))
-        {
-            var image = item.GetComponent<Image>();
-            if (image != null)
+            if (image.gameObject.CompareTag("Background"))
             {
-                Color curColor = image.color;
-                Color newColor = theme.Primary;
-                image.color = new Color(newColor.r, newColor.g, newColor.b, curColor.a);
+                ApplyColor(image, theme.Background);
+            }
+            else if (image.gameObject.CompareTag("Primary"))
+            {
+                ApplyColor(image, theme.Primary);
+            }
+            else if (image.gameObject.CompareTag("Secondary"))
+            {
+                ApplyColor(image, theme.Secondary);
+            }
+            else if (image.gameObject.CompareTag("Accent"))
+            {
+                ApplyColor(image, theme.Accent);
             }
         }
+    }
 
-        // Change secondary theme
-        foreach (var item in GameObject.FindGameObjectsWithTag("Secondary"))
-        {
-            var image = item.GetComponent<Image>();
-            if (image != null)
-            {
-                Color curColor = image.color;
-                Color newColor = theme.Secondary;
-                image.color = new Color(newColor.r, newColor.g, newColor.b, curColor.a);
-            }
-        }
-
-        // Change accent theme
-        foreach (var item in GameObject.FindGameObjectsWithTag("Accent"))
-        {
-            var image = item.GetComponent<Image>();
-            if (image != null)
-            {
-                Color curColor = image.color;
-                Color newColor = theme.Accent;
-                image.color = new Color(newColor.r, newColor.g, newColor.b, curColor.a);
-            }
-        }
-
-        // Change header text theme
-        foreach (var item in GameObject.FindGameObjectsWithTag("HeaderText"))
-        {
-            var text = item.GetComponent<TextMeshProUGUI>();
-            if (text != null)
-            {
-                Color curColor = text.color;
-                Color newColor = theme.HeaderText;
-                text.color = new Color(newColor.r, newColor.g, newColor.b, curColor.a);
-            }
-        }
-
-        // Change navbar text theme
-        foreach (var item in GameObject.FindGameObjectsWithTag("NavBarText"))
-        {
-            var text = item.GetComponent<TextMeshProUGUI>();
-            if (text != null)
-            {
-                Color curColor = text.color;
-                Color newColor = theme.NavBarText;
-                text.color = new Color(newColor.r, newColor.g, newColor.b, curColor.a);
-            }
-        }
+    // Helper function to keep code clean and preserve Alpha transparency
+    private void ApplyColor(Image img, Color themeColor)
+    {
+        img.color = new Color(themeColor.r, themeColor.g, themeColor.b, img.color.a);
     }
 }

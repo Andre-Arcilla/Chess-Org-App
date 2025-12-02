@@ -1767,7 +1767,7 @@ GameObject:
   - component: {fileID: 16202191}
   m_Layer: 5
   m_Name: Edit Text
-  m_TagString: Untagged
+  m_TagString: Accent
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -3520,7 +3520,7 @@ GameObject:
   - component: {fileID: 44969342}
   m_Layer: 5
   m_Name: Header Title box
-  m_TagString: Untagged
+  m_TagString: Primary
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -4201,7 +4201,7 @@ GameObject:
   - component: {fileID: 71333308}
   m_Layer: 5
   m_Name: Header Title box
-  m_TagString: Untagged
+  m_TagString: Primary
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -5268,7 +5268,7 @@ GameObject:
   - component: {fileID: 95724321}
   m_Layer: 5
   m_Name: Tournament Btn
-  m_TagString: Header
+  m_TagString: Primary
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -5624,7 +5624,7 @@ GameObject:
   - component: {fileID: 96898006}
   m_Layer: 5
   m_Name: Post Carousel
-  m_TagString: Untagged
+  m_TagString: Primary
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -6003,7 +6003,7 @@ GameObject:
   - component: {fileID: 105183457}
   m_Layer: 5
   m_Name: Back Button
-  m_TagString: Untagged
+  m_TagString: Header
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -6321,42 +6321,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 105663718}
   m_CullTransparentMesh: 1
---- !u!1 &111521417
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 111521418}
-  m_Layer: 5
-  m_Name: Wrapper (1)
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!224 &111521418
-RectTransform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 111521417}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: -1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 1561112506}
-  m_Father: {fileID: 1821877302}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
-  m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &111605703
 GameObject:
   m_ObjectHideFlags: 0
@@ -6438,7 +6402,7 @@ GameObject:
   - component: {fileID: 114959217}
   m_Layer: 5
   m_Name: Page Header
-  m_TagString: Untagged
+  m_TagString: Secondary
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -6885,7 +6849,7 @@ GameObject:
   - component: {fileID: 123232186}
   m_Layer: 5
   m_Name: Profile Button
-  m_TagString: Untagged
+  m_TagString: Primary
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -7117,7 +7081,7 @@ GameObject:
   - component: {fileID: 125574013}
   m_Layer: 5
   m_Name: Header Title box
-  m_TagString: Untagged
+  m_TagString: Primary
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -7884,7 +7848,7 @@ GameObject:
   - component: {fileID: 152955184}
   m_Layer: 5
   m_Name: Tournaments List
-  m_TagString: Untagged
+  m_TagString: Primary
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -9041,7 +9005,7 @@ RectTransform:
   m_Children:
   - {fileID: 2080492816}
   - {fileID: 1220564342}
-  m_Father: {fileID: 2142328483}
+  m_Father: {fileID: 1064989971}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0.1}
   m_AnchorMax: {x: 1, y: 1}
@@ -9629,7 +9593,7 @@ GameObject:
   - component: {fileID: 193968552}
   m_Layer: 5
   m_Name: Viewport
-  m_TagString: Untagged
+  m_TagString: Accent
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -10089,7 +10053,7 @@ GameObject:
   - component: {fileID: 198609452}
   m_Layer: 5
   m_Name: Edit Text
-  m_TagString: Untagged
+  m_TagString: Accent
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -10688,7 +10652,7 @@ GameObject:
   - component: {fileID: 213512022}
   m_Layer: 5
   m_Name: Button Wrapper
-  m_TagString: Untagged
+  m_TagString: Primary
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -11814,7 +11778,7 @@ GameObject:
   - component: {fileID: 236767975}
   m_Layer: 5
   m_Name: Image
-  m_TagString: Untagged
+  m_TagString: Secondary
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -12228,7 +12192,7 @@ GameObject:
   - component: {fileID: 246923966}
   m_Layer: 5
   m_Name: Home Button
-  m_TagString: Untagged
+  m_TagString: Primary
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -13909,7 +13873,7 @@ GameObject:
   - component: {fileID: 269266700}
   m_Layer: 5
   m_Name: Header Title box
-  m_TagString: Untagged
+  m_TagString: Primary
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -14032,7 +13996,7 @@ GameObject:
   - component: {fileID: 272366661}
   m_Layer: 5
   m_Name: Save Button
-  m_TagString: Untagged
+  m_TagString: Accent
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -14216,7 +14180,7 @@ GameObject:
   - component: {fileID: 272760485}
   m_Layer: 5
   m_Name: Announcements Post
-  m_TagString: Untagged
+  m_TagString: Primary
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -15753,7 +15717,7 @@ GameObject:
   - component: {fileID: 311357491}
   m_Layer: 5
   m_Name: normal Button
-  m_TagString: Untagged
+  m_TagString: Primary
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -16108,7 +16072,7 @@ GameObject:
   - component: {fileID: 319808412}
   m_Layer: 5
   m_Name: Page Header
-  m_TagString: Untagged
+  m_TagString: Secondary
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -16647,7 +16611,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 327675961}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 257297877}
+        m_TargetAssemblyTypeName: ThemeManager, Assembly-CSharp
+        m_MethodName: Theme01
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &327675960
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -18796,7 +18772,7 @@ GameObject:
   - component: {fileID: 380777422}
   m_Layer: 5
   m_Name: Back Button
-  m_TagString: Untagged
+  m_TagString: Primary
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -19684,7 +19660,7 @@ GameObject:
   - component: {fileID: 410171945}
   m_Layer: 5
   m_Name: Save Button
-  m_TagString: Untagged
+  m_TagString: Accent
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -22611,7 +22587,7 @@ GameObject:
   - component: {fileID: 483020142}
   m_Layer: 5
   m_Name: Back Button
-  m_TagString: Untagged
+  m_TagString: Primary
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -23197,7 +23173,7 @@ GameObject:
   - component: {fileID: 492992511}
   m_Layer: 5
   m_Name: Tournaments Post
-  m_TagString: Untagged
+  m_TagString: Primary
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -25446,7 +25422,7 @@ GameObject:
   - component: {fileID: 554318008}
   m_Layer: 5
   m_Name: Back Button
-  m_TagString: Untagged
+  m_TagString: Primary
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -25953,7 +25929,7 @@ GameObject:
   - component: {fileID: 555516823}
   m_Layer: 5
   m_Name: Button Wrapper
-  m_TagString: Untagged
+  m_TagString: Primary
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -26306,7 +26282,7 @@ GameObject:
   - component: {fileID: 564825831}
   m_Layer: 5
   m_Name: hard Button
-  m_TagString: Untagged
+  m_TagString: Primary
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -26639,7 +26615,7 @@ GameObject:
   - component: {fileID: 567920950}
   m_Layer: 5
   m_Name: Announcements Post
-  m_TagString: Untagged
+  m_TagString: Primary
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -27486,7 +27462,7 @@ GameObject:
   - component: {fileID: 593658174}
   m_Layer: 5
   m_Name: Page Header
-  m_TagString: Untagged
+  m_TagString: Secondary
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -29289,7 +29265,7 @@ GameObject:
   - component: {fileID: 625082436}
   m_Layer: 5
   m_Name: Announcement Card (4)
-  m_TagString: Secondary
+  m_TagString: Accent
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -29990,7 +29966,7 @@ GameObject:
   - component: {fileID: 633472006}
   m_Layer: 5
   m_Name: Solze Puzzles Button
-  m_TagString: Untagged
+  m_TagString: Primary
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -30290,7 +30266,7 @@ GameObject:
   - component: {fileID: 637022983}
   m_Layer: 5
   m_Name: Button Wrapper
-  m_TagString: Untagged
+  m_TagString: Primary
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -30560,7 +30536,7 @@ GameObject:
   - component: {fileID: 643905162}
   m_Layer: 5
   m_Name: Edit Title
-  m_TagString: Untagged
+  m_TagString: Accent
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -30926,7 +30902,7 @@ GameObject:
   - component: {fileID: 654880923}
   m_Layer: 5
   m_Name: Header Title box
-  m_TagString: Untagged
+  m_TagString: Primary
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -31308,7 +31284,7 @@ GameObject:
   - component: {fileID: 661802401}
   m_Layer: 5
   m_Name: Save Button
-  m_TagString: Untagged
+  m_TagString: Accent
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -32568,7 +32544,7 @@ GameObject:
   - component: {fileID: 694985182}
   m_Layer: 5
   m_Name: Announcements List
-  m_TagString: Untagged
+  m_TagString: Primary
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -32725,7 +32701,7 @@ GameObject:
   - component: {fileID: 697020229}
   m_Layer: 5
   m_Name: Page Header
-  m_TagString: Untagged
+  m_TagString: Secondary
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -33362,7 +33338,7 @@ GameObject:
   - component: {fileID: 711596584}
   m_Layer: 5
   m_Name: Play Button
-  m_TagString: Untagged
+  m_TagString: Primary
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -33836,7 +33812,7 @@ GameObject:
   - component: {fileID: 722992950}
   m_Layer: 5
   m_Name: Edit Text
-  m_TagString: Untagged
+  m_TagString: Accent
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -38171,7 +38147,7 @@ GameObject:
   - component: {fileID: 821503529}
   m_Layer: 5
   m_Name: Page Header
-  m_TagString: Untagged
+  m_TagString: Secondary
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -39285,7 +39261,7 @@ GameObject:
   - component: {fileID: 862766521}
   m_Layer: 5
   m_Name: Add Entry Button
-  m_TagString: Secondary
+  m_TagString: Accent
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -41086,7 +41062,7 @@ GameObject:
   - component: {fileID: 902410898}
   m_Layer: 5
   m_Name: Header Title box
-  m_TagString: Untagged
+  m_TagString: Header
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -41212,7 +41188,7 @@ GameObject:
   - component: {fileID: 903648717}
   m_Layer: 5
   m_Name: Page Header
-  m_TagString: Untagged
+  m_TagString: Secondary
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -42740,6 +42716,10 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 5883674267860894541, guid: 97b0984783b462d4f98186e9838f4f3e, type: 3}
+      propertyPath: m_TagString
+      value: Accent
+      objectReference: {fileID: 0}
     - target: {fileID: 5960300977419701494, guid: 97b0984783b462d4f98186e9838f4f3e, type: 3}
       propertyPath: m_AnchorMax.y
       value: 0
@@ -44108,7 +44088,7 @@ GameObject:
   - component: {fileID: 957982999}
   m_Layer: 5
   m_Name: Back Button
-  m_TagString: Untagged
+  m_TagString: Primary
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -45157,7 +45137,7 @@ GameObject:
   - component: {fileID: 979762851}
   m_Layer: 5
   m_Name: Page Header
-  m_TagString: Untagged
+  m_TagString: Secondary
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -45553,7 +45533,7 @@ GameObject:
   - component: {fileID: 992731033}
   m_Layer: 5
   m_Name: New Game Button
-  m_TagString: Untagged
+  m_TagString: Primary
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -46319,7 +46299,7 @@ GameObject:
   - component: {fileID: 1006426619}
   m_Layer: 5
   m_Name: easy Button
-  m_TagString: Untagged
+  m_TagString: Primary
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -47015,7 +46995,7 @@ GameObject:
   - component: {fileID: 1012130897}
   m_Layer: 5
   m_Name: Analyze Button
-  m_TagString: Untagged
+  m_TagString: Primary
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -48331,7 +48311,7 @@ GameObject:
   - component: {fileID: 1038959012}
   m_Layer: 5
   m_Name: Match History
-  m_TagString: Untagged
+  m_TagString: Primary
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -48502,7 +48482,7 @@ GameObject:
   - component: {fileID: 1039668912}
   m_Layer: 5
   m_Name: Edit Text
-  m_TagString: Untagged
+  m_TagString: Accent
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -49917,6 +49897,7 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 213076653}
+  - {fileID: 178408768}
   - {fileID: 412215076}
   - {fileID: 983829371}
   - {fileID: 863602724}
@@ -52251,7 +52232,7 @@ GameObject:
   - component: {fileID: 1121218308}
   m_Layer: 5
   m_Name: Announcement Card (3)
-  m_TagString: Secondary
+  m_TagString: Accent
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -52702,7 +52683,7 @@ GameObject:
   - component: {fileID: 1130800153}
   m_Layer: 5
   m_Name: Posts Button
-  m_TagString: Untagged
+  m_TagString: Primary
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -54190,7 +54171,7 @@ GameObject:
   - component: {fileID: 1161572708}
   m_Layer: 5
   m_Name: Header Title box
-  m_TagString: Untagged
+  m_TagString: Primary
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -56011,7 +55992,7 @@ GameObject:
   - component: {fileID: 1202894158}
   m_Layer: 5
   m_Name: Edit Text
-  m_TagString: Untagged
+  m_TagString: Accent
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -58415,7 +58396,7 @@ GameObject:
   - component: {fileID: 1238695896}
   m_Layer: 5
   m_Name: Edit Text
-  m_TagString: Untagged
+  m_TagString: Accent
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -59095,7 +59076,7 @@ GameObject:
   - component: {fileID: 1250933752}
   m_Layer: 5
   m_Name: Header Title box
-  m_TagString: Untagged
+  m_TagString: Primary
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -59866,7 +59847,7 @@ GameObject:
   - component: {fileID: 1259932578}
   m_Layer: 5
   m_Name: Back Button
-  m_TagString: Untagged
+  m_TagString: Primary
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -62448,7 +62429,7 @@ GameObject:
   - component: {fileID: 1319626352}
   m_Layer: 5
   m_Name: Button Wrapper
-  m_TagString: Untagged
+  m_TagString: Primary
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -63477,7 +63458,7 @@ GameObject:
   - component: {fileID: 1342629882}
   m_Layer: 5
   m_Name: Back Button
-  m_TagString: Untagged
+  m_TagString: Primary
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -64434,7 +64415,7 @@ GameObject:
   - component: {fileID: 1357106432}
   m_Layer: 5
   m_Name: Announcement Card (2)
-  m_TagString: Secondary
+  m_TagString: Accent
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -66952,7 +66933,7 @@ GameObject:
   - component: {fileID: 1415493730}
   m_Layer: 5
   m_Name: Header Title box
-  m_TagString: Untagged
+  m_TagString: Primary
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -68712,7 +68693,7 @@ GameObject:
   - component: {fileID: 1435875276}
   m_Layer: 5
   m_Name: Button Wrapper
-  m_TagString: Untagged
+  m_TagString: Primary
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -68817,7 +68798,7 @@ GameObject:
   - component: {fileID: 1446640917}
   m_Layer: 5
   m_Name: Edit Title
-  m_TagString: Untagged
+  m_TagString: Accent
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -69340,7 +69321,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1450391225}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 257297877}
+        m_TargetAssemblyTypeName: ThemeManager, Assembly-CSharp
+        m_MethodName: Theme01
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &1450391224
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -70719,7 +70712,7 @@ GameObject:
   - component: {fileID: 1493538700}
   m_Layer: 5
   m_Name: Add Entry Button
-  m_TagString: Secondary
+  m_TagString: Accent
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -71037,7 +71030,7 @@ GameObject:
   - component: {fileID: 1495827037}
   m_Layer: 5
   m_Name: Announcement Card (1)
-  m_TagString: Secondary
+  m_TagString: Accent
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -72876,7 +72869,7 @@ GameObject:
   - component: {fileID: 1522558423}
   m_Layer: 5
   m_Name: Tournaments Post
-  m_TagString: Untagged
+  m_TagString: Primary
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -73682,7 +73675,7 @@ GameObject:
   - component: {fileID: 1524823461}
   m_Layer: 5
   m_Name: Switch Theme Button
-  m_TagString: Untagged
+  m_TagString: Primary
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -75062,7 +75055,7 @@ GameObject:
   - component: {fileID: 1546188016}
   m_Layer: 5
   m_Name: Player Stats
-  m_TagString: Untagged
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -75826,96 +75819,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1558850542}
   m_CullTransparentMesh: 1
---- !u!1 &1561112505
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1561112506}
-  - component: {fileID: 1561112509}
-  - component: {fileID: 1561112508}
-  - component: {fileID: 1561112507}
-  m_Layer: 5
-  m_Name: Back Button
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!224 &1561112506
-RectTransform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1561112505}
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 1
-  m_Children: []
-  m_Father: {fileID: 111521418}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
-  m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &1561112507
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1561112505}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 86710e43de46f6f4bac7c8e50813a599, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_AspectMode: 2
-  m_AspectRatio: 1
---- !u!114 &1561112508
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1561112505}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 0}
-  m_RaycastTarget: 1
-  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
-  m_Maskable: 1
-  m_OnCullStateChanged:
-    m_PersistentCalls:
-      m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 9268bc5366a217e4ea0e24917882d4d3, type: 3}
-  m_Type: 0
-  m_PreserveAspect: 0
-  m_FillCenter: 1
-  m_FillMethod: 4
-  m_FillAmount: 1
-  m_FillClockwise: 1
-  m_FillOrigin: 0
-  m_UseSpriteMesh: 0
-  m_PixelsPerUnitMultiplier: 1
---- !u!222 &1561112509
-CanvasRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1561112505}
-  m_CullTransparentMesh: 1
 --- !u!1 &1561434779
 GameObject:
   m_ObjectHideFlags: 0
@@ -76629,7 +76532,7 @@ GameObject:
   - component: {fileID: 1571657302}
   m_Layer: 5
   m_Name: Back Button
-  m_TagString: Untagged
+  m_TagString: Primary
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -77806,7 +77709,7 @@ GameObject:
   - component: {fileID: 1594868164}
   m_Layer: 5
   m_Name: Edit Button
-  m_TagString: Untagged
+  m_TagString: Accent
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -80771,6 +80674,10 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 5883674267860894541, guid: 97b0984783b462d4f98186e9838f4f3e, type: 3}
+      propertyPath: m_TagString
+      value: Accent
+      objectReference: {fileID: 0}
     - target: {fileID: 5960300977419701494, guid: 97b0984783b462d4f98186e9838f4f3e, type: 3}
       propertyPath: m_AnchorMax.y
       value: 0
@@ -81020,7 +80927,7 @@ GameObject:
   - component: {fileID: 1673268409}
   m_Layer: 5
   m_Name: Announcements Post
-  m_TagString: Untagged
+  m_TagString: Primary
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -81475,6 +81382,10 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 5883674267860894541, guid: 97b0984783b462d4f98186e9838f4f3e, type: 3}
+      propertyPath: m_TagString
+      value: Accent
+      objectReference: {fileID: 0}
     - target: {fileID: 5960300977419701494, guid: 97b0984783b462d4f98186e9838f4f3e, type: 3}
       propertyPath: m_AnchorMax.y
       value: 0
@@ -81798,7 +81709,7 @@ GameObject:
   - component: {fileID: 1694196130}
   m_Layer: 5
   m_Name: Image
-  m_TagString: Untagged
+  m_TagString: Secondary
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -82747,7 +82658,7 @@ GameObject:
   - component: {fileID: 1725404420}
   m_Layer: 5
   m_Name: Existing Game Button
-  m_TagString: Untagged
+  m_TagString: Primary
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -85117,7 +85028,7 @@ GameObject:
   - component: {fileID: 1797956204}
   m_Layer: 5
   m_Name: Header Title box
-  m_TagString: Untagged
+  m_TagString: Primary
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -86367,7 +86278,7 @@ GameObject:
   - component: {fileID: 1821877303}
   m_Layer: 5
   m_Name: Page Header
-  m_TagString: Untagged
+  m_TagString: Secondary
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -86385,7 +86296,6 @@ RectTransform:
   m_ConstrainProportionsScale: 1
   m_Children:
   - {fileID: 1415493729}
-  - {fileID: 111521418}
   m_Father: {fileID: 1651811448}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -87057,7 +86967,7 @@ GameObject:
   - component: {fileID: 1834458175}
   m_Layer: 5
   m_Name: Edit Button
-  m_TagString: Untagged
+  m_TagString: Accent
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -88329,7 +88239,7 @@ GameObject:
   - component: {fileID: 1855971905}
   m_Layer: 5
   m_Name: Edit Title
-  m_TagString: Untagged
+  m_TagString: Accent
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -88528,7 +88438,7 @@ GameObject:
   - component: {fileID: 1857192659}
   m_Layer: 5
   m_Name: Puzzle Button
-  m_TagString: Untagged
+  m_TagString: Primary
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -89406,7 +89316,7 @@ GameObject:
   - component: {fileID: 1869337167}
   m_Layer: 5
   m_Name: Scroll View
-  m_TagString: Untagged
+  m_TagString: Accent
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -89981,7 +89891,7 @@ GameObject:
   - component: {fileID: 1884186355}
   m_Layer: 5
   m_Name: Back Button
-  m_TagString: Untagged
+  m_TagString: Primary
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -91407,7 +91317,7 @@ GameObject:
   - component: {fileID: 1915674594}
   m_Layer: 5
   m_Name: Tournaments Post
-  m_TagString: Untagged
+  m_TagString: Primary
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -94818,7 +94728,7 @@ GameObject:
   - component: {fileID: 2008167223}
   m_Layer: 5
   m_Name: Edit Title
-  m_TagString: Untagged
+  m_TagString: Accent
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -96751,7 +96661,7 @@ GameObject:
   - component: {fileID: 2050188763}
   m_Layer: 5
   m_Name: Save Button
-  m_TagString: Untagged
+  m_TagString: Accent
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -97749,7 +97659,7 @@ GameObject:
   - component: {fileID: 2067819296}
   m_Layer: 5
   m_Name: Navigation Bar
-  m_TagString: Untagged
+  m_TagString: Secondary
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -98329,7 +98239,7 @@ GameObject:
   - component: {fileID: 2080492817}
   m_Layer: 5
   m_Name: Page Header
-  m_TagString: Untagged
+  m_TagString: Secondary
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -99047,7 +98957,7 @@ GameObject:
   - component: {fileID: 2099693490}
   m_Layer: 5
   m_Name: Announcement Btn
-  m_TagString: Header
+  m_TagString: Primary
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -99396,7 +99306,7 @@ GameObject:
   - component: {fileID: 2100777736}
   m_Layer: 5
   m_Name: Page Header
-  m_TagString: Untagged
+  m_TagString: Secondary
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -100705,7 +100615,6 @@ RectTransform:
   m_Children:
   - {fileID: 1979231496}
   - {fileID: 1651811448}
-  - {fileID: 178408768}
   - {fileID: 2067819294}
   m_Father: {fileID: 1064989971}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -101010,7 +100919,7 @@ GameObject:
   - component: {fileID: 4353723892666160043}
   m_Layer: 5
   m_Name: Announcement Card
-  m_TagString: Secondary
+  m_TagString: Accent
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
