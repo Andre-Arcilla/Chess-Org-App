@@ -2708,7 +2708,7 @@ public class ChessManager : MonoBehaviour
 
         GameModel newEntry = new GameModel
         {
-            GameNum = GenerateDatabase.Instance.database.Table<GameModel>().Count() + 1,
+            GameNum = GenerateDatabase.Instance.database.Table<GameModel>().Where(g => g.StudNum == ProfileManager.Instance.currentProfile.StudNum).OrderByDescending(a => a.GameNum).Count() + 1,
             StudNum = ProfileManager.Instance.currentProfile.StudNum,
             PlayerColor = playerColorStr,
             Result = resultStr,
@@ -2724,7 +2724,11 @@ public class ChessManager : MonoBehaviour
 
         if (ProfileManager.Instance.currentProfile != null)
         {
+            if (resultStr == "Win")
+            {
             ProfileManager.Instance.currentProfile.Rating += rating;
+            }
+
             ProfileManager.Instance.currentProfile.LastModified = DateTimeOffset.Now.ToUnixTimeSeconds();
             GenerateDatabase.Instance.database.Update(ProfileManager.Instance.currentProfile);
         }

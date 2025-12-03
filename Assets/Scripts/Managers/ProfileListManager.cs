@@ -48,7 +48,7 @@ public class ProfileListManager : MonoBehaviour
 
     public void GenerateList()
     {
-        var dbProfiles = GenerateDatabase.Instance.database.Table<ProfileModel>().ToList();
+        var dbProfiles = GenerateDatabase.Instance.database.Table<ProfileModel>().Where(p => p.StudNum != ProfileManager.Instance.currentProfile.StudNum).ToList();
 
         // Check if data is cached, if not, generate it
         foreach (var profile in dbProfiles)

@@ -334,6 +334,7 @@ public class SelectedProfileManager : MonoBehaviour
         currentProfile.Role = newRole;
         currentProfile.LastModified = DateTimeOffset.Now.ToUnixTimeSeconds();
         GenerateDatabase.Instance.database.Update(currentProfile);
+        UpdateProfileInfoPage();
         ProfileListManager.Instance.GenerateList();
     }
 
