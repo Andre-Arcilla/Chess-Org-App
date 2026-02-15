@@ -1,0 +1,1409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Chessistant Mobile</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        :root {
+            --dark-knight: #2c3e50;
+            --strategic-blue: #3498db;
+            --light-square: #ecf0f1;
+            --victory-green: #27ae60;
+            --checkmate-red: #e74c3c;
+            --stalemate-gold: #f39c12;
+            --neutral-gray: #95a5a6;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            color: #2c3e50;
+            overflow-x: hidden;
+            padding-bottom: 70px; /* Space for bottom nav */
+        }
+
+        /* Top Header */
+        .top-header {
+            background: linear-gradient(135deg, var(--dark-knight) 0%, #34495e 100%);
+            color: white;
+            padding: 15px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.3rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            background: var(--strategic-blue);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        /* Page Container */
+        .page {
+            display: none;
+            padding: 15px;
+            min-height: calc(100vh - 140px);
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        /* Cards */
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .card-header {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+            color: var(--dark-knight);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 15px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .stat-card:nth-child(2) {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .stat-card:nth-child(3) {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        .stat-card:nth-child(4) {
+            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            opacity: 0.95;
+        }
+
+        /* Buttons */
+        .btn {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: block;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .btn-primary {
+            background: var(--strategic-blue);
+            color: white;
+        }
+
+        .btn-primary:active {
+            background: #2980b9;
+            transform: scale(0.98);
+        }
+
+        .btn-success {
+            background: var(--victory-green);
+            color: white;
+        }
+
+        .btn-outline {
+            background: white;
+            border: 2px solid var(--strategic-blue);
+            color: var(--strategic-blue);
+        }
+
+        /* Match List */
+        .match-item {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+        }
+
+        .match-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .match-opponent {
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .match-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            color: #7f8c8d;
+            margin-top: 8px;
+        }
+
+        /* Badge */
+        .badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .badge-success { background: var(--victory-green); color: white; }
+        .badge-danger { background: var(--checkmate-red); color: white; }
+        .badge-warning { background: var(--stalemate-gold); color: white; }
+        .badge-primary { background: var(--strategic-blue); color: white; }
+
+        /* Alert */
+        .alert {
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .alert-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        /* Chess Board */
+        .chess-board {
+            width: 100%;
+            aspect-ratio: 1;
+            background: 
+                repeating-conic-gradient(#f0d9b5 0% 25%, #b58863 0% 50%) 
+                50% / 12.5% 12.5%;
+            border: 3px solid var(--dark-knight);
+            border-radius: 10px;
+            margin: 15px 0;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        /* Tournament Card */
+        .tournament-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .tournament-header {
+            background: linear-gradient(135deg, var(--strategic-blue) 0%, #2980b9 100%);
+            color: white;
+            padding: 15px;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .tournament-body {
+            padding: 15px;
+        }
+
+        .tournament-info {
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+        }
+
+        .tournament-info strong {
+            color: var(--dark-knight);
+        }
+
+        /* Lesson Card */
+        .lesson-card {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+        }
+
+        .lesson-title {
+            font-weight: 600;
+            font-size: 1rem;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--strategic-blue), var(--victory-green));
+            transition: width 0.3s ease;
+        }
+
+        /* Form */
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .form-input, .form-select {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            border-color: var(--strategic-blue);
+        }
+
+        /* Bottom Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-top: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-around;
+            padding: 8px 0 10px;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            z-index: 100;
+        }
+
+        .nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+            color: #95a5a6;
+            transition: all 0.3s ease;
+            padding: 8px 0;
+        }
+
+        .nav-item.active {
+            color: var(--strategic-blue);
+        }
+
+        .nav-icon {
+            font-size: 1.5rem;
+        }
+
+        .nav-label {
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 200;
+            align-items: flex-end;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px 20px 0 0;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(100%);
+            }
+            to {
+                transform: translateY(0);
+            }
+        }
+
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            background: white;
+            z-index: 10;
+        }
+
+        .modal-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 2rem;
+            color: #95a5a6;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        /* Tabs */
+        .tab-buttons {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            margin-bottom: 15px;
+            padding-bottom: 5px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .tab-buttons::-webkit-scrollbar {
+            display: none;
+        }
+
+        .tab-btn {
+            padding: 10px 20px;
+            border: none;
+            background: #f8f9fa;
+            border-radius: 20px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            color: #7f8c8d;
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn.active {
+            background: var(--strategic-blue);
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Quick Actions */
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .quick-action {
+            background: white;
+            border-radius: 12px;
+            padding: 20px 15px;
+            text-align: center;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .quick-action:active {
+            transform: scale(0.98);
+        }
+
+        .quick-action-icon {
+            font-size: 2.5rem;
+            margin-bottom: 8px;
+        }
+
+        .quick-action-label {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--dark-knight);
+        }
+
+        /* Swipe Indicator */
+        .swipe-indicator {
+            width: 40px;
+            height: 4px;
+            background: #ddd;
+            border-radius: 2px;
+            margin: 10px auto 0;
+        }
+
+        /* Player Info */
+        .player-info {
+            background: linear-gradient(135deg, var(--dark-knight) 0%, #34495e 100%);
+            color: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .player-rating {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .player-name {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        /* Section Title */
+        .section-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: var(--dark-knight);
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #95a5a6;
+        }
+
+        .empty-icon {
+            font-size: 4rem;
+            margin-bottom: 10px;
+        }
+
+        /* Loading */
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid var(--strategic-blue);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Pull to Refresh */
+        .pull-refresh {
+            text-align: center;
+            padding: 20px;
+            color: var(--strategic-blue);
+            font-weight: 600;
+        }
+
+        /* Admin Table Mobile */
+        .mobile-table-item {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+        }
+
+        .table-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+
+        .table-label {
+            color: #7f8c8d;
+            font-weight: 600;
+        }
+
+        .table-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .icon-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            background: #f8f9fa;
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+        }
+
+        .icon-btn:active {
+            background: #e9ecef;
+            transform: scale(0.95);
+        }
+
+        /* Notification Dot */
+        .notification-dot {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            width: 8px;
+            height: 8px;
+            background: var(--checkmate-red);
+            border-radius: 50%;
+            border: 2px solid white;
+        }
+    </style>
+</head>
+<body>
+    <!-- Top Header -->
+    <div class="top-header">
+        <div class="header-content">
+            <div class="logo">
+                <span>♟️</span>
+                <span>Chessistant</span>
+            </div>
+            <div class="user-avatar">JD</div>
+        </div>
+    </div>
+
+    <!-- Dashboard Page -->
+    <div id="dashboard" class="page active">
+        <!-- Player Info -->
+        <div class="player-info">
+            <div class="player-rating">1850</div>
+            <div class="player-name">John Dela Cruz</div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value">67%</div>
+                <div class="stat-label">Win Rate</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">143</div>
+                <div class="stat-label">Total Games</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">12</div>
+                <div class="stat-label">Streak</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">+42</div>
+                <div class="stat-label">This Month</div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="quick-actions">
+            <div class="quick-action" onclick="openModal('puzzle')">
+                <div class="quick-action-icon">🎯</div>
+                <div class="quick-action-label">Daily Puzzle</div>
+            </div>
+            <div class="quick-action" onclick="openModal('analyze')">
+                <div class="quick-action-icon">📊</div>
+                <div class="quick-action-label">Analyze Game</div>
+            </div>
+            <div class="quick-action" onclick="openModal('bot')">
+                <div class="quick-action-icon">🤖</div>
+                <div class="quick-action-label">Play Bot</div>
+            </div>
+            <div class="quick-action" onclick="switchPage('tournaments')">
+                <div class="quick-action-icon">🏆</div>
+                <div class="quick-action-label">Tournaments</div>
+            </div>
+        </div>
+
+        <!-- Announcements -->
+        <div class="card">
+            <div class="card-header">📢 Announcements</div>
+            <div class="alert alert-info">
+                <span>📅</span>
+                <span>UMak Championship registration opens March 1st!</span>
+            </div>
+            <div class="alert alert-success">
+                <span>🎯</span>
+                <span>New tactical training module available</span>
+            </div>
+        </div>
+
+        <!-- Recent Matches -->
+        <div class="section-title">Recent Matches</div>
+        <div class="match-item">
+            <div class="match-header">
+                <div class="match-opponent">John Dela Cruz</div>
+                <span class="badge badge-success">Win</span>
+            </div>
+            <div>Sicilian Defense</div>
+            <div class="match-info">
+                <span>Feb 10, 2026</span>
+                <span style="color: var(--victory-green); font-weight: 600;">+12</span>
+            </div>
+        </div>
+
+        <div class="match-item">
+            <div class="match-header">
+                <div class="match-opponent">Maria Santos</div>
+                <span class="badge badge-danger">Loss</span>
+            </div>
+            <div>Queen's Gambit</div>
+            <div class="match-info">
+                <span>Feb 8, 2026</span>
+                <span style="color: var(--checkmate-red); font-weight: 600;">-8</span>
+            </div>
+        </div>
+
+        <div class="match-item">
+            <div class="match-header">
+                <div class="match-opponent">Pedro Reyes</div>
+                <span class="badge badge-warning">Draw</span>
+            </div>
+            <div>Italian Game</div>
+            <div class="match-info">
+                <span>Feb 5, 2026</span>
+                <span style="color: var(--neutral-gray); font-weight: 600;">0</span>
+            </div>
+        </div>
+
+        <button class="btn btn-outline">View All Matches</button>
+    </div>
+
+    <!-- Training Page -->
+    <div id="training" class="page">
+        <div class="section-title">Training Center</div>
+
+        <div class="tab-buttons">
+            <button class="tab-btn active" data-tab="puzzles">Puzzles</button>
+            <button class="tab-btn" data-tab="lessons">Lessons</button>
+            <button class="tab-btn" data-tab="bot-play">Play Bot</button>
+            <button class="tab-btn" data-tab="famous">Famous Games</button>
+        </div>
+
+        <!-- Puzzles Tab -->
+        <div class="tab-content active" id="puzzles">
+            <div class="card">
+                <div class="card-header">🎯 Today's Puzzle</div>
+                <div class="chess-board"></div>
+                <p style="text-align: center; font-weight: 600; margin: 15px 0;">White to move and win</p>
+                <button class="btn btn-primary">Solve Puzzle</button>
+            </div>
+
+            <div class="card">
+                <div class="card-header">📈 Your Progress</div>
+                <div style="margin-bottom: 15px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <span style="font-weight: 600;">Puzzles Solved</span>
+                        <span>47/50</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 94%;"></div>
+                    </div>
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <span style="font-weight: 600;">Success Rate</span>
+                        <span>82%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 82%;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lessons Tab -->
+        <div class="tab-content" id="lessons">
+            <div class="lesson-card">
+                <div class="lesson-title">
+                    <span>🎯</span>
+                    <span>Tactical Patterns</span>
+                </div>
+                <p style="font-size: 0.9rem; color: #7f8c8d; margin-bottom: 10px;">
+                    Master pins, forks, and skewers
+                </p>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 60%;"></div>
+                </div>
+                <small style="color: #7f8c8d;">60% Complete</small>
+                <button class="btn btn-primary" style="margin-top: 12px;">Continue</button>
+            </div>
+
+            <div class="lesson-card">
+                <div class="lesson-title">
+                    <span>📚</span>
+                    <span>Opening Repertoire</span>
+                </div>
+                <p style="font-size: 0.9rem; color: #7f8c8d; margin-bottom: 10px;">
+                    Build your opening knowledge
+                </p>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 35%;"></div>
+                </div>
+                <small style="color: #7f8c8d;">35% Complete</small>
+                <button class="btn btn-primary" style="margin-top: 12px;">Continue</button>
+            </div>
+
+            <div class="lesson-card">
+                <div class="lesson-title">
+                    <span>♔</span>
+                    <span>Endgame Mastery</span>
+                </div>
+                <p style="font-size: 0.9rem; color: #7f8c8d; margin-bottom: 10px;">
+                    Essential endgame techniques
+                </p>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 80%;"></div>
+                </div>
+                <small style="color: #7f8c8d;">80% Complete</small>
+                <button class="btn btn-primary" style="margin-top: 12px;">Continue</button>
+            </div>
+        </div>
+
+        <!-- Bot Play Tab -->
+        <div class="tab-content" id="bot-play">
+            <div class="card">
+                <div class="card-header">🤖 Practice with Stockfish</div>
+                <div class="alert alert-info">
+                    <span>ℹ️</span>
+                    <span>Select difficulty and start playing</span>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Engine Strength</label>
+                    <select class="form-select">
+                        <option>Beginner (800)</option>
+                        <option>Intermediate (1200)</option>
+                        <option>Advanced (1600)</option>
+                        <option selected>Expert (2000)</option>
+                        <option>Master (2400)</option>
+                    </select>
+                </div>
+                <button class="btn btn-success">Start Game</button>
+            </div>
+        </div>
+
+        <!-- Famous Games Tab -->
+        <div class="tab-content" id="famous">
+            <div class="match-item">
+                <div style="font-weight: 600; margin-bottom: 8px;">
+                    Fischer vs Spassky
+                </div>
+                <div style="font-size: 0.9rem; color: #7f8c8d; margin-bottom: 8px;">
+                    World Championship 1972
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span class="badge badge-success">1-0</span>
+                    <button class="btn btn-primary" style="width: auto; padding: 8px 20px; margin: 0;">View</button>
+                </div>
+            </div>
+
+            <div class="match-item">
+                <div style="font-weight: 600; margin-bottom: 8px;">
+                    Kasparov vs Karpov
+                </div>
+                <div style="font-size: 0.9rem; color: #7f8c8d; margin-bottom: 8px;">
+                    World Championship 1985
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span class="badge badge-success">1-0</span>
+                    <button class="btn btn-primary" style="width: auto; padding: 8px 20px; margin: 0;">View</button>
+                </div>
+            </div>
+
+            <div class="match-item">
+                <div style="font-weight: 600; margin-bottom: 8px;">
+                    Carlsen vs Anand
+                </div>
+                <div style="font-size: 0.9rem; color: #7f8c8d; margin-bottom: 8px;">
+                    World Championship 2013
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span class="badge badge-success">1-0</span>
+                    <button class="btn btn-primary" style="width: auto; padding: 8px 20px; margin: 0;">View</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tournaments Page -->
+    <div id="tournaments" class="page">
+        <div class="section-title">Active Tournaments</div>
+
+        <div class="tournament-card">
+            <div class="tournament-header" style="background: linear-gradient(135deg, var(--victory-green) 0%, #229954 100%);">
+                UMak Championship 2026
+            </div>
+            <div class="tournament-body">
+                <div class="tournament-info">
+                    <strong>Date:</strong> March 15-17, 2026
+                </div>
+                <div class="tournament-info">
+                    <strong>Format:</strong> Swiss System, 7 rounds
+                </div>
+                <div class="tournament-info">
+                    <strong>Time Control:</strong> 90+30
+                </div>
+                <div class="tournament-info">
+                    <strong>Participants:</strong> 24/32
+                </div>
+                <div style="margin-top: 12px;">
+                    <span class="badge badge-success">Registration Open</span>
+                </div>
+                <button class="btn btn-success" style="margin-top: 15px;">Register Now</button>
+            </div>
+        </div>
+
+        <div class="tournament-card">
+            <div class="tournament-header" style="background: linear-gradient(135deg, var(--strategic-blue) 0%, #2980b9 100%);">
+                Weekly Blitz Tournament
+            </div>
+            <div class="tournament-body">
+                <div class="tournament-info">
+                    <strong>Date:</strong> Every Saturday, 2:00 PM
+                </div>
+                <div class="tournament-info">
+                    <strong>Format:</strong> Round Robin
+                </div>
+                <div class="tournament-info">
+                    <strong>Time Control:</strong> 3+2
+                </div>
+                <div class="tournament-info">
+                    <strong>Participants:</strong> 12/16
+                </div>
+                <div style="margin-top: 12px;">
+                    <span class="badge badge-warning">This Weekend</span>
+                </div>
+                <button class="btn btn-primary" style="margin-top: 15px;">Register</button>
+            </div>
+        </div>
+
+        <div class="tournament-card">
+            <div class="tournament-header" style="background: linear-gradient(135deg, var(--stalemate-gold) 0%, #e67e22 100%);">
+                Monthly Rapid Championship
+            </div>
+            <div class="tournament-body">
+                <div class="tournament-info">
+                    <strong>Date:</strong> March 20, 2026
+                </div>
+                <div class="tournament-info">
+                    <strong>Format:</strong> Single Elimination
+                </div>
+                <div class="tournament-info">
+                    <strong>Time Control:</strong> 15+10
+                </div>
+                <div class="tournament-info">
+                    <strong>Participants:</strong> 8/16
+                </div>
+                <div style="margin-top: 12px;">
+                    <span class="badge badge-primary">Open</span>
+                </div>
+                <button class="btn btn-primary" style="margin-top: 15px;">Register</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Analytics Page -->
+    <div id="analytics" class="page">
+        <div class="section-title">Performance Analytics</div>
+
+        <div class="card">
+            <div class="card-header">📈 Rating Progress</div>
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 15px;">
+                <div style="height: 150px; display: flex; align-items: flex-end; justify-content: space-around; gap: 8px;">
+                    <div style="width: 30px; height: 60%; background: linear-gradient(to top, var(--strategic-blue), var(--victory-green)); border-radius: 4px;"></div>
+                    <div style="width: 30px; height: 75%; background: linear-gradient(to top, var(--strategic-blue), var(--victory-green)); border-radius: 4px;"></div>
+                    <div style="width: 30px; height: 55%; background: linear-gradient(to top, var(--strategic-blue), var(--victory-green)); border-radius: 4px;"></div>
+                    <div style="width: 30px; height: 80%; background: linear-gradient(to top, var(--strategic-blue), var(--victory-green)); border-radius: 4px;"></div>
+                    <div style="width: 30px; height: 85%; background: linear-gradient(to top, var(--strategic-blue), var(--victory-green)); border-radius: 4px;"></div>
+                    <div style="width: 30px; height: 90%; background: linear-gradient(to top, var(--strategic-blue), var(--victory-green)); border-radius: 4px;"></div>
+                </div>
+            </div>
+            <div style="text-align: center; color: var(--victory-green); font-weight: 600;">
+                +42 points this month
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">📊 Opening Statistics</div>
+            <div style="margin-bottom: 15px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                    <span style="font-weight: 600;">Sicilian Defense</span>
+                    <span style="font-weight: 600; color: var(--victory-green);">72%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 72%;"></div>
+                </div>
+            </div>
+            <div style="margin-bottom: 15px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                    <span style="font-weight: 600;">Queen's Gambit</span>
+                    <span style="font-weight: 600; color: var(--victory-green);">65%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 65%;"></div>
+                </div>
+            </div>
+            <div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                    <span style="font-weight: 600;">Ruy Lopez</span>
+                    <span style="font-weight: 600; color: var(--stalemate-gold);">58%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 58%;"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">⚠️ Areas to Improve</div>
+            <div class="alert alert-warning">
+                <span>📉</span>
+                <span><strong>Blunders:</strong> 12 in last 20 games</span>
+            </div>
+            <div class="alert alert-warning">
+                <span>⏱️</span>
+                <span><strong>Time Trouble:</strong> 8 games</span>
+            </div>
+            <div class="alert alert-success">
+                <span>✅</span>
+                <span><strong>Accuracy:</strong> 87% average</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Page -->
+    <div id="admin" class="page">
+        <div class="section-title">Admin Panel</div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value">45</div>
+                <div class="stat-label">Total Members</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">38</div>
+                <div class="stat-label">Active</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">5</div>
+                <div class="stat-label">Pending</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">2</div>
+                <div class="stat-label">Suspended</div>
+            </div>
+        </div>
+
+        <button class="btn btn-success" onclick="openModal('addMember')">+ Add New Member</button>
+
+        <div class="section-title">Members</div>
+
+        <div class="form-group">
+            <input type="text" class="form-input" placeholder="Search members...">
+        </div>
+
+        <div class="mobile-table-item">
+            <div class="table-row">
+                <span class="table-label">Name:</span>
+                <span>John Dela Cruz</span>
+            </div>
+            <div class="table-row">
+                <span class="table-label">Email:</span>
+                <span style="font-size: 0.85rem;">john@umak.edu.ph</span>
+            </div>
+            <div class="table-row">
+                <span class="table-label">Rating:</span>
+                <span style="font-weight: 700;">1850</span>
+            </div>
+            <div class="table-row">
+                <span class="table-label">Status:</span>
+                <span class="badge badge-success">Active</span>
+            </div>
+            <div class="table-actions">
+                <button class="icon-btn">✏️ Edit</button>
+                <button class="icon-btn">🗑️ Delete</button>
+            </div>
+        </div>
+
+        <div class="mobile-table-item">
+            <div class="table-row">
+                <span class="table-label">Name:</span>
+                <span>Maria Santos</span>
+            </div>
+            <div class="table-row">
+                <span class="table-label">Email:</span>
+                <span style="font-size: 0.85rem;">maria@umak.edu.ph</span>
+            </div>
+            <div class="table-row">
+                <span class="table-label">Rating:</span>
+                <span style="font-weight: 700;">1720</span>
+            </div>
+            <div class="table-row">
+                <span class="table-label">Status:</span>
+                <span class="badge badge-success">Active</span>
+            </div>
+            <div class="table-actions">
+                <button class="icon-btn">✏️ Edit</button>
+                <button class="icon-btn">🗑️ Delete</button>
+            </div>
+        </div>
+
+        <div class="mobile-table-item">
+            <div class="table-row">
+                <span class="table-label">Name:</span>
+                <span>Pedro Reyes</span>
+            </div>
+            <div class="table-row">
+                <span class="table-label">Email:</span>
+                <span style="font-size: 0.85rem;">pedro@umak.edu.ph</span>
+            </div>
+            <div class="table-row">
+                <span class="table-label">Rating:</span>
+                <span style="font-weight: 700;">1680</span>
+            </div>
+            <div class="table-row">
+                <span class="table-label">Status:</span>
+                <span class="badge badge-warning">Pending</span>
+            </div>
+            <div class="table-actions">
+                <button class="icon-btn">✏️ Edit</button>
+                <button class="icon-btn">🗑️ Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <div class="bottom-nav">
+        <div class="nav-item active" data-page="dashboard">
+            <div class="nav-icon">🏠</div>
+            <div class="nav-label">Home</div>
+        </div>
+        <div class="nav-item" data-page="training">
+            <div class="nav-icon">🎯</div>
+            <div class="nav-label">Training</div>
+        </div>
+        <div class="nav-item" data-page="tournaments">
+            <div class="nav-icon">🏆</div>
+            <div class="nav-label">Tournaments</div>
+        </div>
+        <div class="nav-item" data-page="analytics">
+            <div class="nav-icon">📊</div>
+            <div class="nav-label">Analytics</div>
+        </div>
+        <div class="nav-item" data-page="admin">
+            <div class="nav-icon">⚙️</div>
+            <div class="nav-label">Admin</div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="puzzle" class="modal">
+        <div class="modal-content">
+            <div class="swipe-indicator"></div>
+            <div class="modal-header">
+                <div class="modal-title">Daily Puzzle</div>
+                <button class="modal-close" onclick="closeModal('puzzle')">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="chess-board"></div>
+                <p style="text-align: center; font-weight: 600; margin: 15px 0; font-size: 1.1rem;">
+                    White to move and win
+                </p>
+                <div class="alert alert-info">
+                    <span>💡</span>
+                    <span>Look for a tactical opportunity</span>
+                </div>
+                <button class="btn btn-outline">Show Hint</button>
+                <button class="btn btn-success">Submit Solution</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="analyze" class="modal">
+        <div class="modal-content">
+            <div class="swipe-indicator"></div>
+            <div class="modal-header">
+                <div class="modal-title">Game Analysis</div>
+                <button class="modal-close" onclick="closeModal('analyze')">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="chess-board"></div>
+                <div class="card">
+                    <div class="card-header">🎮 Engine Evaluation</div>
+                    <div style="text-align: center; padding: 15px 0;">
+                        <div style="font-size: 2rem; font-weight: 700; color: var(--victory-green);">+0.5</div>
+                        <p style="color: #7f8c8d; margin-top: 5px;">White has a slight advantage</p>
+                    </div>
+                    <div style="padding: 12px; background: #f8f9fa; border-radius: 8px;">
+                        <p style="margin-bottom: 5px;"><strong>Best Move:</strong> Nf3</p>
+                        <p><strong>Opening:</strong> Ruy Lopez</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="bot" class="modal">
+        <div class="modal-content">
+            <div class="swipe-indicator"></div>
+            <div class="modal-header">
+                <div class="modal-title">Play Against Bot</div>
+                <button class="modal-close" onclick="closeModal('bot')">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Select Difficulty</label>
+                    <select class="form-select">
+                        <option>Beginner (800)</option>
+                        <option>Intermediate (1200)</option>
+                        <option>Advanced (1600)</option>
+                        <option selected>Expert (2000)</option>
+                        <option>Master (2400)</option>
+                    </select>
+                </div>
+                <div class="chess-board"></div>
+                <button class="btn btn-success">Start Game</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="addMember" class="modal">
+        <div class="modal-content">
+            <div class="swipe-indicator"></div>
+            <div class="modal-header">
+                <div class="modal-title">Add New Member</div>
+                <button class="modal-close" onclick="closeModal('addMember')">×</button>
+            </div>
+            <div class="modal-body">
+                <form id="addMemberForm">
+                    <div class="form-group">
+                        <label class="form-label">Full Name</label>
+                        <input type="text" class="form-input" placeholder="Enter full name" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-input" placeholder="name@umak.edu.ph" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Initial Rating</label>
+                        <input type="number" class="form-input" placeholder="1500" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Status</label>
+                        <select class="form-select">
+                            <option>Active</option>
+                            <option>Pending</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-success">Add Member</button>
+                    <button type="button" class="btn btn-outline" onclick="closeModal('addMember')">Cancel</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Bottom Navigation
+        const navItems = document.querySelectorAll('.nav-item');
+        const pages = document.querySelectorAll('.page');
+
+        navItems.forEach(item => {
+            item.addEventListener('click', () => {
+                const pageName = item.getAttribute('data-page');
+                switchPage(pageName);
+                
+                // Update active state
+                navItems.forEach(i => i.classList.remove('active'));
+                item.classList.add('active');
+            });
+        });
+
+        function switchPage(pageName) {
+            pages.forEach(page => {
+                page.classList.remove('active');
+            });
+            document.getElementById(pageName).classList.add('active');
+            window.scrollTo(0, 0);
+        }
+
+        // Tab Navigation
+        const tabButtons = document.querySelectorAll('.tab-btn');
+        
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const tabName = button.getAttribute('data-tab');
+                const parentPage = button.closest('.page');
+                
+                // Update buttons
+                parentPage.querySelectorAll('.tab-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                button.classList.add('active');
+                
+                // Update content
+                parentPage.querySelectorAll('.tab-content').forEach(content => {
+                    content.classList.remove('active');
+                });
+                parentPage.querySelector(`#${tabName}`).classList.add('active');
+            });
+        });
+
+        // Modal Functions
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        // Close modal on background click
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.classList.remove('active');
+                    document.body.style.overflow = '';
+                }
+            });
+        });
+
+        // Form handling
+        document.getElementById('addMemberForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            alert('Member added successfully! (Demo)');
+            closeModal('addMember');
+        });
+
+        // Swipe down to close modal
+        let startY = 0;
+        document.querySelectorAll('.modal-content').forEach(content => {
+            content.addEventListener('touchstart', (e) => {
+                startY = e.touches[0].clientY;
+            });
+
+            content.addEventListener('touchmove', (e) => {
+                const currentY = e.touches[0].clientY;
+                const diff = currentY - startY;
+                
+                if (diff > 100 && content.scrollTop === 0) {
+                    const modal = content.closest('.modal');
+                    modal.classList.remove('active');
+                    document.body.style.overflow = '';
+                }
+            });
+        });
+
+        // Prevent pull-to-refresh on iOS
+        document.body.addEventListener('touchmove', (e) => {
+            if (e.target.closest('.modal-content')) return;
+            if (window.scrollY === 0) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+    </script>
+</body>
+</html>
