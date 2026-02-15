@@ -6,6 +6,24 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/SampleScene.unity
-    guid: 8c9cfa26abfee488c85f1582747f6a02
+    path: Assets/Scenes/EntryScene.unity
+    guid: 28c7848d93e806f4d9a38061ec2f88c7
+  - enabled: 1
+    path: Assets/Scenes/MemberScene.unity
+    guid: 7671ff2e2e8c1ea41a45ac5345967123
+  - enabled: 1
+    path: Assets/Scenes/CoachScene.unity
+    guid: 45d0c1f63a0b51245b179d0f36e599a5
+  - enabled: 1
+    path: Assets/Scenes/AdminScene.unity
+    guid: 67a2291211232ea47bc6e80bd6d104e2
+  - enabled: 1
+    path: Assets/Scenes/ChessScene.unity
+    guid: 32c838a3d2466ba4ebf04fabc2067c64
+  - enabled: 1
+    path: Assets/Scenes/AnalysisScene.unity
+    guid: ef82fef804d2cbd498bff25d6fd5b961
+  - enabled: 1
+    path: Assets/Scenes/PuzzleScene.unity
+    guid: ffcd4947ba66b6c45a44ee262322c9d1
   m_configObjects: {}

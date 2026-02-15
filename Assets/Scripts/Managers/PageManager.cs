@@ -1,30 +1,43 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class PageManager : MonoBehaviour
 {
     [SerializeField] private List<GameObject> pageList;
-    [SerializeField] private ThemeManager themeManager;
+    [SerializeField] private Transform canvas;
+    [SerializeField] private Button announcementButton;
 
-    public void SelectPage(GameObject btnPage, bool keepOldPage = false)
+    public void SelectPage()
     {
-        foreach (var page in pageList)
+        foreach (var page in pageList.Where(p => p.activeSelf))
         {
-            if (page == btnPage || (page.activeSelf == true && keepOldPage))
+            var scrollbar = page.GetComponentInChildren<Scrollbar>();
+            if (scrollbar != null)
             {
-                page.SetActive(true);
+                scrollbar.value = 1f;
             }
-            else
-            {
-                var scrollbar = page.GetComponentInChildren<Scrollbar>();
-                if (scrollbar != null)
-                {
-                    scrollbar.value = 1f;
-                }
 
-                page.SetActive(false);
-            }
+            page.transform.SetParent(canvas);
+            page.transform.SetAsFirstSibling();
+            page.SetActive(false);
         }
+    }
+
+    public void OpenPosts()
+    {
+        announcementButton.onClick.Invoke();
+    }
+
+    public void GoToScene(string sceneName)
+    {
+        SceneLoader.Instance.LoadNewScene(sceneName);
+    }
+
+    public void GoToChessScene(int depth)
+    {
+        SceneLoader.Instance.LoadNewScene("ChessScene");
+        StaticDataString.depth = depth;
     }
 }
