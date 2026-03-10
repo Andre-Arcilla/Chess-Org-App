@@ -694,65 +694,69 @@
         <p>UMak Chess Team | Coach: Clark Dela Torre</p>
     </footer>
 
-<script>
-    // Page Navigation
-    const navLinks = document.querySelectorAll('.nav-link');
-    const pages = document.querySelectorAll('.page');
+    <script>
+        // Page Navigation
+        const navLinks = document.querySelectorAll('.nav-link');
+        const pages = document.querySelectorAll('.page');
 
-    navLinks.forEach(link => {
-        link.addEventListener('click', (e) => {
-            e.preventDefault();
-            const pageName = link.getAttribute('data-page');
-            switchPage(pageName);
-        });
-    });
-
-    // We moved the highlight logic INSIDE this function
-    function switchPage(pageName) {
-        // Hide all pages
-        pages.forEach(page => page.style.display = 'none');
-        
-        // Show target page
-        document.getElementById(`${pageName}-page`).style.display = 'block';
-        
-        // Update the active highlight on the navbar
         navLinks.forEach(link => {
-            link.classList.remove('active');
-            if (link.getAttribute('data-page') === pageName) {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const pageName = link.getAttribute('data-page');
+                switchPage(pageName);
+                
+                navLinks.forEach(l => l.classList.remove('active'));
                 link.classList.add('active');
-            }
+                window.scrollTo(0, 0);
+            });
         });
-        
-        // Scroll back to top
-        window.scrollTo(0, 0);
-    }
 
-    // Modal Functions
-    function openModal(modalId) {
-        document.getElementById(modalId).classList.add('active');
-    }
+        function switchPage(pageName) {
+            pages.forEach(page => page.style.display = 'none');
+            document.getElementById(`${pageName}-page`).style.display = 'block';
+        }
 
-    function closeModal(modalId) {
-        document.getElementById(modalId).classList.remove('active');
-    }
-
-    document.querySelectorAll('.modal').forEach(modal => {
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                modal.classList.remove('active');
-            }
+        // Tab Navigation
+        const tabButtons = document.querySelectorAll('.tab-btn');
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const tabName = button.getAttribute('data-tab');
+                const parentTabs = button.closest('.tabs');
+                
+                parentTabs.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                
+                parentTabs.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+                parentTabs.querySelector(`#${tabName}`).classList.add('active');
+            });
         });
-    });
 
-    // Form handling
-    document.querySelectorAll('form').forEach(form => {
-        form.addEventListener('submit', (e) => {
-            e.preventDefault();
-            alert('Submitted! (Demo)');
-            const modal = form.closest('.modal');
-            if (modal) modal.classList.remove('active');
+        // Modal Functions
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.add('active');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.classList.remove('active');
+                }
+            });
         });
-    });
-</script>
+
+        // Form handling
+        document.querySelectorAll('form').forEach(form => {
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                alert('Submitted! (Demo)');
+                const modal = form.closest('.modal');
+                if (modal) modal.classList.remove('active');
+            });
+        });
+    </script>
 </body>
 </html>
