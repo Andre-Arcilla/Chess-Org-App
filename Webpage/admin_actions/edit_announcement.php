@@ -1,5 +1,5 @@
 <?php
-require 'db.php';
+require '../db.php';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $stmt = $pdo->prepare("UPDATE Announcements SET Title = :title, Text = :text, LastEditor = :lastEditor, LastModified = strftime('%s', 'now') WHERE AnnID = :annID");
     $stmt->execute([
@@ -8,6 +8,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ':lastEditor' => $_POST['lastEditorId'],
         ':annID' => $_POST['annID']
     ]);
-    header("Location: chessistant-admin.php?success=AnnouncementUpdated");
+    header("Location: ../chessistant-admin.php?success=AnnouncementUpdated");
     exit;
 }

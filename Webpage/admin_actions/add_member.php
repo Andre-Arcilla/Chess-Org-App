@@ -1,6 +1,6 @@
 <?php
 // Require the database connection we made earlier
-require 'db.php';
+require '../db.php';
 
 // Check if the form was actually submitted
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -50,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 } else {
     // If someone tries to visit add_member.php directly without submitting the form
-    header("Location: chessistant-admin.php");
+    header("Location: ../chessistant-admin.php");
     exit;
 }
 ?>

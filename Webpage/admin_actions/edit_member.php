@@ -1,5 +1,5 @@
 <?php
-require 'db.php';
+require '../db.php';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $stmt = $pdo->prepare("UPDATE Profiles SET StudName = :name, Email = :email, Rating = :rating WHERE StudNum = :studNum");
     $stmt->execute([
@@ -8,6 +8,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ':rating' => (int)$_POST['rating'],
         ':studNum' => $_POST['studNum']
     ]);
-    header("Location: chessistant-admin.php?success=MemberEdited");
+    header("Location: ../chessistant-admin.php?success=MemberEdited");
     exit;
 }

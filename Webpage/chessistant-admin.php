@@ -184,7 +184,7 @@ $announcements = $stmt->fetchAll();
                                                     data-role="<?= htmlspecialchars($member['Role']) ?>"
                                                     onclick="openRoleModal(this)">👑</button>
                                             
-                                            <form action="delete_member.php" method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to completely remove this member?');">
+                                            <form action="admin_actions/delete_member.php" method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to completely remove this member?');">
                                                 <input type="hidden" name="studNum" value="<?= htmlspecialchars($member['StudNum']) ?>">
                                                 <button type="submit" class="icon-btn" title="Delete">🗑️</button>
                                             </form>
@@ -277,7 +277,7 @@ $announcements = $stmt->fetchAll();
                                                         data-text="<?= htmlspecialchars($ann['Text']) ?>"
                                                         onclick="openEditAnnModal(this)">✏️</button>
                                                 
-                                                <form action="delete_announcement.php" method="POST" style="display:inline;" onsubmit="return confirm('Delete this announcement permanently?');">
+                                                <form action="admin_actions/delete_announcement.php" method="POST" style="display:inline;" onsubmit="return confirm('Delete this announcement permanently?');">
                                                     <input type="hidden" name="annID" value="<?= htmlspecialchars($ann['AnnID']) ?>">
                                                     <button type="submit" class="icon-btn" title="Delete">🗑️</button>
                                                 </form>
@@ -326,7 +326,7 @@ $announcements = $stmt->fetchAll();
                 <button type="button" class="modal-close" onclick="closeModal('addMember')">×</button>
             </div>
             <div class="modal-body">
-                <form action="add_member.php" method="POST">
+                <form action="admin_actions/add_member.php" method="POST">
                     <div class="form-group">
                         <label class="form-label">Full Name</label>
                         <input type="text" name="studName" class="form-input" placeholder="Enter full name" required>
@@ -369,7 +369,7 @@ $announcements = $stmt->fetchAll();
                 <button type="button" class="modal-close" onclick="closeModal('editMember')">×</button>
             </div>
             <div class="modal-body">
-                <form action="edit_member.php" method="POST">
+                <form action="admin_actions/edit_member.php" method="POST">
                     <input type="hidden" name="studNum" id="edit_studNum">
                     <div class="form-group">
                         <label class="form-label">Full Name</label>
@@ -396,7 +396,7 @@ $announcements = $stmt->fetchAll();
                 <button type="button" class="modal-close" onclick="closeModal('changeRole')">×</button>
             </div>
             <div class="modal-body">
-                <form action="change_role.php" method="POST">
+                <form action="admin_actions/change_role.php" method="POST">
                     <input type="hidden" name="studNum" id="role_studNum">
                     <div class="form-group">
                         <label class="form-label">Member Name</label>
@@ -429,7 +429,7 @@ $announcements = $stmt->fetchAll();
                 <button type="button" class="modal-close" onclick="closeModal('createAnnouncement')">×</button>
             </div>
             <div class="modal-body">
-                <form action="add_announcement.php" method="POST">
+                <form action="admin_actions/add_announcement.php" method="POST">
                     <input type="hidden" name="authorId" value="A12345932"> 
 
                     <div class="form-group">
@@ -453,7 +453,7 @@ $announcements = $stmt->fetchAll();
                 <button type="button" class="modal-close" onclick="closeModal('editAnnouncement')">×</button>
             </div>
             <div class="modal-body">
-                <form action="edit_announcement.php" method="POST">
+                <form action="admin_actions/edit_announcement.php" method="POST">
                     <input type="hidden" name="lastEditorId" value="A12345932">
                     <input type="hidden" name="annID" id="edit_annID">
 
@@ -477,7 +477,7 @@ $announcements = $stmt->fetchAll();
     </footer>
 
 <script>
-    // --- Page Navigation ---
+    // --- Page Navigation with Local Storage Tab Fix ---
     const navLinks = document.querySelectorAll('.nav-link');
     const pages = document.querySelectorAll('.page');
 
@@ -503,11 +503,11 @@ $announcements = $stmt->fetchAll();
         });
         window.scrollTo(0, 0);
 
-        // THE FIX: Save the active tab to the browser's local storage
+        // Save the active tab to the browser's local storage
         localStorage.setItem('activeAdminTab', pageName);
     }
 
-    // THE FIX: When the page reloads (like after saving a form), return to the saved tab
+    // When the page reloads, return to the saved tab
     document.addEventListener('DOMContentLoaded', () => {
         const savedTab = localStorage.getItem('activeAdminTab');
         if (savedTab) {
