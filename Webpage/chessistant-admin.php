@@ -1,4 +1,9 @@
 <?php
+session_start();
+if (!isset($_SESSION['logged_in']) || $_SESSION['role'] !== 'Admin') {
+    header("Location: login.php");
+    exit();
+}
 require 'db.php';
 
 // Fetch all Members
@@ -33,6 +38,7 @@ $announcements = $stmt->fetchAll();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chessistant - Admin Dashboard</title>
     <link rel="stylesheet" href="chessistant.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>♟️</text></svg>">
 </head>
 
 <body class="admin-theme"> 
@@ -50,6 +56,8 @@ $announcements = $stmt->fetchAll();
                 <li><a href="#" class="nav-link" data-page="tournaments">Tournaments</a></li>
                 <li><a href="#" class="nav-link" data-page="announcements">Announcements</a></li>
                 <li><a href="#" class="nav-link" data-page="settings">System Settings</a></li>
+
+                <li><a href="logout.php" class="nav-link" style="background: rgba(231, 76, 60, 0.8); margin-left: 15px; border-radius: 6px; padding: 10px 20px; align-self: center;">Logout 🚪</a></li>
             </ul>
         </div>
     </nav>
@@ -477,15 +485,19 @@ $announcements = $stmt->fetchAll();
     </footer>
 
 <script>
-    // --- Page Navigation with Local Storage Tab Fix ---
+// --- Page Navigation ---
     const navLinks = document.querySelectorAll('.nav-link');
     const pages = document.querySelectorAll('.page');
 
     navLinks.forEach(link => {
         link.addEventListener('click', (e) => {
-            e.preventDefault();
-            const pageName = link.getAttribute('data-page');
-            switchPage(pageName);
+            // THE FIX: Only prevent default and switch tabs IF it has a data-page attribute
+            if (link.hasAttribute('data-page')) {
+                e.preventDefault();
+                const pageName = link.getAttribute('data-page');
+                switchPage(pageName);
+            }
+            // If it DOESN'T have data-page (like our Logout button), it will normally navigate to the link!
         });
     });
 
