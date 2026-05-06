@@ -58,7 +58,14 @@ async function handleLogin(e) {
         };
         localStorage.setItem('currentUser', JSON.stringify(safeUserData));
 
-        window.location.href = '/dashboard.html';
+        // Redirect based on role
+        if (profile.Role === 'Admin') {
+            window.location.href = '/dashboard.html';
+        } else if (profile.Role === 'Member') {
+            window.location.href = '/member-dashboard.html';
+        } else {
+            throw new Error('Unknown user role');
+        }
     } catch (error) {
         console.error('Login Error:', error.message);
         errorMessage.textContent = error.message;
