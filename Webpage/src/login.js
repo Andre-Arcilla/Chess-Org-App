@@ -21,16 +21,44 @@ async function handleLogin(e) {
     errorMessage.hidden = true;
     
     try {
-        const { data, error } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-        });
+        // const { data, error } = await supabase.auth.signInWithPassword({
+        //     email,
+        //     password,
+        // });
         
-        if (error) throw error;
-        
+        // if (error) throw error;
+
         // Successful login: Redirect to Dashboard
-        window.location.href = '/dashboard.html';
+        // if (profile.Role === 'Admin') {
+        //     window.location.href = '/dashboard.html';
+        // }
         
+        const { data: profiles, error: profileError } = await supabase
+            .schema('Chessistant')
+            .from('Profiles')
+            .select('*')
+            .eq('Email', email)
+            .limit(1);
+
+        console.log('Profile query result:', { profiles, profileError });
+
+        // Verify errors
+        if (profileError) throw new Error(profileError.message || 'User not found');
+        if (!profiles || profiles.length === 0) throw new Error('User not found');
+
+        const profile = profiles[0];  // Use first row if multiples exist
+        if (profile.Password != password) throw new Error('Invalid password');
+
+        // Store only safe user data in localStorage (no password)
+        const safeUserData = {
+            StudName: profile.StudName,
+            StudNum: profile.StudNum,
+            Role: profile.Role,
+            Email: profile.Email
+        };
+        localStorage.setItem('currentUser', JSON.stringify(safeUserData));
+
+        window.location.href = '/dashboard.html';
     } catch (error) {
         console.error('Login Error:', error.message);
         errorMessage.textContent = error.message;
