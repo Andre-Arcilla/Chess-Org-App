@@ -74,3 +74,4 @@ crashlytics-build.properties
 # Plastic SCM / Unity Version Control
 .plastic/
 plastic.workspace
+Webpage/.env
