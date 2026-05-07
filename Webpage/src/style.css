@@ -178,6 +178,7 @@ button:disabled {
 
 .sidebar {
     width: 280px;
+    flex-shrink: 0;
     background: var(--mahogany);
     background-image: var(--texture), linear-gradient(var(--mahogany), var(--oak-dark));
     background-blend-mode: overlay;
@@ -231,17 +232,23 @@ button:disabled {
 /* Content Area */
 .main-content {
     flex-grow: 1;
-    overflow-y: auto;
-    padding: 50px;
+    display: flex;
+    flex-direction: column;
 }
 
 .top-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 50px;
-    padding-bottom: 25px;
+    margin: 0px 25px;
+    padding: 25px;
     border-bottom: 3px solid var(--oak);
+}
+
+.content-body { 
+    padding: 30px;
+    overflow-y: auto;
+    scrollbar-gutter: stable both-edges;
 }
 
 .top-header h2 {
@@ -364,7 +371,16 @@ button:disabled {
     border: 8px solid var(--oak);
     position: relative;
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-scroll {
+    flex: 1;
     overflow-y: auto;
+    scrollbar-gutter: stable both-edges;
+    display: flex;
+    flex-direction: column;
 }
 
 .modal-close {
@@ -383,10 +399,11 @@ button:disabled {
 }
 
 .modal-body {
-    padding: 0px 20px;
+    padding: 20px 10px;
     line-height: 1.6;
     white-space: pre-wrap;
     color: var(--text);
+    height: 100%;
 }
 
 .modal-hr {

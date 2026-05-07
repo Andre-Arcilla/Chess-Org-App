@@ -6,8 +6,9 @@ const Announcements = () => {
   const { adminData } = useOutletContext();
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [isModalEditing, setIsModalEditing] = useState(false);
+  const [isModalAdding, setIsModalAdding] = useState(false);
   const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
   const [formData, setFormData] = useState({ Title: '', Date: '', Text: '' });
 
@@ -35,14 +36,28 @@ const Announcements = () => {
 
   const openModal = (ann) => {
     setSelectedAnnouncement(ann);
+    // If no AnnID, it's a new announcement - go into edit mode
+    if (!ann.AnnID) {
+      setIsModalEditing(true);
+      setIsModalAdding(true);
+      setEditingId(null);
+      setFormData({ Title: ann.Title || '', Date: ann.Date || '', Text: ann.Text || '' });
+    } else {
+      setIsModalEditing(false);
+      setIsModalAdding(false);
+    }
   };
 
   const closeModal = () => {
     setSelectedAnnouncement(null);
+    setIsModalEditing(false);
+    setIsModalAdding(false);
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) {
+      e.preventDefault();
+    }
     try {
       const payload = {
         Title: formData.Title,
@@ -72,8 +87,8 @@ const Announcements = () => {
 
       setFormData({ Title: '', Date: '', Text: '' });
       setEditingId(null);
-      setShowForm(false);
       fetchAnnouncements();
+      closeModal();
     } catch (err) {
       console.error('Error saving announcement:', JSON.stringify(err, null, 2));
       alert('Save failed! Check the console for details.');
@@ -112,35 +127,15 @@ const Announcements = () => {
 
   return (
     <div className="card">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', overflowY: 'hidden', scrollbarGutter: 'stable both-edges' }}>
         <h3>Announcements</h3>
-        <button onClick={() => { setShowForm(!showForm); setEditingId(null); setFormData({ Title: '', Date: '', Text: '' }); }} style={{ width: 'auto', padding: '10px 20px' }}>
-          {showForm ? 'Cancel' : 'Post Announcement'}
+        <button onClick={() => { 
+          const today = new Date().toISOString().split('T')[0];
+          openModal({ Title: '', Date: today, Text: '' });
+        }} style={{ width: 'auto', padding: '10px 20px' }}>
+          Post Announcement
         </button>
       </div>
-
-      {showForm && (
-        <form onSubmit={handleSubmit} style={{ marginTop: '20px', padding: '20px', border: '1px solid var(--oak)', background: 'var(--antique-white)' }}>
-          <div className="form-group">
-            <label>Title</label>
-            <input value={formData.Title} onChange={(e) => setFormData({...formData, Title: e.target.value})} required />
-          </div>
-          <div className="form-group">
-            <label>Date</label>
-            <input type="date" value={formData.Date} onChange={(e) => setFormData({...formData, Date: e.target.value})} required />
-          </div>
-          <div className="form-group">
-            <label>Content</label>
-            <textarea 
-              value={formData.Text} 
-              onChange={(e) => setFormData({...formData, Text: e.target.value})} 
-              style={{ width: '100%', minHeight: '100px', padding: '10px', background: 'var(--parchment)', border: '1px solid var(--oak)' }}
-              required 
-            />
-          </div>
-          <button type="submit" style={{ marginTop: '10px' }}>{editingId ? 'Update Announcement' : 'Publish Announcement'}</button>
-        </form>
-      )}
 
       <div style={{ marginTop: '30px' }}>
         {loading ? <p>Loading...</p> : announcements.map((ann) => (
@@ -153,10 +148,6 @@ const Announcements = () => {
             <span className="label">{displayDate(ann.Date)}</span>
             <span className="value" style={{ fontSize: '1.5rem' }}>{ann.Title}</span>
             <p style={{ marginTop: '10px', color: 'var(--text-muted)', display: '-webkit-box', WebkitLineClamp: '2', WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{ann.Text}</p>
-            <div style={{ marginTop: '15px' }}>
-              <button onClick={(e) => handleEdit(ann, e)} style={{ padding: '5px 10px', fontSize: '0.8rem', width: 'auto', marginRight: '5px' }}>Edit</button>
-              <button onClick={(e) => handleDelete(ann.AnnID, e)} style={{ padding: '5px 10px', fontSize: '0.8rem', width: 'auto', background: 'var(--error)' }}>Delete</button>
-            </div>
           </div>
         ))}
       </div>
@@ -166,33 +157,111 @@ const Announcements = () => {
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <span className="modal-close" onClick={closeModal}>&times;</span>
 
-            {/* Announcement header */}
-            <div style={{ textAlign: 'center', padding: '20px 20px 0px 20px' }}>
-              <h2 style={{ color: 'var(--mahogany)', fontSize: '2.5rem' }}>{selectedAnnouncement.Title}</h2>
-              <span className="label" style={{ color: 'var(--gold-muted)', fontWeight: 'bold' }}>{displayDate(selectedAnnouncement.Date)}</span>
-              <hr className="modal-hr" style={{ marginTop: '10px' }} />
+            {/* scrollable container for header and body */}
+            <div className="modal-scroll"> 
+              {/* modal header */}
+              <div style={{ textAlign: 'center', padding: '20px 10px 0px 10px', flexShrink: 0 }}>
+                {isModalEditing ? (
+                  <div style={{ marginBottom: '10px' }}>
+                    <input 
+                      value={formData.Title} 
+                      onChange={(e) => setFormData({...formData, Title: e.target.value})} 
+                      style={{ 
+                        fontSize: '2.5rem', 
+                        width: '95%', 
+                        textAlign: 'center', 
+                        padding: '10px', 
+                        background: 'var(--antique-white)', 
+                        border: '1px solid var(--oak)', 
+                        color: 'var(--mahogany)', 
+                        fontFamily: 'var(--font-serif)',
+                        fontWeight: 'bold',
+                        outline: 'none'
+                      }}
+                      placeholder="Announcement Title"
+                      required 
+                    />
+                  </div>
+                ) : (
+                  <h2 style={{ color: 'var(--mahogany)', fontSize: '2.5rem' }}>{selectedAnnouncement.Title}</h2>
+                )}
+                <span className="label" style={{ color: 'var(--gold-muted)', fontWeight: 'bold' }}>{displayDate(selectedAnnouncement.Date)}</span>
+                <hr className="modal-hr" style={{ marginTop: '20px' }} />
+              </div>
+
+              {/* modal body */}
+              <div className="modal-body">
+                {isModalEditing ? (
+                  <textarea 
+                    value={formData.Text} 
+                    onChange={(e) => setFormData({...formData, Text: e.target.value})} 
+                    style={{ 
+                      width: '100%',
+                      height: '100%',
+                        padding: '10px', 
+                        background: 'var(--antique-white)', 
+                        border: '1px solid var(--oak)', 
+                      fontSize: '1rem', 
+                      fontFamily: 'inherit',
+                      lineHeight: '1.6',
+                      color: 'var(--text)',
+                      outline: 'none',
+                      resize: 'none'
+                    }}
+                    placeholder="Announcement Content"
+                    required 
+                  />
+                ) : (
+                  <p>{selectedAnnouncement.Text}</p>
+                )}
+              </div>
             </div>
 
-            {/* Announcement content */}
-            <div className="modal-body">
-              {selectedAnnouncement.Text}
-            </div>
-
-            {/* Admin actions at bottom of modal */}
-            <div style={{ padding: '0px 20px 20px 20px', position: 'sticky', bottom: '0px', backgroundColor: 'var(--parchment)' }}>
+            {/* modal footer */}
+            <div style={{ padding: '0px 10px 20px 10px', backgroundColor: 'var(--parchment)', flexShrink: 0, position: 'sticky', bottom: '0', overflowY: 'hidden', scrollbarGutter: 'stable both-edges' }}>
               <hr className="modal-hr" />
               <br></br>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                <button 
-                  onClick={(e) => { handleEdit(selectedAnnouncement, e); closeModal(); }} 
-                  style={{ padding: '10px 20px', margin: '0', fontSize: '0.9rem', width: 'auto' }}>
-                  Edit
-                </button>
-                <button 
-                  onClick={(e) => { handleDelete(selectedAnnouncement.AnnID, e); closeModal(); }} 
-                  style={{ padding: '10px 20px', margin: '0', fontSize: '0.9rem', width: 'auto', background: 'var(--error)' }}>
-                  Delete
-                </button>
+                {isModalEditing ? (
+                  <>
+                    {isModalAdding ? (
+                      <button 
+                        onClick={handleSubmit}
+                        style={{ padding: '10px 20px', margin: '0', fontSize: '0.9rem', width: 'auto' }}>
+                        Post
+                      </button>
+                    ) : (
+                      <button 
+                        onClick={handleSubmit} 
+                        style={{ padding: '10px 20px', margin: '0', fontSize: '0.9rem', width: 'auto' }}>
+                        Save Changes
+                      </button>
+                    )}
+                    <button 
+                      onClick={() => setIsModalEditing(false)} 
+                      style={{ padding: '10px 20px', margin: '0', fontSize: '0.9rem', width: 'auto' }}>
+                      Cancel
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button 
+                      onClick={(e) => { 
+                        setIsModalEditing(true);
+                        const dateStr = selectedAnnouncement.Date ? new Date(selectedAnnouncement.Date).toISOString().split('T')[0] : '';
+                        setFormData({ Title: selectedAnnouncement.Title, Date: dateStr, Text: selectedAnnouncement.Text });
+                        setEditingId(selectedAnnouncement.AnnID);
+                      }} 
+                      style={{ padding: '10px 20px', margin: '0', fontSize: '0.9rem', width: 'auto' }}>
+                      Edit
+                    </button>
+                    <button 
+                      onClick={(e) => { handleDelete(selectedAnnouncement.AnnID, e); closeModal(); }} 
+                      style={{ padding: '10px 20px', margin: '0', fontSize: '0.9rem', width: 'auto', background: 'var(--error)' }}>
+                      Delete
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           </div>
