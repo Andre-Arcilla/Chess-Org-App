@@ -8,7 +8,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: resolve(__dirname, 'index.html'),
-        dashboard: resolve(__dirname, 'dashboard.html'),
+        'dashboard-ADMIN': resolve(__dirname, 'dashboard-ADMIN.html')
       },
     },
   },

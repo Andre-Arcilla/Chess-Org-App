@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import MemberDashboardLayout from './components/MemberDashboardLayout';
-import MemberHome from './member pages/MemberHome';
-import MemberProfile from './member pages/MemberProfile';
-import MemberTournaments from './member pages/MemberTournaments';
+import MemberDashboardLayout from './components/DashboardLayout-MEMBER';
+import MemberHome from './pages-MEMBER/MemberHome';
+import MemberProfile from './pages-MEMBER/MemberProfile';
+import MemberTournaments from './pages-MEMBER/MemberTournaments';
 
 const MemberBouncer = ({ children }) => {
     const [loading, setLoading] = useState(true);

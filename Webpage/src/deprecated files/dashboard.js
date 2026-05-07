@@ -1,4 +1,4 @@
-import { supabase } from './db.js';
+import { supabase } from '../db.js';
 
 const loadingOverlay = document.getElementById('loading-overlay');
 const dashboardContent = document.getElementById('dashboard-content');

@@ -60,9 +60,9 @@ async function handleLogin(e) {
 
         // Redirect based on role
         if (profile.Role === 'Admin') {
-            window.location.href = '/dashboard.html';
+            window.location.href = '/dashboard-ADMIN.html';
         } else if (profile.Role === 'Member') {
-            window.location.href = '/member-dashboard.html';
+            window.location.href = '/dashboard-MEMBER.html';
         } else {
             throw new Error('Unknown user role');
         }

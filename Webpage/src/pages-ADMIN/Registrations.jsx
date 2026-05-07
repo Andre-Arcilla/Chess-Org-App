@@ -39,7 +39,7 @@ const Registrations = () => {
           Email: reg.Email,
           Password: reg.Password,
           Role: 'Member',
-          Rating: 1200, 
+          Rating: 100, 
           PuzzlesWin: 0,
           PuzzlesTotal: 0,
           Date: new Date().toISOString(), // Date is standard string

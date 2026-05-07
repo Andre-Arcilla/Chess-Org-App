@@ -260,7 +260,19 @@ button:disabled {
     text-decoration: underline var(--gold);
 }
 
+/* Tables */
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+td:nth-child(4) {
+    text-align: center;
+}
+
 .role-tag {
+    display: block;
     background: var(--oak);
     background-image: var(--texture);
     color: white;
@@ -271,6 +283,8 @@ button:disabled {
     text-transform: uppercase;
     letter-spacing: 1px;
     border: 1px solid var(--gold);
+    width: 100%;
+    text-align: center;
 }
 
 .card {

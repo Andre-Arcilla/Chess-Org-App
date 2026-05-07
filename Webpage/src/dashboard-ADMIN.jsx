@@ -2,17 +2,17 @@ import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { supabase } from './db';
-import DashboardLayout from './components/DashboardLayout';
-import Overview from './pages/Overview';
-import Members from './pages/Members';
-import Registrations from './pages/Registrations';
-import Tournaments from './pages/Tournaments';
-import OrgRoster from './pages/OrgRoster';
-import Announcements from './pages/Announcements';
+import DashboardLayout from './components/DashboardLayout-ADMIN';
+import Overview from './pages-ADMIN/Overview';
+import Members from './pages-ADMIN/Members';
+import Registrations from './pages-ADMIN/Registrations';
+import Tournaments from './pages-ADMIN/Tournaments';
+import OrgRoster from './pages-ADMIN/OrgRoster';
+import Announcements from './pages-ADMIN/Announcements';
 
 const Bouncer = ({ children }) => {
   const [loading, setLoading] = useState(true);
-  const [authorized, setAuthorized] = useState(false);
+  const [authorized, setAuthorized] = useState(false); 
   const [adminData, setAdminData] = useState(null);
 
   useEffect(() => {
