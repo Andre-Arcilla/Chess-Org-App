@@ -3,7 +3,7 @@ import React from 'react';
 const Overview = () => {
   return (
     <div className="card">
-      <h3>Club Statistics</h3>
+      <h3 style={{ fontSize: '2rem' }}>Club Statistics</h3>
       <p>Current overview of your elite chess organization.</p>
       
       <div className="placeholder-stats">

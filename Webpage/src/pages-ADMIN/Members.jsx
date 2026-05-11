@@ -15,7 +15,6 @@ const Members = () => {
         .from('Profiles')
         .select('*')
         .order('StudName', { ascending: true });
-      
       if (error) throw error;
       setMembers(data || []);
     } catch (err) {
@@ -84,7 +83,7 @@ const Members = () => {
 
   return (
     <div className="card">
-      <h3>Member Management</h3>
+      <h3 style={{ fontSize: '2rem' }}>Member Management</h3>
       <div style={{ overflowX: 'auto', marginTop: '20px' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
           <thead>

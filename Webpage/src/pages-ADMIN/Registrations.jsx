@@ -106,7 +106,7 @@ const Registrations = () => {
 
   return (
     <div className="card">
-      <h3>Pending Registrations</h3>
+      <h3 style={{ fontSize: '2rem' }}>Pending Registrations</h3>
       <div style={{ marginTop: '20px' }}>
         {registrations.length === 0 ? (
           <p>No pending applications.</p>

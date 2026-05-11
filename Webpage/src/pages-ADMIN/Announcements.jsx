@@ -20,7 +20,6 @@ const Announcements = () => {
         .from('Announcements')
         .select('*')
         .order('Date', { ascending: false });
-      
       if (error) throw error;
       setAnnouncements(data || []);
     } catch (err) {
@@ -127,12 +126,12 @@ const Announcements = () => {
 
   return (
     <div className="card">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', overflowY: 'hidden', scrollbarGutter: 'stable both-edges' }}>
-        <h3>Announcements</h3>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', alignItems: 'flex-start', overflowY: 'hidden', scrollbarGutter: 'stable both-edges' }}>
+        <h3 style={{ fontSize: '2rem' }}>Announcements Management</h3>
         <button onClick={() => { 
           const today = new Date().toISOString().split('T')[0];
           openModal({ Title: '', Date: today, Text: '' });
-        }} style={{ width: 'auto', padding: '10px 20px' }}>
+        }} style={{ width: 'fit-content', height: 'fit-content', padding: '10px 20px' }}>
           Post Announcement
         </button>
       </div>
@@ -147,7 +146,7 @@ const Announcements = () => {
           >
             <span className="label">{displayDate(ann.Date)}</span>
             <span className="value" style={{ fontSize: '1.5rem' }}>{ann.Title}</span>
-            <p style={{ marginTop: '10px', color: 'var(--text-muted)', display: '-webkit-box', WebkitLineClamp: '2', WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{ann.Text}</p>
+            <p style={{ marginTop: '10px', color: 'var(--text-muted)', display: '-webkit-box', WebkitLineClamp: '1', WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{ann.Text}</p>
           </div>
         ))}
       </div>

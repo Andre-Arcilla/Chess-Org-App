@@ -10,16 +10,32 @@ const Tournaments = () => {
   const [isModalEditing, setIsModalEditing] = useState(false);
   const [isModalAdding, setIsModalAdding] = useState(false);
   const [selectedTournament, setSelectedTournament] = useState(null);
-  const [formData, setFormData] = useState({ Title: '', Date: '', Text: '' });
+  const [formData, setFormData] = useState({ 
+    Title: '', 
+    Date: '', 
+    Hour: '09', 
+    Style: 'Swiss System', 
+    ParticipantCount: 10, 
+    Text: '' 
+  });
+  const [view, setView] = useState('upcoming');
 
   const fetchTournaments = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      const now = new Date().toISOString();
+      let query = supabase
         .schema('Chessistant')
         .from('Tournaments')
-        .select('*')
-        .order('Date', { ascending: false });
+        .select('*');
+
+      if (view === 'upcoming') {
+        query = query.gte('Date', now).order('Date', { ascending: true });
+      } else {
+        query = query.lt('Date', now).order('Date', { ascending: false });
+      }
+      
+      const { data, error } = await query;
       
       if (error) throw error;
       setTournaments(data || []);
@@ -32,7 +48,7 @@ const Tournaments = () => {
 
   useEffect(() => {
     fetchTournaments();
-  }, []);
+  }, [view]);
 
   const openModal = (tour) => {
     setSelectedTournament(tour);
@@ -41,7 +57,16 @@ const Tournaments = () => {
       setIsModalEditing(true);
       setIsModalAdding(true);
       setEditingId(null);
-      setFormData({ Title: tour.Title || '', Date: tour.Date || '', Text: tour.Text || '' });
+      // tour.Date is expected to be 'YYYY-MM-DDTHH:00' here if called from Add button
+      const [d, t] = (tour.Date || '').split('T');
+      setFormData({ 
+        Title: tour.Title || '', 
+        Date: d || '', 
+        Hour: (t || '09:00').split(':')[0], 
+        Style: tour.Style || 'Swiss System',
+        ParticipantCount: tour.ParticipantCount || 10,
+        Text: tour.Text || '' 
+      });
     } else {
       setIsModalEditing(false);
       setIsModalAdding(false);
@@ -58,12 +83,22 @@ const Tournaments = () => {
     if (e && e.preventDefault) {
       e.preventDefault();
     }
+
+    const combinedDate = new Date(`${formData.Date}T${formData.Hour}:00`);
+
+    if (combinedDate < new Date()) {
+      alert('Cannot set a tournament date in the past!');
+      return;
+    }
+
     try {
       const payload = {
         Title: formData.Title,
         Text: formData.Text,
+        Style: formData.Style,
+        ParticipantCount: formData.ParticipantCount,
         // The Date column expects a standard Timestamp string (ISO)
-        Date: new Date(formData.Date).toISOString(), 
+        Date: combinedDate.toISOString(), 
         // FIX 1: LastModified requires a BigInt integer!
         LastModified: Date.now() 
       };
@@ -89,7 +124,14 @@ const Tournaments = () => {
         if (error) throw error;
       }
 
-      setFormData({ Title: '', Date: '', Text: '' });
+      setFormData({ 
+        Title: '', 
+        Date: '', 
+        Hour: '09', 
+        Style: 'Swiss System', 
+        ParticipantCount: 10, 
+        Text: '' 
+      });
       setEditingId(null);
       fetchTournaments();
       closeModal();
@@ -101,8 +143,29 @@ const Tournaments = () => {
 
   const handleEdit = (tour, e) => {
     if (e) e.stopPropagation();
-    const dateStr = tour.Date ? new Date(tour.Date).toISOString().split('T')[0] : '';
-    setFormData({ Title: tour.Title, Date: dateStr, Text: tour.Text });
+    const date = new Date(tour.Date);
+    if (isNaN(date.getTime())) {
+      setFormData({ 
+        Title: tour.Title, 
+        Date: '', 
+        Hour: '09', 
+        Style: tour.Style || 'Swiss System',
+        ParticipantCount: tour.ParticipantCount || 10,
+        Text: tour.Text 
+      });
+    } else {
+      const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+      const isoStr = localDate.toISOString(); // YYYY-MM-DDTHH:mm:ss.sssZ
+      const [d, t] = isoStr.split('T');
+      setFormData({ 
+        Title: tour.Title, 
+        Date: d, 
+        Hour: t.split(':')[0], 
+        Style: tour.Style || 'Swiss System',
+        ParticipantCount: tour.ParticipantCount || 10,
+        Text: tour.Text 
+      });
+    }
     setEditingId(tour.TourID);
     setIsModalEditing(true);
   };
@@ -126,23 +189,78 @@ const Tournaments = () => {
   const displayDate = (dateVal) => {
     if (!dateVal) return '';
     const d = new Date(dateVal);
-    return isNaN(d.getTime()) ? '' : d.toLocaleDateString();
+    return isNaN(d.getTime()) ? '' : d.toLocaleString([], { 
+      month: 'short', 
+      day: 'numeric', 
+      year: 'numeric', 
+      hour: '2-digit', 
+      hour12: true
+    });
   };
 
   return (
     <div className="card">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', overflowY: 'hidden', scrollbarGutter: 'stable both-edges' }}>
-        <h3>Tournament Management</h3>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', alignItems: 'flex-start', overflowY: 'hidden', scrollbarGutter: 'stable both-edges' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px'}}>
+          <h3 style={{ fontSize: '2rem' }}>Tournament Management</h3>
+          <div style={{ display: 'flex', flexDirection: 'row', gap: '10px', alignItems: 'center' }}> 
+            <h3 style={{ fontSize: '1rem', margin: 0 }}>Sort by:</h3>
+            <button 
+              onClick={() => setView('upcoming')}
+              style={{ 
+                width: 'fit-content', 
+                height: 'fit-content', 
+                padding: '6px 12px', 
+                fontSize: '0.75rem',
+                backgroundColor: view === 'upcoming' ? 'var(--gold)' : 'var(--oak-muted, #5d4037)',
+                color: view === 'upcoming' ? 'var(--mahogany)' : 'var(--antique-white, #f5f5dc)',
+                border: '2px solid',
+                borderColor: view === 'upcoming' ? 'var(--mahogany)' : 'var(--oak)',
+                cursor: 'pointer',
+                fontWeight: view === 'upcoming' ? 'bold' : 'normal',
+                transition: 'background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease',
+                boxSizing: 'border-box'
+              }}
+            >
+              Upcoming Tournaments
+            </button>
+            <button 
+              onClick={() => setView('past')}
+              style={{ 
+                width: 'fit-content', 
+                height: 'fit-content', 
+                padding: '6px 12px', 
+                fontSize: '0.75rem',
+                backgroundColor: view === 'past' ? 'var(--gold)' : 'var(--oak-muted, #5d4037)',
+                color: view === 'past' ? 'var(--mahogany)' : 'var(--antique-white, #f5f5dc)',
+                border: '2px solid',
+                borderColor: view === 'past' ? 'var(--mahogany)' : 'var(--oak)',
+                cursor: 'pointer',
+                fontWeight: view === 'past' ? 'bold' : 'normal',
+                transition: 'background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease',
+                boxSizing: 'border-box'
+              }}
+            >
+              Past Tournaments
+            </button>
+          </div>
+        </div>
         <button onClick={() => { 
-          const today = new Date().toISOString().split('T')[0];
-          openModal({ Title: '', Date: today, Text: '' });
-        }} style={{ width: 'auto', padding: '10px 20px' }}>
+          const now = new Date();
+          const localNow = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+          openModal({ Title: '', Date: `${localNow}T09:00`, Text: '' });
+        }} style={{ width: 'fit-content', height: 'fit-content', padding: '10px 20px' }}>
           Add Tournament
         </button>
       </div>
 
       <div style={{ marginTop: '30px' }}>
-        {loading ? <p>Loading...</p> : tournaments.map((tour) => (
+        {loading ? (
+          <p>Loading...</p>
+        ) : tournaments.length === 0 ? (
+          <p>No pending applications.</p>
+        ) : (
+          tournaments.map((tour) => (
           <div 
             key={tour.TourID} 
             className="stat-item" 
@@ -151,9 +269,10 @@ const Tournaments = () => {
           >
             <span className="label">{displayDate(tour.Date)}</span>
             <span className="value" style={{ fontSize: '1.5rem' }}>{tour.Title}</span>
-            <p style={{ marginTop: '10px', color: 'var(--text-muted)', display: '-webkit-box', WebkitLineClamp: '2', WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{tour.Text}</p>
+            <p style={{ marginTop: '10px', color: 'var(--text-muted)', display: '-webkit-box', WebkitLineClamp: '1', WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{tour.Text}</p>
           </div>
-        ))}
+          ))
+        )}
       </div>
 
       {selectedTournament && (
@@ -185,11 +304,135 @@ const Tournaments = () => {
                       placeholder="Tournament Title"
                       required 
                     />
+                    <div style={{ marginTop: '10px', display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                      <div style={{ flex: '1', minWidth: '150px', maxWidth: '200px' }}>
+                        <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.8rem', color: 'var(--gold)', fontWeight: 'bold', textAlign: 'left' }}>Date</label>
+                        <input 
+                          type="date"
+                          value={formData.Date} 
+                          onChange={(e) => setFormData({...formData, Date: e.target.value})} 
+                          min={new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]}
+                          style={{ 
+                            width: '100%', 
+                            padding: '10px', 
+                            background: 'var(--antique-white)', 
+                            border: '1px solid var(--oak)', 
+                            color: 'var(--mahogany)', 
+                            outline: 'none',
+                            fontSize: '1rem'
+                          }}
+                          required 
+                        />
+                      </div>
+                      <div style={{ flex: '1', minWidth: '100px', maxWidth: '120px' }}>
+                        <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.8rem', color: 'var(--gold)', fontWeight: 'bold', textAlign: 'left' }}>Hour</label>
+                        <select 
+                          value={formData.Hour} 
+                          onChange={(e) => setFormData({...formData, Hour: e.target.value})} 
+                          style={{ 
+                            width: '100%', 
+                            padding: '10px', 
+                            background: 'var(--antique-white)', 
+                            border: '1px solid var(--oak)', 
+                            color: 'var(--mahogany)', 
+                            outline: 'none',
+                            fontSize: '1rem',
+                            cursor: 'pointer'
+                          }}
+                          required 
+                        >
+                          {Array.from({ length: 24 }, (_, i) => {
+                            const hour = i.toString().padStart(2, '0');
+                            const label = i === 0 ? '12 AM' : i === 12 ? '12 PM' : i < 12 ? `${i} AM` : `${i - 12} PM`;
+                            return <option key={hour} value={hour}>{label}</option>;
+                          })}
+                        </select>
+                      </div>
+                      <div style={{ flex: '1', minWidth: '150px', maxWidth: '180px' }}>
+                        <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.8rem', color: 'var(--gold)', fontWeight: 'bold', textAlign: 'left' }}>Style</label>
+                        <select 
+                          value={formData.Style} 
+                          onChange={(e) => {
+                            const newStyle = e.target.value;
+                            const min = newStyle === 'Round Robin' ? 3 : 4;
+                            const max = newStyle === 'Round Robin' ? 16 : 100;
+                            let newParticipants = formData.ParticipantCount;
+                            
+                            if (newParticipants < min) newParticipants = min;
+                            if (newParticipants > max) newParticipants = max;
+                            
+                            setFormData({
+                              ...formData, 
+                              Style: newStyle,
+                              ParticipantCount: newParticipants
+                            });
+                          }} 
+                          style={{ 
+                            width: '100%', 
+                            padding: '10px', 
+                            background: 'var(--antique-white)', 
+                            border: '1px solid var(--oak)', 
+                            color: 'var(--mahogany)', 
+                            outline: 'none',
+                            fontSize: '1rem',
+                            cursor: 'pointer'
+                          }}
+                          required 
+                        >
+                          <option value="Swiss System">Swiss System</option>
+                          <option value="Round Robin">Round Robin</option>
+                        </select>
+                      </div>
+                      <div style={{ flex: '1', minWidth: '100px', maxWidth: '120px' }}>
+                        <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.8rem', color: 'var(--gold)', fontWeight: 'bold', textAlign: 'left' }}>Max Players</label>
+                        <input 
+                          type="number"
+                          value={formData.ParticipantCount} 
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value);
+                            const min = formData.Style === 'Round Robin' ? 3 : 4;
+                            const max = formData.Style === 'Round Robin' ? 16 : 100;
+                            
+                            if (isNaN(val)) {
+                              setFormData({...formData, ParticipantCount: ''});
+                            } else {
+                              // Clamp the value
+                              const clamped = Math.max(0, Math.min(val, max));
+                              setFormData({...formData, ParticipantCount: clamped});
+                            }
+                          }} 
+                          onBlur={(e) => {
+                            const val = parseInt(e.target.value);
+                            const min = formData.Style === 'Round Robin' ? 3 : 4;
+                            const max = formData.Style === 'Round Robin' ? 16 : 100;
+                            if (isNaN(val) || val < min) {
+                              setFormData({...formData, ParticipantCount: min});
+                            } else if (val > max) {
+                              setFormData({...formData, ParticipantCount: max});
+                            }
+                          }}
+                          min={formData.Style === 'Round Robin' ? 3 : 4}
+                          max={formData.Style === 'Round Robin' ? 16 : 100}
+                          style={{ 
+                            width: '100%', 
+                            padding: '10px', 
+                            background: 'var(--antique-white)', 
+                            border: '1px solid var(--oak)', 
+                            color: 'var(--mahogany)', 
+                            outline: 'none',
+                            fontSize: '1rem'
+                          }}
+                          required 
+                        />
+                      </div>
+                    </div>
                   </div>
                 ) : (
-                  <h2 style={{ color: 'var(--mahogany)', fontSize: '2.5rem' }}>{selectedTournament.Title}</h2>
+                  <>
+                    <h2 style={{ color: 'var(--mahogany)', fontSize: '2.5rem' }}>{selectedTournament.Title}</h2>
+                    <span className="label" style={{ color: 'var(--gold-muted)', fontWeight: 'bold' }}>{displayDate(selectedTournament.Date)}</span>
+                  </>
                 )}
-                <span className="label" style={{ color: 'var(--gold-muted)', fontWeight: 'bold' }}>{displayDate(selectedTournament.Date)}</span>
                 <hr className="modal-hr" style={{ marginTop: '20px' }} />
               </div>
 
