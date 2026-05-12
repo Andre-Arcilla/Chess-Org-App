@@ -73,21 +73,26 @@ const Announcements = () => {
           .update(payload)
           .eq('AnnID', editingId);
         if (error) throw error;
+        setSelectedAnnouncement({ ...selectedAnnouncement, ...payload });
       } else {
         payload.Author = adminData?.StudNum;
         payload.LastEditor = adminData?.StudNum;
         
-        const { error } = await supabase
+        const { data, error } = await supabase
           .schema('Chessistant')
           .from('Announcements')
-          .insert([payload]);
+          .insert([payload])
+          .select();
         if (error) throw error;
+        if (data && data[0]) {
+          setSelectedAnnouncement(data[0]);
+          setEditingId(data[0].AnnID);
+        }
       }
 
-      setFormData({ Title: '', Date: '', Text: '' });
-      setEditingId(null);
       fetchAnnouncements();
-      closeModal();
+      setIsModalEditing(false);
+      setIsModalAdding(false);
     } catch (err) {
       console.error('Error saving announcement:', JSON.stringify(err, null, 2));
       alert('Save failed! Check the console for details.');
@@ -153,7 +158,7 @@ const Announcements = () => {
 
       {selectedAnnouncement && (
         <div className="modal-overlay" onClick={closeModal}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content" style={{ width: "60%" }} onClick={(e) => e.stopPropagation()}>
             <span className="modal-close" onClick={closeModal}>&times;</span>
 
             {/* scrollable container for header and body */}
@@ -211,36 +216,45 @@ const Announcements = () => {
                     required 
                   />
                 ) : (
-                  <p>{selectedAnnouncement.Text}</p>
+                  <p style={{ whiteSpace: 'pre-wrap' }}>{selectedAnnouncement.Text}</p>
                 )}
               </div>
             </div>
 
             {/* modal footer */}
-            <div style={{ padding: '0px 10px 20px 10px', backgroundColor: 'var(--parchment)', flexShrink: 0, position: 'sticky', bottom: '0', overflowY: 'hidden', scrollbarGutter: 'stable both-edges' }}>
+            <div style={{ padding: '0px 10px 20px 10px', backgroundColor: 'var(--parchment)', flexShrink: 0, overflowY: 'hidden', scrollbarGutter: 'stable both-edges' }}>
               <hr className="modal-hr" />
               <br></br>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
                 {isModalEditing ? (
                   <>
                     {isModalAdding ? (
-                      <button 
-                        onClick={handleSubmit}
-                        style={{ padding: '10px 20px', margin: '0', fontSize: '0.9rem', width: 'auto' }}>
-                        Post
-                      </button>
+                      <>
+                        <button 
+                          onClick={handleSubmit}
+                          style={{ padding: '10px 20px', margin: '0', fontSize: '0.9rem', width: 'auto' }}>
+                          Post
+                        </button>
+                        <button 
+                          onClick={closeModal} 
+                          style={{ padding: '10px 20px', margin: '0', fontSize: '0.9rem', width: 'auto' }}>
+                          Cancel
+                        </button>
+                      </>
                     ) : (
-                      <button 
-                        onClick={handleSubmit} 
-                        style={{ padding: '10px 20px', margin: '0', fontSize: '0.9rem', width: 'auto' }}>
-                        Save Changes
-                      </button>
+                      <>
+                        <button 
+                          onClick={handleSubmit} 
+                          style={{ padding: '10px 20px', margin: '0', fontSize: '0.9rem', width: 'auto' }}>
+                          Save Changes
+                        </button>
+                        <button 
+                          onClick={() => setIsModalEditing(false)} 
+                          style={{ padding: '10px 20px', margin: '0', fontSize: '0.9rem', width: 'auto' }}>
+                          Cancel
+                        </button>
+                      </>
                     )}
-                    <button 
-                      onClick={() => setIsModalEditing(false)} 
-                      style={{ padding: '10px 20px', margin: '0', fontSize: '0.9rem', width: 'auto' }}>
-                      Cancel
-                    </button>
                   </>
                 ) : (
                   <>

@@ -385,12 +385,20 @@ p {
     background: var(--parchment);
     background-image: var(--texture);
     height: 90%;
-    width: 60%;
+    width: 90%;
     border: 8px solid var(--oak);
     position: relative;
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
     display: flex;
     flex-direction: column;
+}
+
+.modal-info {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    flex: 1;
+    min-height: 0;
 }
 
 .modal-scroll {

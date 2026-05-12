@@ -19,6 +19,46 @@ const Tournaments = () => {
     Text: '' 
   });
   const [view, setView] = useState('upcoming');
+  const [results, setResults] = useState({});
+
+  const handleResultChange = (row, col, value) => {
+    // Allow partial inputs like '0.' and '1/' so users can finish typing 0.5 or 1/2
+    const allowed = ['0', '1', '0.5', '1/2', '', '0.', '1/'];
+    if (!allowed.includes(value)) return;
+
+    let normalizedValue = value;
+    if (value === '1/2') normalizedValue = '0.5';
+
+    const newResults = { ...results };
+    
+    if (normalizedValue === '') {
+      delete newResults[`${row}-${col}`];
+      delete newResults[`${col}-${row}`];
+    } else {
+      newResults[`${row}-${col}`] = normalizedValue;
+      
+      // Reciprocal logic only for COMPLETE inputs
+      if (normalizedValue === '1') {
+        newResults[`${col}-${row}`] = '0';
+      } else if (normalizedValue === '0') {
+        newResults[`${col}-${row}`] = '1';
+      } else if (normalizedValue === '0.5') {
+        newResults[`${col}-${row}`] = '0.5';
+      }
+    }
+    
+    setResults(newResults);
+  };
+
+  const getScore = (rowIndex) => {
+    let score = 0;
+    for (let i = 0; i < selectedTournament.ParticipantCount; i++) {
+      const val = results[`${rowIndex}-${i}`];
+      if (val === '1') score += 1;
+      else if (val === '0.5' || val === '1/2') score += 0.5;
+    }
+    return score;
+  };
 
   const fetchTournaments = async () => {
     try {
@@ -52,6 +92,7 @@ const Tournaments = () => {
 
   const openModal = (tour) => {
     setSelectedTournament(tour);
+    
     // If no TourID, it's a new tournament - go into edit mode
     if (!tour.TourID) {
       setIsModalEditing(true);
@@ -65,9 +106,17 @@ const Tournaments = () => {
         Hour: (t || '09:00').split(':')[0], 
         Style: tour.Style || 'Swiss System',
         ParticipantCount: tour.ParticipantCount || 10,
-        Text: tour.Text || '' 
+        Text: tour.Text || ''
       });
     } else {
+      setFormData({ 
+        Title: tour.Title || '', 
+        Date: (tour.Date || '').split('T')[0], 
+        Hour: (tour.Date || 'T09').split('T')[1].split(':')[0], 
+        Style: tour.Style || 'Swiss System',
+        ParticipantCount: tour.ParticipantCount || 10,
+        Text: tour.Text || ''
+      });
       setIsModalEditing(false);
       setIsModalAdding(false);
     }
@@ -112,29 +161,27 @@ const Tournaments = () => {
           .update(payload)
           .eq('TourID', editingId);
         if (error) throw error;
+        setSelectedTournament({ ...selectedTournament, ...payload });
       } else {
         // FIX 3: Use StudNum and satisfy the not-null constraint for BOTH fields
         payload.Author = adminData?.StudNum;
         payload.LastEditor = adminData?.StudNum;
         
-        const { error } = await supabase
+        const { data, error } = await supabase
           .schema('Chessistant')
           .from('Tournaments')
-          .insert([payload]);
+          .insert([payload])
+          .select();
         if (error) throw error;
+        if (data && data[0]) {
+          setSelectedTournament(data[0]);
+          setEditingId(data[0].TourID);
+        }
       }
 
-      setFormData({ 
-        Title: '', 
-        Date: '', 
-        Hour: '09', 
-        Style: 'Swiss System', 
-        ParticipantCount: 10, 
-        Text: '' 
-      });
-      setEditingId(null);
       fetchTournaments();
-      closeModal();
+      setIsModalEditing(false);
+      setIsModalAdding(false);
     } catch (err) {
       console.error('Error saving tournament:', JSON.stringify(err, null, 2));
       alert('Save failed! Check the console for details.');
@@ -280,215 +327,333 @@ const Tournaments = () => {
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <span className="modal-close" onClick={closeModal}>&times;</span>
 
-            {/* scrollable container for header and body */}
-            <div className="modal-scroll"> 
-              {/* modal header */}
-              <div style={{ textAlign: 'center', padding: '20px 10px 0px 10px', flexShrink: 0 }}>
-                {isModalEditing ? (
-                  <div style={{ marginBottom: '10px' }}>
-                    <input 
-                      value={formData.Title} 
-                      onChange={(e) => setFormData({...formData, Title: e.target.value})} 
+            <div className="modal-info">
+              {/* scrollable container for header and body */}
+              <div className="modal-scroll"> 
+                {/* modal header */}
+                <div style={{ textAlign: 'center', padding: '20px 10px 0px 10px', flexShrink: 0 }}>
+                  {isModalEditing ? (
+                    <div style={{ marginBottom: '10px' }}>
+                      <input 
+                        value={formData.Title} 
+                        onChange={(e) => setFormData({...formData, Title: e.target.value})} 
+                        style={{ 
+                          fontSize: '2.5rem', 
+                          width: '100%', 
+                          textAlign: 'center', 
+                          padding: '10px', 
+                          background: 'var(--antique-white)', 
+                          border: '1px solid var(--oak)', 
+                          color: 'var(--mahogany)', 
+                          fontFamily: 'var(--font-serif)',
+                          fontWeight: 'bold',
+                          outline: 'none'
+                        }}
+                        placeholder="Tournament Title"
+                        required 
+                      />
+                      <div style={{ marginTop: '10px', width: '100%', display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ width: '26%' }}>
+                          <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.8rem', color: 'var(--gold)', fontWeight: 'bold', textAlign: 'left' }}>Date</label>
+                          <input 
+                            type="date"
+                            value={formData.Date} 
+                            onChange={(e) => setFormData({...formData, Date: e.target.value})} 
+                            min={new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]}
+                            style={{ 
+                              width: '100%', 
+                              padding: '10px', 
+                              background: 'var(--antique-white)', 
+                              border: '1px solid var(--oak)', 
+                              color: 'var(--mahogany)', 
+                              outline: 'none',
+                              fontSize: '1rem'
+                            }}
+                            required 
+                          />
+                        </div>
+                        <div style={{ width: '18%' }}>
+                          <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.8rem', color: 'var(--gold)', fontWeight: 'bold', textAlign: 'left' }}>Hour</label>
+                          <select 
+                            value={formData.Hour} 
+                            onChange={(e) => setFormData({...formData, Hour: e.target.value})} 
+                            style={{ 
+                              width: '100%', 
+                              padding: '10px', 
+                              background: 'var(--antique-white)', 
+                              border: '1px solid var(--oak)', 
+                              color: 'var(--mahogany)', 
+                              outline: 'none',
+                              fontSize: '1rem',
+                              cursor: 'pointer'
+                            }}
+                            required 
+                          >
+                            {Array.from({ length: 24 }, (_, i) => {
+                              const hour = i.toString().padStart(2, '0');
+                              const label = i === 0 ? '12 AM' : i === 12 ? '12 PM' : i < 12 ? `${i} AM` : `${i - 12} PM`;
+                              return <option key={hour} value={hour}>{label}</option>;
+                            })}
+                          </select>
+                        </div>
+                        <div style={{ width: '30' }}>
+                          <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.8rem', color: 'var(--gold)', fontWeight: 'bold', textAlign: 'left' }}>Style</label>
+                          <select 
+                            value={formData.Style} 
+                            onChange={(e) => {
+                              const newStyle = e.target.value;
+                              const min = newStyle === 'Round Robin' ? 3 : 4;
+                              const max = newStyle === 'Round Robin' ? 16 : 100;
+                              let newParticipants = formData.ParticipantCount;
+                              
+                              if (newParticipants < min) newParticipants = min;
+                              if (newParticipants > max) newParticipants = max;
+                              
+                              setFormData({
+                                ...formData, 
+                                Style: newStyle,
+                                ParticipantCount: newParticipants
+                              });
+                            }} 
+                            style={{ 
+                              width: '100%', 
+                              padding: '10px', 
+                              background: 'var(--antique-white)', 
+                              border: '1px solid var(--oak)', 
+                              color: 'var(--mahogany)', 
+                              outline: 'none',
+                              fontSize: '1rem',
+                              cursor: 'pointer'
+                            }}
+                            required 
+                          >
+                            <option value="Swiss System">Swiss System</option>
+                            <option value="Round Robin">Round Robin</option>
+                          </select>
+                        </div>
+                        <div style={{ width: '16' }}>
+                          <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.8rem', color: 'var(--gold)', fontWeight: 'bold', textAlign: 'left' }}>Max Players</label>
+                          <input 
+                            type="number"
+                            value={formData.ParticipantCount} 
+                            onChange={(e) => {
+                              const val = parseInt(e.target.value);
+                              const min = formData.Style === 'Round Robin' ? 3 : 4;
+                              const max = formData.Style === 'Round Robin' ? 16 : 100;
+                              
+                              if (isNaN(val)) {
+                                setFormData({...formData, ParticipantCount: ''});
+                              } else {
+                                // Clamp the value
+                                const clamped = Math.max(0, Math.min(val, max));
+                                setFormData({...formData, ParticipantCount: clamped});
+                              }
+                            }} 
+                            onBlur={(e) => {
+                              const val = parseInt(e.target.value);
+                              const min = formData.Style === 'Round Robin' ? 3 : 4;
+                              const max = formData.Style === 'Round Robin' ? 16 : 100;
+                              if (isNaN(val) || val < min) {
+                                setFormData({...formData, ParticipantCount: min});
+                              } else if (val > max) {
+                                setFormData({...formData, ParticipantCount: max});
+                              }
+                            }}
+                            min={formData.Style === 'Round Robin' ? 3 : 4}
+                            max={formData.Style === 'Round Robin' ? 16 : 100}
+                            style={{ 
+                              width: '100%', 
+                              padding: '10px', 
+                              background: 'var(--antique-white)', 
+                              border: '1px solid var(--oak)', 
+                              color: 'var(--mahogany)', 
+                              outline: 'none',
+                              fontSize: '1rem'
+                            }}
+                            required 
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <h2 style={{ color: 'var(--mahogany)', fontSize: '2.5rem' }}>{selectedTournament.Title}</h2>
+                      <div style={{ marginTop: '10px', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                        <span className="label" style={{ color: 'var(--gold-muted)', fontWeight: 'bold' }}>{displayDate(selectedTournament.Date)}</span>
+                        <span className="label" style={{ color: 'var(--gold-muted)', fontWeight: 'bold' }}>{selectedTournament.ParticipantCount} Player {selectedTournament.Style} Tournament</span>
+                      </div>
+                    </>
+                  )}
+                  <hr className="modal-hr" style={{ marginTop: '20px' }} />
+                </div>
+
+                {/* modal body */}
+                <div className="modal-body">
+                  {isModalEditing ? (
+                    <textarea 
+                      value={formData.Text} 
+                      onChange={(e) => setFormData({...formData, Text: e.target.value})} 
                       style={{ 
-                        fontSize: '2.5rem', 
-                        width: '95%', 
-                        textAlign: 'center', 
+                        width: '100%',
+                        height: '100%',
                         padding: '10px', 
                         background: 'var(--antique-white)', 
                         border: '1px solid var(--oak)', 
-                        color: 'var(--mahogany)', 
-                        fontFamily: 'var(--font-serif)',
-                        fontWeight: 'bold',
-                        outline: 'none'
+                        fontSize: '1rem', 
+                        fontFamily: 'inherit',
+                        lineHeight: '1.6',
+                        color: 'var(--text)',
+                        outline: 'none',
+                        resize: 'none'
                       }}
-                      placeholder="Tournament Title"
+                      placeholder="Tournament Description / Details"
                       required 
                     />
-                    <div style={{ marginTop: '10px', display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
-                      <div style={{ flex: '1', minWidth: '150px', maxWidth: '200px' }}>
-                        <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.8rem', color: 'var(--gold)', fontWeight: 'bold', textAlign: 'left' }}>Date</label>
-                        <input 
-                          type="date"
-                          value={formData.Date} 
-                          onChange={(e) => setFormData({...formData, Date: e.target.value})} 
-                          min={new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]}
-                          style={{ 
-                            width: '100%', 
-                            padding: '10px', 
-                            background: 'var(--antique-white)', 
-                            border: '1px solid var(--oak)', 
-                            color: 'var(--mahogany)', 
-                            outline: 'none',
-                            fontSize: '1rem'
-                          }}
-                          required 
-                        />
-                      </div>
-                      <div style={{ flex: '1', minWidth: '100px', maxWidth: '120px' }}>
-                        <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.8rem', color: 'var(--gold)', fontWeight: 'bold', textAlign: 'left' }}>Hour</label>
-                        <select 
-                          value={formData.Hour} 
-                          onChange={(e) => setFormData({...formData, Hour: e.target.value})} 
-                          style={{ 
-                            width: '100%', 
-                            padding: '10px', 
-                            background: 'var(--antique-white)', 
-                            border: '1px solid var(--oak)', 
-                            color: 'var(--mahogany)', 
-                            outline: 'none',
-                            fontSize: '1rem',
-                            cursor: 'pointer'
-                          }}
-                          required 
-                        >
-                          {Array.from({ length: 24 }, (_, i) => {
-                            const hour = i.toString().padStart(2, '0');
-                            const label = i === 0 ? '12 AM' : i === 12 ? '12 PM' : i < 12 ? `${i} AM` : `${i - 12} PM`;
-                            return <option key={hour} value={hour}>{label}</option>;
-                          })}
-                        </select>
-                      </div>
-                      <div style={{ flex: '1', minWidth: '150px', maxWidth: '180px' }}>
-                        <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.8rem', color: 'var(--gold)', fontWeight: 'bold', textAlign: 'left' }}>Style</label>
-                        <select 
-                          value={formData.Style} 
-                          onChange={(e) => {
-                            const newStyle = e.target.value;
-                            const min = newStyle === 'Round Robin' ? 3 : 4;
-                            const max = newStyle === 'Round Robin' ? 16 : 100;
-                            let newParticipants = formData.ParticipantCount;
-                            
-                            if (newParticipants < min) newParticipants = min;
-                            if (newParticipants > max) newParticipants = max;
-                            
-                            setFormData({
-                              ...formData, 
-                              Style: newStyle,
-                              ParticipantCount: newParticipants
-                            });
-                          }} 
-                          style={{ 
-                            width: '100%', 
-                            padding: '10px', 
-                            background: 'var(--antique-white)', 
-                            border: '1px solid var(--oak)', 
-                            color: 'var(--mahogany)', 
-                            outline: 'none',
-                            fontSize: '1rem',
-                            cursor: 'pointer'
-                          }}
-                          required 
-                        >
-                          <option value="Swiss System">Swiss System</option>
-                          <option value="Round Robin">Round Robin</option>
-                        </select>
-                      </div>
-                      <div style={{ flex: '1', minWidth: '100px', maxWidth: '120px' }}>
-                        <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.8rem', color: 'var(--gold)', fontWeight: 'bold', textAlign: 'left' }}>Max Players</label>
-                        <input 
-                          type="number"
-                          value={formData.ParticipantCount} 
-                          onChange={(e) => {
-                            const val = parseInt(e.target.value);
-                            const min = formData.Style === 'Round Robin' ? 3 : 4;
-                            const max = formData.Style === 'Round Robin' ? 16 : 100;
-                            
-                            if (isNaN(val)) {
-                              setFormData({...formData, ParticipantCount: ''});
-                            } else {
-                              // Clamp the value
-                              const clamped = Math.max(0, Math.min(val, max));
-                              setFormData({...formData, ParticipantCount: clamped});
-                            }
-                          }} 
-                          onBlur={(e) => {
-                            const val = parseInt(e.target.value);
-                            const min = formData.Style === 'Round Robin' ? 3 : 4;
-                            const max = formData.Style === 'Round Robin' ? 16 : 100;
-                            if (isNaN(val) || val < min) {
-                              setFormData({...formData, ParticipantCount: min});
-                            } else if (val > max) {
-                              setFormData({...formData, ParticipantCount: max});
-                            }
-                          }}
-                          min={formData.Style === 'Round Robin' ? 3 : 4}
-                          max={formData.Style === 'Round Robin' ? 16 : 100}
-                          style={{ 
-                            width: '100%', 
-                            padding: '10px', 
-                            background: 'var(--antique-white)', 
-                            border: '1px solid var(--oak)', 
-                            color: 'var(--mahogany)', 
-                            outline: 'none',
-                            fontSize: '1rem'
-                          }}
-                          required 
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ) : (
+                  ) : (
+                    <p style={{ whiteSpace: 'pre-wrap' }}>{selectedTournament.Text}</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="tournament-bracket" style={{ flexBasis: "60%", overflow: 'auto' }}>
+                {selectedTournament.Style === 'Round Robin' ? (
                   <>
-                    <h2 style={{ color: 'var(--mahogany)', fontSize: '2.5rem' }}>{selectedTournament.Title}</h2>
-                    <span className="label" style={{ color: 'var(--gold-muted)', fontWeight: 'bold' }}>{displayDate(selectedTournament.Date)}</span>
+                    <div style={{ padding: '20px 20px 0 20px' }}>
+                      <h4 style={{ fontFamily: 'var(--font-serif)', color: 'var(--mahogany)', marginBottom: '15px' }}>Tournament Crosstable</h4>
+                    </div>
+                    <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0, backgroundColor: 'rgba(255,255,255,0.5)', borderLeft: 'none', borderRight: 'none', borderBottom: '1px solid var(--oak)' }}>
+                      <thead style={{ position: 'sticky', top: 0, zIndex: 10, backgroundColor: 'var(--mahogany)', color: 'var(--parchment)' }}>
+                        <tr style={{ backgroundColor: 'var(--mahogany)', color: 'var(--parchment)' }}>
+                          <th style={{ 
+                            padding: '8px', 
+                            border: '1px solid var(--oak)', 
+                            fontSize: '0.8rem', 
+                            width: '40px',
+                            position: 'sticky',
+                            left: 0,
+                            backgroundColor: 'var(--mahogany)',
+                            zIndex: 11
+                          }}>Rank</th>
+                          <th style={{ padding: '8px', border: '1px solid var(--oak)', fontSize: '0.8rem', width: '180px', minWidth: '180px' }}>Player</th>
+                          {Array.from({ length: selectedTournament.ParticipantCount }).map((_, i) => (
+                            <th key={i} style={{ padding: '8px', border: '1px solid var(--oak)', fontSize: '0.8rem', width: '40px', minWidth: '40px' }}>{i + 1}</th>
+                          ))}
+                          <th style={{ padding: '8px', border: '1px solid var(--oak)', fontSize: '0.8rem', width: '60px', minWidth: '60px' }}>Score</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {Array.from({ length: selectedTournament.ParticipantCount }).map((_, rowIndex) => (
+                          <tr key={rowIndex}>
+                            <td style={{ 
+                              padding: '8px', 
+                              border: '1px solid var(--oak)', 
+                              textAlign: 'center', 
+                              fontSize: '0.8rem', 
+                              backgroundColor: 'var(--antique-white)',
+                              position: 'sticky',
+                              left: 0,
+                              zIndex: 5
+                            }}>
+                              {rowIndex + 1}
+                            </td>
+                            <td style={{ padding: '8px', border: '1px solid var(--oak)', fontWeight: 'bold', fontSize: '0.8rem', backgroundColor: 'var(--antique-white)', width: '180px', minWidth: '180px' }}>
+                              #{rowIndex + 1}
+                            </td>
+                            {Array.from({ length: selectedTournament.ParticipantCount }).map((_, colIndex) => (
+                              <td 
+                                key={colIndex} 
+                                style={{ 
+                                  padding: '0', 
+                                  border: '1px solid var(--oak)', 
+                                  textAlign: 'center', 
+                                  fontSize: '0.8rem',
+                                  width: '40px',
+                                  height: '40px',
+                                  minWidth: '40px',
+                                  backgroundColor: rowIndex === colIndex ? 'var(--mahogany-light)' : 'transparent',
+                                  color: rowIndex === colIndex ? 'var(--parchment)' : 'inherit'
+                                }}
+                              >
+                                {rowIndex === colIndex ? '—' : (
+                                  <input 
+                                    value={results[`${rowIndex}-${colIndex}`] || ''}
+                                    onChange={(e) => handleResultChange(rowIndex, colIndex, e.target.value)}                                    style={{
+                                      width: '100%',
+                                      height: '100%',
+                                      textAlign: 'center',
+                                      border: 'none',
+                                      background: 'transparent',
+                                      outline: 'none',
+                                      padding: 0,
+                                      color: 'inherit',
+                                      fontFamily: 'inherit',
+                                      fontSize: '0.85rem'
+                                    }}
+                                  />
+                                )}
+                              </td>
+                            ))}
+                            <td style={{ padding: '8px', border: '1px solid var(--oak)', textAlign: 'center', fontWeight: 'bold', fontSize: '0.8rem' }}>
+                              {getScore(rowIndex)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </>
-                )}
-                <hr className="modal-hr" style={{ marginTop: '20px' }} />
-              </div>
-
-              {/* modal body */}
-              <div className="modal-body">
-                {isModalEditing ? (
-                  <textarea 
-                    value={formData.Text} 
-                    onChange={(e) => setFormData({...formData, Text: e.target.value})} 
-                    style={{ 
-                      width: '100%',
-                      height: '100%',
-                      padding: '10px', 
-                      background: 'var(--antique-white)', 
-                      border: '1px solid var(--oak)', 
-                      fontSize: '1rem', 
-                      fontFamily: 'inherit',
-                      lineHeight: '1.6',
-                      color: 'var(--text)',
-                      outline: 'none',
-                      resize: 'none'
-                    }}
-                    placeholder="Tournament Description / Details"
-                    required 
-                  />
                 ) : (
-                  <p>{selectedTournament.Text}</p>
+                  <div style={{ 
+                    height: '100%', 
+                    display: 'flex', 
+                    flexDirection: 'column',
+                    justifyContent: 'center', 
+                    alignItems: 'center', 
+                    padding: '40px',
+                    textAlign: 'center',
+                    color: 'var(--text-muted)'
+                  }}>
+                    <h4 style={{ fontFamily: 'var(--font-serif)', color: 'var(--mahogany)', marginBottom: '10px' }}>Swiss System Bracket</h4>
+                    <p style={{ fontStyle: 'italic' }}>Bracket generation for Swiss System is currently being optimized for large participant counts. Check back soon for the automated pairing display!</p>
+                  </div>
                 )}
               </div>
-            </div>
 
+            </div>
+            
             {/* modal footer */}
-            <div style={{ padding: '0px 10px 20px 10px', backgroundColor: 'var(--parchment)', flexShrink: 0, position: 'sticky', bottom: '0', overflowY: 'hidden', scrollbarGutter: 'stable both-edges' }}>
+            <div style={{ padding: '0px 10px 20px 10px', backgroundColor: 'var(--parchment)', flexShrink: 0, overflowY: 'hidden', scrollbarGutter: 'stable both-edges' }}>
               <hr className="modal-hr" />
               <br></br>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
                 {isModalEditing ? (
                   <>
                     {isModalAdding ? (
-                      <button 
-                        onClick={handleSubmit}
-                        style={{ padding: '10px 20px', margin: '0', fontSize: '0.9rem', width: 'auto' }}>
-                        Post
-                      </button>
+                      <>
+                        <button 
+                          onClick={handleSubmit}
+                          style={{ padding: '10px 20px', margin: '0', fontSize: '0.9rem', width: 'auto' }}>
+                          Post
+                        </button>
+                        <button 
+                          onClick={closeModal} 
+                          style={{ padding: '10px 20px', margin: '0', fontSize: '0.9rem', width: 'auto' }}>
+                          Cancel
+                        </button>
+                      </>
                     ) : (
-                      <button 
-                        onClick={handleSubmit} 
-                        style={{ padding: '10px 20px', margin: '0', fontSize: '0.9rem', width: 'auto' }}>
-                        Save Changes
-                      </button>
+                      <>
+                        <button 
+                          onClick={handleSubmit} 
+                          style={{ padding: '10px 20px', margin: '0', fontSize: '0.9rem', width: 'auto' }}>
+                          Save Changes
+                        </button>
+                        <button 
+                          onClick={() => setIsModalEditing(false)} 
+                          style={{ padding: '10px 20px', margin: '0', fontSize: '0.9rem', width: 'auto' }}>
+                          Cancel
+                        </button>
+                      </>
                     )}
-                    <button 
-                      onClick={() => setIsModalEditing(false)} 
-                      style={{ padding: '10px 20px', margin: '0', fontSize: '0.9rem', width: 'auto' }}>
-                      Cancel
-                    </button>
                   </>
                 ) : (
                   <>
