@@ -58,7 +58,7 @@ const DashboardLayout = ({ adminData }) => {
       <main className="main-content">
         <header className="top-header">
           <div className="welcome-text">
-            <h2>Welcome back, <span className="admin-highlight">{adminData?.StudName || 'Admin'}</span></h2>
+            <h2 style={{ display: '-webkit-box', WebkitLineClamp: '1', WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>Welcome back, <span className="admin-highlight">{adminData?.StudName || 'Admin'}</span></h2>
           </div>
           <div className="badge-area">
             <span className="role-tag">Grandmaster Admin</span>

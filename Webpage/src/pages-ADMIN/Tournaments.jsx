@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { supabase } from '../db';
+import RoundRobinCrossTable from '../components/RoundRobinCrossTable';
 
 const Tournaments = () => {
   const { adminData } = useOutletContext();
@@ -20,44 +21,41 @@ const Tournaments = () => {
   });
   const [view, setView] = useState('upcoming');
   const [results, setResults] = useState({});
+  const [participants, setParticipants] = useState([]);
 
-  const handleResultChange = (row, col, value) => {
-    // Allow partial inputs like '0.' and '1/' so users can finish typing 0.5 or 1/2
-    const allowed = ['0', '1', '0.5', '1/2', '', '0.', '1/'];
-    if (!allowed.includes(value)) return;
+  const fetchParticipants = async (tourId) => {
+    if (!tourId) return;
+    try {
+      const { data, error } = await supabase
+        .schema('Chessistant')
+        .from('TournamentParticipants')
+        .select('TPID,StudNum')
+        .eq('TourID', tourId);
 
-    let normalizedValue = value;
-    if (value === '1/2') normalizedValue = '0.5';
+      if (error) throw error;
 
-    const newResults = { ...results };
-    
-    if (normalizedValue === '') {
-      delete newResults[`${row}-${col}`];
-      delete newResults[`${col}-${row}`];
-    } else {
-      newResults[`${row}-${col}`] = normalizedValue;
-      
-      // Reciprocal logic only for COMPLETE inputs
-      if (normalizedValue === '1') {
-        newResults[`${col}-${row}`] = '0';
-      } else if (normalizedValue === '0') {
-        newResults[`${col}-${row}`] = '1';
-      } else if (normalizedValue === '0.5') {
-        newResults[`${col}-${row}`] = '0.5';
+      const studentIds = Array.from(new Set((data || []).map((p) => p.StudNum).filter(Boolean)));
+      let profileMap = {};
+
+      if (studentIds.length > 0) {
+        const { data: profiles, error: profileError } = await supabase
+          .schema('Chessistant')
+          .from('Profiles')
+          .select('StudNum,StudName')
+          .in('StudNum', studentIds);
+
+        if (profileError) throw profileError;
+
+        profileMap = Object.fromEntries((profiles || []).map((profile) => [profile.StudNum, profile.StudName]));
       }
-    }
-    
-    setResults(newResults);
-  };
 
-  const getScore = (rowIndex) => {
-    let score = 0;
-    for (let i = 0; i < selectedTournament.ParticipantCount; i++) {
-      const val = results[`${rowIndex}-${i}`];
-      if (val === '1') score += 1;
-      else if (val === '0.5' || val === '1/2') score += 0.5;
+      setParticipants((data || []).map((p) => ({
+        StudNum: p.StudNum,
+        StudName: profileMap[p.StudNum] || 'Unknown Player'
+      })));
+    } catch (err) {
+      console.error('Error fetching participants:', err);
     }
-    return score;
   };
 
   const fetchTournaments = async () => {
@@ -89,6 +87,43 @@ const Tournaments = () => {
   useEffect(() => {
     fetchTournaments();
   }, [view]);
+
+  // Real-time subscription for participants
+  useEffect(() => {
+    if (!selectedTournament?.TourID) return;
+
+    fetchParticipants(selectedTournament.TourID);
+
+    const subscription = supabase
+      .channel('participants_changes_admin')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'Chessistant',
+          table: 'TournamentParticipants'
+        },
+        () => {
+          fetchParticipants(selectedTournament.TourID);
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'Chessistant',
+          table: 'TournamentParticipants'
+        },
+        () => {
+          fetchParticipants(selectedTournament.TourID);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(subscription);
+    };
+  }, [selectedTournament?.TourID]);
 
   const openModal = (tour) => {
     setSelectedTournament(tour);
@@ -517,90 +552,12 @@ const Tournaments = () => {
 
               <div className="tournament-bracket" style={{ flexBasis: "60%", overflow: 'auto' }}>
                 {selectedTournament.Style === 'Round Robin' ? (
-                  <>
-                    <div style={{ padding: '20px 20px 0 20px' }}>
-                      <h4 style={{ fontFamily: 'var(--font-serif)', color: 'var(--mahogany)', marginBottom: '15px' }}>Tournament Crosstable</h4>
-                    </div>
-                    <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0, backgroundColor: 'rgba(255,255,255,0.5)', borderLeft: 'none', borderRight: 'none', borderBottom: '1px solid var(--oak)' }}>
-                      <thead style={{ position: 'sticky', top: 0, zIndex: 10, backgroundColor: 'var(--mahogany)', color: 'var(--parchment)' }}>
-                        <tr style={{ backgroundColor: 'var(--mahogany)', color: 'var(--parchment)' }}>
-                          <th style={{ 
-                            padding: '8px', 
-                            border: '1px solid var(--oak)', 
-                            fontSize: '0.8rem', 
-                            width: '40px',
-                            position: 'sticky',
-                            left: 0,
-                            backgroundColor: 'var(--mahogany)',
-                            zIndex: 11
-                          }}>Rank</th>
-                          <th style={{ padding: '8px', border: '1px solid var(--oak)', fontSize: '0.8rem', width: '180px', minWidth: '180px' }}>Player</th>
-                          {Array.from({ length: selectedTournament.ParticipantCount }).map((_, i) => (
-                            <th key={i} style={{ padding: '8px', border: '1px solid var(--oak)', fontSize: '0.8rem', width: '40px', minWidth: '40px' }}>{i + 1}</th>
-                          ))}
-                          <th style={{ padding: '8px', border: '1px solid var(--oak)', fontSize: '0.8rem', width: '60px', minWidth: '60px' }}>Score</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {Array.from({ length: selectedTournament.ParticipantCount }).map((_, rowIndex) => (
-                          <tr key={rowIndex}>
-                            <td style={{ 
-                              padding: '8px', 
-                              border: '1px solid var(--oak)', 
-                              textAlign: 'center', 
-                              fontSize: '0.8rem', 
-                              backgroundColor: 'var(--antique-white)',
-                              position: 'sticky',
-                              left: 0,
-                              zIndex: 5
-                            }}>
-                              {rowIndex + 1}
-                            </td>
-                            <td style={{ padding: '8px', border: '1px solid var(--oak)', fontWeight: 'bold', fontSize: '0.8rem', backgroundColor: 'var(--antique-white)', width: '180px', minWidth: '180px' }}>
-                              #{rowIndex + 1}
-                            </td>
-                            {Array.from({ length: selectedTournament.ParticipantCount }).map((_, colIndex) => (
-                              <td 
-                                key={colIndex} 
-                                style={{ 
-                                  padding: '0', 
-                                  border: '1px solid var(--oak)', 
-                                  textAlign: 'center', 
-                                  fontSize: '0.8rem',
-                                  width: '40px',
-                                  height: '40px',
-                                  minWidth: '40px',
-                                  backgroundColor: rowIndex === colIndex ? 'var(--mahogany-light)' : 'transparent',
-                                  color: rowIndex === colIndex ? 'var(--parchment)' : 'inherit'
-                                }}
-                              >
-                                {rowIndex === colIndex ? '—' : (
-                                  <input 
-                                    value={results[`${rowIndex}-${colIndex}`] || ''}
-                                    onChange={(e) => handleResultChange(rowIndex, colIndex, e.target.value)}                                    style={{
-                                      width: '100%',
-                                      height: '100%',
-                                      textAlign: 'center',
-                                      border: 'none',
-                                      background: 'transparent',
-                                      outline: 'none',
-                                      padding: 0,
-                                      color: 'inherit',
-                                      fontFamily: 'inherit',
-                                      fontSize: '0.85rem'
-                                    }}
-                                  />
-                                )}
-                              </td>
-                            ))}
-                            <td style={{ padding: '8px', border: '1px solid var(--oak)', textAlign: 'center', fontWeight: 'bold', fontSize: '0.8rem' }}>
-                              {getScore(rowIndex)}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </>
+                  <RoundRobinCrossTable 
+                    participantCount={selectedTournament.ParticipantCount}
+                    results={results}
+                    setResults={setResults}
+                    participants={participants}
+                  />
                 ) : (
                   <div style={{ 
                     height: '100%', 

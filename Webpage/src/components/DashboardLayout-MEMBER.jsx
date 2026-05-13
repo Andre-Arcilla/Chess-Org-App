@@ -40,7 +40,7 @@ const MemberDashboardLayout = ({ memberData }) => {
       <main className="main-content">
         <header className="top-header">
           <div className="welcome-text">
-            <h2>Welcome, <span className="admin-highlight">{memberData?.StudName || 'Member'}</span></h2>
+            <h2 style={{ display: '-webkit-box', WebkitLineClamp: '1', WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>Welcome, <span className="admin-highlight">{memberData?.StudName || 'Member'}</span></h2>
           </div>
           <div className="badge-area">
             <span className="role-tag">Member</span>
