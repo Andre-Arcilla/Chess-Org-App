@@ -248,6 +248,7 @@ button:disabled {
     padding: 30px;
     overflow-y: auto;
     scrollbar-gutter: stable both-edges;
+    height: 100%;
 }
 
 .top-header h2 {
@@ -293,6 +294,7 @@ td:nth-child(4) {
     padding: 40px;
     border: 1px solid var(--oak);
     box-shadow: 10px 10px 0 var(--antique-white), 10px 10px 0 1px var(--oak);
+    min-height: 100%;
 }
 
 .card h3 {
