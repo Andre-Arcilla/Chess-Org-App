@@ -11,6 +11,7 @@ const Tournaments = () => {
   const [registeredTournaments, setRegisteredTournaments] = useState(new Set());
   const [studentNum, setStudentNum] = useState(null);
   const [participants, setParticipants] = useState([]);
+  const [canUnregisterCurrent, setCanUnregisterCurrent] = useState(true);
 
   const fetchMatches = async (tourId, currentParticipants) => {
     if (!tourId || !currentParticipants || currentParticipants.length === 0) return;
@@ -139,22 +140,12 @@ const Tournaments = () => {
       return;
     }
 
-    const table = 'TournamentParticipants'; // Primary choice
+    const table = 'TournamentParticipants';
 
     try {
       if (registeredTournaments.has(tourId)) {
-        // PREVENT: Check if they have scores first
-        const { data: matches, error: matchError } = await supabase
-          .schema('Chessistant')
-          .from('TournamentMatches')
-          .select('matchid')
-          .eq('tourid', tourId)
-          .or(`player1.eq.${studentNum},player2.eq.${studentNum}`)
-          .limit(1);
-
-        if (matchError) throw matchError;
-
-        if (matches && matches.length > 0) {
+        const canUnregister = await checkCanUnregister(tourId);
+        if (!canUnregister) {
           alert('Cannot unregister: You already have scores recorded in this tournament.');
           return;
         }
@@ -199,8 +190,9 @@ const Tournaments = () => {
         
         setRegisteredTournaments(prev => new Set([...prev, tourId]));
       }
-      // Manually trigger participant refresh for immediate UI feedback
+
       fetchParticipants(tourId);
+      checkCanUnregister(tourId);
     } catch (err) {
       console.error('Error toggling registration:', err);
     }
@@ -264,11 +256,31 @@ const Tournaments = () => {
     };
   }, [selectedTournament?.TourID]);
 
+  const checkCanUnregister = async (tourId) => {
+    if (!studentNum || !tourId) return true;
+    
+    const { data: matches, error } = await supabase
+      .schema('Chessistant')
+      .from('TournamentMatches')
+      .select('matchid')
+      .eq('tourid', tourId)
+      .or(`player1.eq.${studentNum},player2.eq.${studentNum}`)
+      .limit(1);
+
+    if (error) { console.error(error); return true; }
+    
+    const canUnregister = !matches || matches.length === 0;
+    setCanUnregisterCurrent(canUnregister);
+    return canUnregister;
+  };
+
   const openModal = (tour) => {
     // Reset data to prevent "ghosting" from previously viewed tournaments
     setResults({});
     setParticipants([]);
     setSelectedTournament(tour);
+    setCanUnregisterCurrent(true);
+    checkCanUnregister(tour.TourID);
   };
 
   const closeModal = () => {
@@ -408,7 +420,6 @@ const Tournaments = () => {
                   </div>
                 )}
               </div>
-
             </div>
             
             {/* modal footer */}
@@ -418,7 +429,7 @@ const Tournaments = () => {
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
                 <button 
                   onClick={() => toggleRegistration(selectedTournament.TourID)}
-                  style={{ padding: '10px 20px', margin: '0', fontSize: '0.9rem', width: 'auto', }}>
+                  style={{ padding: '10px 20px', margin: '0', fontSize: '0.9rem', width: 'auto', cursor: !canUnregisterCurrent ? 'default' : 'pointer' }} disabled={!canUnregisterCurrent || view === 'past'}>
                   {registeredTournaments.has(selectedTournament.TourID) ? 'Unregister' : 'Register'}
                 </button>
               </div>
