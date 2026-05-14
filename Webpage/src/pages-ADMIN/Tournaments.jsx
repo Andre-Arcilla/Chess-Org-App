@@ -15,7 +15,7 @@ const Tournaments = () => {
     Title: '', 
     Date: '', 
     Hour: '09', 
-    Style: 'Swiss System', 
+    Style: 'Round Robin', 
     ParticipantCount: 10, 
     Text: '' 
   });
@@ -176,7 +176,7 @@ const Tournaments = () => {
         Title: tour.Title || '', 
         Date: d || '', 
         Hour: (t || '09:00').split(':')[0], 
-        Style: tour.Style || 'Swiss System',
+        Style: 'Round Robin',
         ParticipantCount: tour.ParticipantCount || 10,
         Text: tour.Text || ''
       });
@@ -185,7 +185,7 @@ const Tournaments = () => {
         Title: tour.Title || '', 
         Date: (tour.Date || '').split('T')[0], 
         Hour: (tour.Date || 'T09').split('T')[1].split(':')[0], 
-        Style: tour.Style || 'Swiss System',
+        Style: 'Round Robin',
         ParticipantCount: tour.ParticipantCount || 10,
         Text: tour.Text || ''
       });
@@ -218,7 +218,7 @@ const Tournaments = () => {
       const payload = {
         Title: formData.Title,
         Text: formData.Text,
-        Style: formData.Style,
+        Style: 'Round Robin',
         ParticipantCount: formData.ParticipantCount,
         // The Date column expects a standard Timestamp string (ISO)
         Date: combinedDate.toISOString(), 
@@ -373,7 +373,7 @@ const Tournaments = () => {
         Title: tour.Title, 
         Date: '', 
         Hour: '09', 
-        Style: tour.Style || 'Swiss System',
+        Style: 'Round Robin',
         ParticipantCount: tour.ParticipantCount || 10,
         Text: tour.Text 
       });
@@ -385,7 +385,7 @@ const Tournaments = () => {
         Title: tour.Title, 
         Date: d, 
         Hour: t.split(':')[0], 
-        Style: tour.Style || 'Swiss System',
+        Style: 'Round Robin',
         ParticipantCount: tour.ParticipantCount || 10,
         Text: tour.Text 
       });
@@ -530,7 +530,7 @@ const Tournaments = () => {
                         required 
                       />
                       <div style={{ marginTop: '10px', width: '100%', display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div style={{ width: '26%' }}>
+                        <div style={{ width: '50%' }}>
                           <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.8rem', color: 'var(--gold)', fontWeight: 'bold', textAlign: 'left' }}>Date</label>
                           <input 
                             type="date"
@@ -549,7 +549,7 @@ const Tournaments = () => {
                             required 
                           />
                         </div>
-                        <div style={{ width: '18%' }}>
+                        <div style={{ width: '30%' }}>
                           <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.8rem', color: 'var(--gold)', fontWeight: 'bold', textAlign: 'left' }}>Hour</label>
                           <select 
                             value={formData.Hour} 
@@ -573,7 +573,7 @@ const Tournaments = () => {
                             })}
                           </select>
                         </div>
-                        <div style={{ width: '30' }}>
+                        {/* <div style={{ width: '30' }}>
                           <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.8rem', color: 'var(--gold)', fontWeight: 'bold', textAlign: 'left' }}>Style</label>
                           <select 
                             value={formData.Style} 
@@ -607,16 +607,16 @@ const Tournaments = () => {
                             <option value="Swiss System">Swiss System</option>
                             <option value="Round Robin">Round Robin</option>
                           </select>
-                        </div>
-                        <div style={{ width: '16' }}>
+                        </div> */}
+                        <div style={{ width: '15%' }}>
                           <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.8rem', color: 'var(--gold)', fontWeight: 'bold', textAlign: 'left' }}>Max Players</label>
                           <input 
                             type="number"
                             value={formData.ParticipantCount} 
                             onChange={(e) => {
                               const val = parseInt(e.target.value);
-                              const min = formData.Style === 'Round Robin' ? 3 : 4;
-                              const max = formData.Style === 'Round Robin' ? 16 : 100;
+                              const min = 3;
+                              const max = 16;
                               
                               if (isNaN(val)) {
                                 setFormData({...formData, ParticipantCount: ''});
@@ -628,16 +628,16 @@ const Tournaments = () => {
                             }} 
                             onBlur={(e) => {
                               const val = parseInt(e.target.value);
-                              const min = formData.Style === 'Round Robin' ? 3 : 4;
-                              const max = formData.Style === 'Round Robin' ? 16 : 100;
+                              const min = 3;
+                              const max = 16;
                               if (isNaN(val) || val < min) {
                                 setFormData({...formData, ParticipantCount: min});
                               } else if (val > max) {
                                 setFormData({...formData, ParticipantCount: max});
                               }
                             }}
-                            min={formData.Style === 'Round Robin' ? 3 : 4}
-                            max={formData.Style === 'Round Robin' ? 16 : 100}
+                            min={3}
+                            max={16}
                             style={{ 
                               width: '100%', 
                               padding: '10px', 
@@ -692,8 +692,8 @@ const Tournaments = () => {
                 </div>
               </div>
 
-              <div className="tournament-bracket" style={{ flexBasis: "60%", overflow: 'auto' }}>
-                {selectedTournament.Style === 'Round Robin' ? (
+              <div className="tournament-bracket" style={{ flexBasis: "60%", overflow: 'auto', padding: '0 20px 0 0' }}>
+                {/* {selectedTournament.Style === 'Round Robin' ? (
                   <RoundRobinCrossTable 
                     participantCount={selectedTournament.ParticipantCount}
                     results={results}
@@ -715,7 +715,14 @@ const Tournaments = () => {
                     <h4 style={{ fontFamily: 'var(--font-serif)', color: 'var(--mahogany)', marginBottom: '10px' }}>Swiss System Bracket</h4>
                     <p style={{ fontStyle: 'italic' }}>Bracket generation for Swiss System is currently being optimized for large participant counts. Check back soon for the automated pairing display!</p>
                   </div>
-                )}
+                )} */}
+                <RoundRobinCrossTable 
+                  participantCount={isModalEditing ? formData.ParticipantCount : selectedTournament.ParticipantCount}
+                  results={results}
+                  setResults={setResults}
+                  participants={participants}
+                  onSaveMatch={handleSaveMatch}
+                />
               </div>
 
             </div>
