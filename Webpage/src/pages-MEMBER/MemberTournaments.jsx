@@ -12,6 +12,36 @@ const Tournaments = () => {
   const [studentNum, setStudentNum] = useState(null);
   const [participants, setParticipants] = useState([]);
 
+  const fetchMatches = async (tourId, currentParticipants) => {
+    if (!tourId || !currentParticipants || currentParticipants.length === 0) return;
+    try {
+      const { data, error } = await supabase
+        .schema('Chessistant')
+        .from('TournamentMatches')
+        .select('*')
+        .eq('tourid', tourId);
+
+      if (error) throw error;
+
+      const newResults = {};
+      const studNumToIndex = Object.fromEntries(currentParticipants.map((p, i) => [p.StudNum, i]));
+
+      (data || []).forEach(match => {
+        const idx1 = studNumToIndex[match.player1];
+        const idx2 = studNumToIndex[match.player2];
+
+        if (idx1 !== undefined && idx2 !== undefined) {
+          newResults[`${idx1}-${idx2}`] = match.player1result.toString();
+          newResults[`${idx2}-${idx1}`] = match.player2result.toString();
+        }
+      });
+
+      setResults(newResults);
+    } catch (err) {
+      console.error('Error fetching matches:', err);
+    }
+  };
+
   const fetchParticipants = async (tourId) => {
     if (!tourId) return;
     try {
@@ -38,10 +68,14 @@ const Tournaments = () => {
         profileMap = Object.fromEntries((profiles || []).map((profile) => [profile.StudNum, profile.StudName]));
       }
 
-      setParticipants((data || []).map((p) => ({
+      const updatedParticipants = (data || []).map((p) => ({
         StudNum: p.StudNum,
         StudName: profileMap[p.StudNum] || 'Unknown Player'
-      })));
+      }));
+      setParticipants(updatedParticipants);
+      
+      // Fetch matches after participants are loaded
+      fetchMatches(tourId, updatedParticipants);
     } catch (err) {
       console.error('Error fetching participants:', err);
     }
@@ -109,6 +143,22 @@ const Tournaments = () => {
 
     try {
       if (registeredTournaments.has(tourId)) {
+        // PREVENT: Check if they have scores first
+        const { data: matches, error: matchError } = await supabase
+          .schema('Chessistant')
+          .from('TournamentMatches')
+          .select('matchid')
+          .eq('tourid', tourId)
+          .or(`player1.eq.${studentNum},player2.eq.${studentNum}`)
+          .limit(1);
+
+        if (matchError) throw matchError;
+
+        if (matches && matches.length > 0) {
+          alert('Cannot unregister: You already have scores recorded in this tournament.');
+          return;
+        }
+
         // Unregister
         let { error } = await supabase
           .schema('Chessistant')
@@ -215,11 +265,16 @@ const Tournaments = () => {
   }, [selectedTournament?.TourID]);
 
   const openModal = (tour) => {
+    // Reset data to prevent "ghosting" from previously viewed tournaments
+    setResults({});
+    setParticipants([]);
     setSelectedTournament(tour);
   };
 
   const closeModal = () => {
     setSelectedTournament(null);
+    setResults({});
+    setParticipants([]);
   };
 
   const displayDate = (dateVal) => {

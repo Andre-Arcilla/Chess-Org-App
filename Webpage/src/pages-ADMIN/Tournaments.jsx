@@ -23,6 +23,36 @@ const Tournaments = () => {
   const [results, setResults] = useState({});
   const [participants, setParticipants] = useState([]);
 
+  const fetchMatches = async (tourId, currentParticipants) => {
+    if (!tourId || !currentParticipants || currentParticipants.length === 0) return;
+    try {
+      const { data, error } = await supabase
+        .schema('Chessistant')
+        .from('TournamentMatches')
+        .select('*')
+        .eq('tourid', tourId);
+
+      if (error) throw error;
+
+      const newResults = {};
+      const studNumToIndex = Object.fromEntries(currentParticipants.map((p, i) => [p.StudNum, i]));
+
+      (data || []).forEach(match => {
+        const idx1 = studNumToIndex[match.player1];
+        const idx2 = studNumToIndex[match.player2];
+
+        if (idx1 !== undefined && idx2 !== undefined) {
+          newResults[`${idx1}-${idx2}`] = match.player1result.toString();
+          newResults[`${idx2}-${idx1}`] = match.player2result.toString();
+        }
+      });
+
+      setResults(newResults);
+    } catch (err) {
+      console.error('Error fetching matches:', err);
+    }
+  };
+
   const fetchParticipants = async (tourId) => {
     if (!tourId) return;
     try {
@@ -49,10 +79,14 @@ const Tournaments = () => {
         profileMap = Object.fromEntries((profiles || []).map((profile) => [profile.StudNum, profile.StudName]));
       }
 
-      setParticipants((data || []).map((p) => ({
+      const updatedParticipants = (data || []).map((p) => ({
         StudNum: p.StudNum,
         StudName: profileMap[p.StudNum] || 'Unknown Player'
-      })));
+      }));
+      setParticipants(updatedParticipants);
+      
+      // Fetch matches after participants are loaded so we can map StudNum to index
+      fetchMatches(tourId, updatedParticipants);
     } catch (err) {
       console.error('Error fetching participants:', err);
     }
@@ -126,6 +160,9 @@ const Tournaments = () => {
   }, [selectedTournament?.TourID]);
 
   const openModal = (tour) => {
+    // Reset data for the new selection to prevent "ghosting" from previous tournament
+    setResults({});
+    setParticipants([]);
     setSelectedTournament(tour);
     
     // If no TourID, it's a new tournament - go into edit mode
@@ -161,6 +198,8 @@ const Tournaments = () => {
     setSelectedTournament(null);
     setIsModalEditing(false);
     setIsModalAdding(false);
+    setResults({});
+    setParticipants([]);
   };
 
   const handleSubmit = async (e) => {
@@ -220,6 +259,109 @@ const Tournaments = () => {
     } catch (err) {
       console.error('Error saving tournament:', JSON.stringify(err, null, 2));
       alert('Save failed! Check the console for details.');
+    }
+  };
+
+  const handleSaveScores = async () => {
+    if (!selectedTournament?.TourID) return;
+    
+    try {
+      // 1. Identify matches to save. We only save pairs where row < col to avoid duplicates
+      const matchesToSave = [];
+      const participantCount = participants.length;
+
+      for (let i = 0; i < participantCount; i++) {
+        for (let j = i + 1; j < participantCount; j++) {
+          const res1 = results[`${i}-${j}`];
+          const res2 = results[`${j}-${i}`];
+
+          // Only save if at least one result is present
+          if (res1 !== undefined || res2 !== undefined) {
+            matchesToSave.push({
+              tourid: selectedTournament.TourID,
+              player1: participants[i].StudNum,
+              player2: participants[j].StudNum,
+              player1result: parseFloat(res1 || 0.5),
+              player2result: parseFloat(res2 || 0.5)
+            });
+          }
+        }
+      }
+
+      // 2. Clear existing matches for this tournament to avoid duplicates
+      // In a more robust system, we would upsert based on (tourid, player1, player2)
+      const { error: deleteError } = await supabase
+        .schema('Chessistant')
+        .from('TournamentMatches')
+        .delete()
+        .eq('tourid', selectedTournament.TourID);
+
+      if (deleteError) throw deleteError;
+
+      // 3. Insert new matches
+      const { error: insertError } = await supabase
+        .schema('Chessistant')
+        .from('TournamentMatches')
+        .insert(matchesToSave);
+
+      if (insertError) throw insertError;
+
+      alert('Scores saved successfully!');
+    } catch (err) {
+      console.error('Error saving scores:', err);
+      alert('Failed to save scores.');
+    }
+  };
+
+  const handleSaveMatch = async (row, col, value) => {
+    if (!selectedTournament?.TourID || !participants[row] || !participants[col]) return;
+
+    const tourid = selectedTournament.TourID;
+    const [player1Index, player2Index] = row < col ? [row, col] : [col, row];
+    const player1 = participants[player1Index].StudNum;
+    const player2 = participants[player2Index].StudNum;
+
+    try {
+      if (value === '') {
+        const { error } = await supabase
+          .schema('Chessistant')
+          .from('TournamentMatches')
+          .delete()
+          .match({ tourid, player1, player2 });
+
+        if (error) throw error;
+        return;
+      }
+
+      const normalizedValue = value === '1/2' ? 0.5 : parseFloat(value);
+      const isRowLess = row < col;
+      const player1result = isRowLess
+        ? normalizedValue
+        : normalizedValue === 0.5
+          ? 0.5
+          : 1 - normalizedValue;
+      const player2result = isRowLess
+        ? normalizedValue === 0.5
+          ? 0.5
+          : 1 - normalizedValue
+        : normalizedValue;
+
+      const { error: deleteError } = await supabase
+        .schema('Chessistant')
+        .from('TournamentMatches')
+        .delete()
+        .match({ tourid, player1, player2 });
+
+      if (deleteError) throw deleteError;
+
+      const { error: insertError } = await supabase
+        .schema('Chessistant')
+        .from('TournamentMatches')
+        .insert([{ tourid, player1, player2, player1result, player2result }]);
+
+      if (insertError) throw insertError;
+    } catch (err) {
+      console.error('Error saving match result:', err);
     }
   };
 
@@ -557,6 +699,7 @@ const Tournaments = () => {
                     results={results}
                     setResults={setResults}
                     participants={participants}
+                    onSaveMatch={handleSaveMatch}
                   />
                 ) : (
                   <div style={{ 
@@ -614,6 +757,13 @@ const Tournaments = () => {
                   </>
                 ) : (
                   <>
+                    {selectedTournament.Style === 'Round Robin' && (
+                      <button 
+                        onClick={handleSaveScores} 
+                        style={{ padding: '10px 20px', margin: '0', fontSize: '0.9rem', width: 'auto', background: 'var(--success, #2e7d32)', color: 'white' }}>
+                        Save Scores
+                      </button>
+                    )}
                     <button 
                       onClick={(e) => { 
                         handleEdit(selectedTournament, e);

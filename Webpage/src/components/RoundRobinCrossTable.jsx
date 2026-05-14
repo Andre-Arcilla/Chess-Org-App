@@ -1,8 +1,14 @@
 import React from 'react';
 
-const RoundRobinCrossTable = ({ participantCount, results, setResults, readOnly = false, participants = [] }) => {
+const RoundRobinCrossTable = ({ participantCount, results, setResults, readOnly = false, participants = [], onSaveMatch }) => {
   const handleResultChange = (row, col, value) => {
     if (readOnly) return;
+    
+    // PREVENT: Don't allow entry if one or both players are not registered yet
+    if (!participants[row] || !participants[col]) {
+      return;
+    }
+
     // Allow partial inputs like '0.' and '1/' so users can finish typing 0.5 or 1/2
     const allowed = ['0', '1', '0.5', '1/2', '', '0.', '1/'];
     if (!allowed.includes(value)) return;
@@ -15,16 +21,21 @@ const RoundRobinCrossTable = ({ participantCount, results, setResults, readOnly 
     if (normalizedValue === '') {
       delete newResults[`${row}-${col}`];
       delete newResults[`${col}-${row}`];
+      // SAVE: Trigger auto-save for empty/deleted match
+      if (onSaveMatch) onSaveMatch(row, col, '');
     } else {
       newResults[`${row}-${col}`] = normalizedValue;
       
       // Reciprocal logic only for COMPLETE inputs
       if (normalizedValue === '1') {
         newResults[`${col}-${row}`] = '0';
+        if (onSaveMatch) onSaveMatch(row, col, '1');
       } else if (normalizedValue === '0') {
         newResults[`${col}-${row}`] = '1';
+        if (onSaveMatch) onSaveMatch(row, col, '0');
       } else if (normalizedValue === '0.5') {
         newResults[`${col}-${row}`] = '0.5';
+        if (onSaveMatch) onSaveMatch(row, col, '0.5');
       }
     }
     
@@ -127,17 +138,19 @@ const RoundRobinCrossTable = ({ participantCount, results, setResults, readOnly 
                       <input 
                         value={results[`${rowIndex}-${colIndex}`] || ''}
                         onChange={(e) => handleResultChange(rowIndex, colIndex, e.target.value)}
+                        readOnly={!participants[rowIndex] || !participants[colIndex]}
                         style={{
                           width: '100%',
                           height: '100%',
                           textAlign: 'center',
                           border: 'none',
-                          background: 'transparent',
+                          background: (!participants[rowIndex] || !participants[colIndex]) ? 'rgba(0,0,0,0.05)' : 'transparent',
                           outline: 'none',
                           padding: 0,
                           color: 'inherit',
                           fontFamily: 'inherit',
-                          fontSize: '0.85rem'
+                          fontSize: '0.85rem',
+                          cursor: (!participants[rowIndex] || !participants[colIndex]) ? 'default' : 'text'
                         }}
                       />
                     )

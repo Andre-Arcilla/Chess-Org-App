@@ -1,163 +1,94 @@
-CREATE TABLE "Chessistant"."Tournaments" (
-  -- Using IDENTITY for the auto-incrementing Tournament ID
-  "TourID" BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-  
-  "Author" TEXT NOT NULL,
-  "LastEditor" TEXT NOT NULL,
-  "Title" TEXT NOT NULL DEFAULT 'Title',
-  
-  -- Using the proper timestamp type for scheduling events
-  "Date" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  
-  "Text" TEXT NOT NULL DEFAULT 'Text',
-  
-  -- Storing unix epoch for modification tracking
-  "LastModified" BIGINT NOT NULL DEFAULT EXTRACT(EPOCH FROM NOW()),
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
 
-  -- Safety check for the ID
-  CONSTRAINT tourid_check CHECK ("TourID" >= 0)
+CREATE TABLE Chessistant.Announcements (
+  AnnID bigint GENERATED ALWAYS AS IDENTITY NOT NULL CHECK ("AnnID" >= 0),
+  Author text NOT NULL,
+  LastEditor text NOT NULL,
+  Title text NOT NULL DEFAULT 'Title'::text,
+  Date timestamp with time zone NOT NULL DEFAULT now(),
+  Text text NOT NULL DEFAULT 'Text'::text,
+  LastModified bigint NOT NULL DEFAULT EXTRACT(epoch FROM now()),
+  CONSTRAINT Announcements_pkey PRIMARY KEY (AnnID),
+  CONSTRAINT fk_ann_author FOREIGN KEY (Author) REFERENCES Chessistant.Profiles(StudNum),
+  CONSTRAINT fk_ann_editor FOREIGN KEY (LastEditor) REFERENCES Chessistant.Profiles(StudNum)
 );
-
-CREATE TABLE "Chessistant"."Registrations" (
-  -- Identity handles the auto-incrementing RegID
-  "RegID" BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-  
-  "StudName" TEXT NOT NULL DEFAULT 'John Smith',
-  
-  -- Ensures a student can't register multiple times with the same ID
-  "StudNum" TEXT NOT NULL UNIQUE,
-  
-  "Email" TEXT NOT NULL DEFAULT 'no.mail@umak.edu.ph',
-  
-  -- Standard text for passwords (consider Supabase Auth for production!)
-  "Password" TEXT NOT NULL DEFAULT '12345',
-  
-  -- Using Timestamptz for accurate registration tracking
-  "Date" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  
-  -- Storing the last modified time as a Unix epoch
-  "LastModified" BIGINT NOT NULL DEFAULT EXTRACT(EPOCH FROM NOW()),
-
-  -- Ensures the ID is never negative
-  CONSTRAINT regid_check CHECK ("RegID" >= 0)
+CREATE TABLE Chessistant.ChessGames (
+  GameID bigint GENERATED ALWAYS AS IDENTITY NOT NULL CHECK ("GameID" >= 0),
+  GameNum integer NOT NULL DEFAULT 1,
+  StudNum text NOT NULL,
+  PlayerColor text NOT NULL DEFAULT 'White'::text CHECK ("PlayerColor" = ANY (ARRAY['White'::text, 'Black'::text])),
+  Date timestamp with time zone NOT NULL DEFAULT now(),
+  Result text NOT NULL DEFAULT 'Draw'::text CHECK ("Result" = ANY (ARRAY['Win'::text, 'Lose'::text, 'Draw'::text])),
+  PGN text NOT NULL DEFAULT 'N/A'::text,
+  Feedback text,
+  LastModified bigint NOT NULL DEFAULT EXTRACT(epoch FROM now()),
+  FeedbackRead boolean NOT NULL DEFAULT false,
+  CONSTRAINT ChessGames_pkey PRIMARY KEY (GameID),
+  CONSTRAINT fk_chess_student FOREIGN KEY (StudNum) REFERENCES Chessistant.Profiles(StudNum)
 );
-
-CREATE TABLE "Chessistant"."Profiles" (
-  -- Identity handles the auto-incrementing UserID
-  "UserID" BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-  
-  "StudName" TEXT NOT NULL DEFAULT 'John Smith',
-  
-  -- StudNum is unique so other tables can use it as a Foreign Key
-  "StudNum" TEXT NOT NULL UNIQUE,
-  
-  "Email" TEXT NOT NULL DEFAULT 'no.mail@umak.edu.ph',
-  
-  -- NOTE: See the security section below regarding passwords!
-  "Password" TEXT NOT NULL DEFAULT '12345',
-  
-  "Rating" INTEGER NOT NULL DEFAULT 100 CHECK ("Rating" >= 1),
-  "PuzzlesWin" INTEGER NOT NULL DEFAULT 0,
-  "PuzzlesTotal" INTEGER NOT NULL DEFAULT 0,
-  
-  "Role" TEXT NOT NULL DEFAULT 'Member' 
-    CHECK ("Role" IN ('Member', 'Coach', 'Admin', 'Disabled')),
-    
-  "Date" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  
-  "LastModified" BIGINT NOT NULL DEFAULT EXTRACT(EPOCH FROM NOW()),
-
-  -- Your ID check
-  CONSTRAINT userid_check CHECK ("UserID" >= 0)
+CREATE TABLE Chessistant.OrgRoster (
+  MmbrID bigint GENERATED ALWAYS AS IDENTITY NOT NULL CHECK ("MmbrID" >= 0),
+  StudName text NOT NULL DEFAULT 'John Smith'::text,
+  StudNum text NOT NULL UNIQUE,
+  LastModified bigint NOT NULL DEFAULT EXTRACT(epoch FROM now()),
+  CONSTRAINT OrgRoster_pkey PRIMARY KEY (MmbrID)
 );
-
-CREATE TABLE "Chessistant"."OrgRoster" (
-  -- Using Identity for the auto-incrementing Member ID
-  "MmbrID" BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-  
-  "StudName" TEXT NOT NULL DEFAULT 'John Smith',
-  
-  -- UNIQUE ensures no two members have the same Student Number
-  "StudNum" TEXT NOT NULL UNIQUE,
-  
-  -- Storing the last modified time as a Unix epoch (seconds)
-  "LastModified" BIGINT NOT NULL DEFAULT EXTRACT(EPOCH FROM NOW()),
-
-  -- Your ID check to ensure it stays positive
-  CONSTRAINT mmbrid_check CHECK ("MmbrID" >= 0)
+CREATE TABLE Chessistant.Profiles (
+  UserID bigint GENERATED ALWAYS AS IDENTITY NOT NULL CHECK ("UserID" >= 0),
+  StudName text NOT NULL DEFAULT 'John Smith'::text,
+  StudNum text NOT NULL UNIQUE,
+  Email text NOT NULL DEFAULT 'no.mail@umak.edu.ph'::text,
+  Password text NOT NULL DEFAULT '12345'::text,
+  Rating integer NOT NULL DEFAULT 100 CHECK ("Rating" >= 1),
+  PuzzlesWin integer NOT NULL DEFAULT 0,
+  PuzzlesTotal integer NOT NULL DEFAULT 0,
+  Role text NOT NULL DEFAULT 'Member'::text CHECK ("Role" = ANY (ARRAY['Member'::text, 'Coach'::text, 'Admin'::text, 'Disabled'::text])),
+  Date timestamp with time zone NOT NULL DEFAULT now(),
+  LastModified bigint NOT NULL DEFAULT EXTRACT(epoch FROM now()),
+  CONSTRAINT Profiles_pkey PRIMARY KEY (UserID)
 );
-
-CREATE TABLE "Chessistant"."ChessGames" (
-  -- Identity handles the AUTOINCREMENT logic properly in Postgres
-  "GameID" BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-  
-  "GameNum" INTEGER NOT NULL DEFAULT 1,
-  "StudNum" TEXT NOT NULL,
-  
-  -- Postgres uses standard CHECK constraints similarly to SQLite
-  "PlayerColor" TEXT NOT NULL DEFAULT 'White' 
-    CHECK ("PlayerColor" IN ('White', 'Black')),
-    
-  -- Using TIMESTAMPTZ is better for game history than TEXT strings
-  "Date" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  
-  "Result" TEXT NOT NULL DEFAULT 'Draw' 
-    CHECK ("Result" IN ('Win', 'Lose', 'Draw')),
-    
-  "PGN" TEXT NOT NULL DEFAULT 'N/A',
-  "Feedback" TEXT,
-  
-  -- Storing Unix epoch as a BIGINT
-  "LastModified" BIGINT NOT NULL DEFAULT EXTRACT(EPOCH FROM NOW()),
-  
-  -- In Postgres, we use BOOLEAN instead of INTEGER 0/1 for flags
-  "FeedbackRead" BOOLEAN NOT NULL DEFAULT FALSE,
-
-  -- Your ID check
-  CONSTRAINT gameid_check CHECK ("GameID" >= 0)
+CREATE TABLE Chessistant.Registrations (
+  RegID bigint GENERATED ALWAYS AS IDENTITY NOT NULL CHECK ("RegID" >= 0),
+  StudName text NOT NULL DEFAULT 'John Smith'::text,
+  StudNum text NOT NULL UNIQUE,
+  Email text NOT NULL DEFAULT 'no.mail@umak.edu.ph'::text,
+  Password text NOT NULL DEFAULT '12345'::text,
+  Date timestamp with time zone NOT NULL DEFAULT now(),
+  LastModified bigint NOT NULL DEFAULT EXTRACT(epoch FROM now()),
+  CONSTRAINT Registrations_pkey PRIMARY KEY (RegID)
 );
-
-CREATE TABLE "Chessistant"."Announcements" (
-  -- In Postgres, we use IDENTITY for autoincrementing IDs
-  "AnnID" BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-  
-  "Author" TEXT NOT NULL,
-  "LastEditor" TEXT NOT NULL,
-  "Title" TEXT NOT NULL DEFAULT 'Title',
-  
-  -- Postgres handles dates better as Timestamps rather than Text strings
-  "Date" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  
-  "Text" TEXT NOT NULL DEFAULT 'Text',
-  
-  -- Storing unix epoch (seconds) as a bigint
-  "LastModified" BIGINT NOT NULL DEFAULT EXTRACT(EPOCH FROM NOW()),
-
-  -- Your specific ID check
-  CONSTRAINT annid_check CHECK ("AnnID" >= 0)
+CREATE TABLE Chessistant.TournamentMatches (
+  matchid bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  tourid bigint NOT NULL,
+  player1 text NOT NULL,
+  player2 text NOT NULL,
+  player1result numeric NOT NULL DEFAULT 0.5,
+  player2result numeric NOT NULL DEFAULT 0.5,
+  CONSTRAINT TournamentMatches_pkey PRIMARY KEY (matchid),
+  CONSTRAINT tournamentmatches_tourid_fkey FOREIGN KEY (tourid) REFERENCES Chessistant.Tournaments(TourID),
+  CONSTRAINT TournamentMatches_player1_fkey FOREIGN KEY (player1) REFERENCES Chessistant.Profiles(StudNum),
+  CONSTRAINT TournamentMatches_player2_fkey FOREIGN KEY (player2) REFERENCES Chessistant.Profiles(StudNum)
 );
-
--- 1. Link ANNOUNCEMENTS to Profiles
-ALTER TABLE "Chessistant"."Announcements"
-ADD CONSTRAINT fk_ann_author FOREIGN KEY ("Author") 
-  REFERENCES "Chessistant"."Profiles"("StudNum") ON DELETE CASCADE ON UPDATE CASCADE,
-ADD CONSTRAINT fk_ann_editor FOREIGN KEY ("LastEditor") 
-  REFERENCES "Chessistant"."Profiles"("StudNum") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- 2. Link CHESSGAMES to Profiles
-ALTER TABLE "Chessistant"."ChessGames"
-ADD CONSTRAINT fk_chess_student FOREIGN KEY ("StudNum") 
-  REFERENCES "Chessistant"."Profiles"("StudNum") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- 3. Link TOURNAMENTS to Profiles
-ALTER TABLE "Chessistant"."Tournaments"
-ADD CONSTRAINT fk_tour_author FOREIGN KEY ("Author") 
-  REFERENCES "Chessistant"."Profiles"("StudNum") ON DELETE CASCADE ON UPDATE CASCADE,
-ADD CONSTRAINT fk_tour_editor FOREIGN KEY ("LastEditor") 
-  REFERENCES "Chessistant"."Profiles"("StudNum") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- 4. Link ORGROSTER to Profiles
-ALTER TABLE "Chessistant"."OrgRoster"
-ADD CONSTRAINT fk_roster_student FOREIGN KEY ("StudNum") 
-  REFERENCES "Chessistant"."Profiles"("StudNum") ON DELETE CASCADE ON UPDATE CASCADE;
-  
+CREATE TABLE Chessistant.TournamentParticipants (
+  TPID bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  TourID bigint NOT NULL,
+  StudNum text NOT NULL,
+  CONSTRAINT TournamentParticipants_pkey PRIMARY KEY (TPID),
+  CONSTRAINT TournamentParticipants_TourID_fkey FOREIGN KEY (TourID) REFERENCES Chessistant.Tournaments(TourID),
+  CONSTRAINT TournamentParticipants_StudNum_fkey FOREIGN KEY (StudNum) REFERENCES Chessistant.Profiles(StudNum)
+);
+CREATE TABLE Chessistant.Tournaments (
+  TourID bigint GENERATED ALWAYS AS IDENTITY NOT NULL CHECK ("TourID" >= 0),
+  Author text NOT NULL,
+  LastEditor text NOT NULL,
+  Title text NOT NULL DEFAULT 'Title'::text,
+  Date timestamp with time zone NOT NULL DEFAULT now(),
+  Text text NOT NULL DEFAULT 'Text'::text,
+  LastModified bigint NOT NULL DEFAULT EXTRACT(epoch FROM now()),
+  Style text NOT NULL DEFAULT 'Round Robin'::text,
+  ParticipantCount integer NOT NULL DEFAULT 6,
+  CONSTRAINT Tournaments_pkey PRIMARY KEY (TourID),
+  CONSTRAINT fk_tour_author FOREIGN KEY (Author) REFERENCES Chessistant.Profiles(StudNum),
+  CONSTRAINT fk_tour_editor FOREIGN KEY (LastEditor) REFERENCES Chessistant.Profiles(StudNum)
+);
