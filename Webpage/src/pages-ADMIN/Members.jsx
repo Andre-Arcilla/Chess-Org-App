@@ -40,7 +40,7 @@ const Members = () => {
 
   const handleUpdate = async () => {
     try {
-      // If demoting an admin, check how many admins remain
+      // 1. If demoting an admin, check how many admins remain
       const originalMember = members.find(m => m.UserID === editingId);
       if (originalMember?.Role === 'Admin' && editForm.Role !== 'Admin') {
         const { count, error: countError } = await supabase
@@ -57,6 +57,8 @@ const Members = () => {
         }
       }
 
+      // 2. Perform the database update
+      const updatedTimestamp = Date.now();
       const { error } = await supabase
         .schema('Chessistant')
         .from('Profiles')
@@ -65,21 +67,36 @@ const Members = () => {
           StudName: editForm.StudName,
           Role: editForm.Role,
           Rating: editForm.Rating,
-          LastModified: Date.now() // Use Unix timestamp for bigint type
+          LastModified: updatedTimestamp // Use Unix timestamp for bigint type
         })
         .eq('UserID', editingId);
 
       if (error) throw error;
       
+      // 3. Update the local UI state directly without setting loading = true
+      setMembers(prevMembers => 
+        prevMembers.map(member => 
+          member.UserID === editingId 
+            ? { ...member, ...editForm, LastModified: updatedTimestamp } 
+            : member
+        )
+      );
+
+      // 4. Exit edit mode cleanly
       setEditingId(null);
-      fetchMembers();
+
     } catch (err) {
       console.error('Error updating member:', err.message);
       alert('Update failed: ' + (err.message || 'Unknown error'));
     }
   };
 
-  if (loading) return <p>Loading Members...</p>;
+  if (loading) return (
+    <div class="overlay">
+      <div class="spinner"></div>
+      <p>Loading Members...</p>
+    </div>
+  );
 
   return (
     <div className="card">
@@ -97,7 +114,7 @@ const Members = () => {
           </thead>
           <tbody>
             {members.map((member) => (
-              <tr key={member.UserID} style={{ borderBottom: '1px solid var(--antique-white)' }}>
+              <tr key={member.UserID} style={{ borderBottom: '1.5px solid var(--gold)' }}>
                 <td style={{ padding: '10px' }}>
                   {editingId === member.UserID ? (
                     <input
@@ -143,12 +160,12 @@ const Members = () => {
                 </td>
                 <td style={{ padding: '10px' }}>
                   {editingId === member.UserID ? (
-                    <>
-                      <button onClick={handleUpdate} style={{ padding: '5px 10px', fontSize: '0.8rem', width: 'auto', margin: '5px 5px 5px 0px' }}>Save</button>
-                      <button onClick={cancelEdit} style={{ padding: '5px 10px', fontSize: '0.8rem', width: 'auto', margin: '5px 0px', background: 'var(--oak)' }}>Cancel</button>
-                    </>
+                    <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', gap: '10px' }}>
+                      <button onClick={handleUpdate} style={{ fontSize: '0.85rem', width: 'stretch' }}>Save</button>
+                      <button onClick={cancelEdit} style={{ fontSize: '0.85rem', width: 'stretch', background: 'var(--oak)' }}>Cancel</button>
+                    </div>
                   ) : (
-                    <button onClick={() => startEdit(member)} style={{ padding: '5px 10px', fontSize: '0.8rem', width: '100%', margin: '5px 5px 5px 0px' }}>Edit</button>
+                    <button onClick={() => startEdit(member)} style={{ fontSize: '0.85rem', width: 'stretch' }}>Edit</button>
                   )}
                 </td>
               </tr>

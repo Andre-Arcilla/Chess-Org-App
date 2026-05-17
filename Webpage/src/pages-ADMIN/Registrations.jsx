@@ -102,7 +102,12 @@ const Registrations = () => {
     return isNaN(d.getTime()) ? '' : d.toLocaleDateString();
   };
 
-  if (loading) return <p>Loading Applications...</p>;
+  if (loading) return (
+    <div class="overlay">
+      <div class="spinner"></div>
+      <p>Loading Registrations...</p>
+    </div>
+  );
 
   return (
     <div className="card">

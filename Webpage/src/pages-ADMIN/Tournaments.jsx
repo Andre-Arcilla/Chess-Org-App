@@ -422,6 +422,13 @@ const Tournaments = () => {
     });
   };
 
+  if (loading) return (
+    <div class="overlay">
+      <div class="spinner"></div>
+      <p>Loading Tournaments...</p>
+    </div>
+  );
+
   return (
     <div className="card">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', alignItems: 'flex-start', overflowY: 'hidden', scrollbarGutter: 'stable both-edges' }}>
@@ -479,9 +486,7 @@ const Tournaments = () => {
       </div>
 
       <div style={{ marginTop: '30px' }}>
-        {loading ? (
-          <p>Loading...</p>
-        ) : tournaments.length === 0 ? (
+        {tournaments.length === 0 ? (
           <p>No pending applications.</p>
         ) : (
           tournaments.map((tour) => (

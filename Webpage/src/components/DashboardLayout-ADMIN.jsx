@@ -12,43 +12,30 @@ const DashboardLayout = ({ adminData }) => {
 
   return (
     <div className="dashboard-layout">
-      <aside className="sidebar">
+      <aside className="top-bar">
         <div className="brand">
-          <h1>Chessistant</h1>
+            <img src="src/assets/chess-club-logo.png" alt="Chess Logo" class="logo"></img>
+            <h1>Chessistant</h1> 
         </div>
         <nav>
-          <ul>
-            <li>
-              <NavLink to="/" end className={({ isActive }) => isActive ? 'active' : ''}>
-                Overview
-              </NavLink>
-            </li>
-            <li>
-              <NavLink to="/members" className={({ isActive }) => isActive ? 'active' : ''}>
-                Members
-              </NavLink>
-            </li>
-            <li>
-              <NavLink to="/registrations" className={({ isActive }) => isActive ? 'active' : ''}>
-                Registrations
-              </NavLink>
-            </li>
-            <li>
-              <NavLink to="/roster" className={({ isActive }) => isActive ? 'active' : ''}>
-                Org Roster
-              </NavLink>
-            </li>
-            <li>
-              <NavLink to="/tournaments" className={({ isActive }) => isActive ? 'active' : ''}>
-                Tournaments
-              </NavLink>
-            </li>
-            <li>
-              <NavLink to="/announcements" className={({ isActive }) => isActive ? 'active' : ''}>
-                Announcements
-              </NavLink>
-            </li>
-          </ul>
+          <NavLink to="/" end className={({ isActive }) => isActive ? 'active' : ''}>
+            Overview
+          </NavLink>
+          <NavLink to="/members" className={({ isActive }) => isActive ? 'active' : ''}>
+            Members
+          </NavLink>
+          <NavLink to="/registrations" className={({ isActive }) => isActive ? 'active' : ''}>
+            Registrations
+          </NavLink>
+          {/* <NavLink to="/roster" className={({ isActive }) => isActive ? 'active' : ''}>
+            Org Roster
+          </NavLink> */}
+          <NavLink to="/tournaments" className={({ isActive }) => isActive ? 'active' : ''}>
+            Tournaments
+          </NavLink>
+          <NavLink to="/announcements" className={({ isActive }) => isActive ? 'active' : ''}>
+            Announcements
+          </NavLink>
         </nav>
         <div className="sidebar-footer">
           <button onClick={handleLogout} className="btn-link">Leave Club</button>
@@ -56,15 +43,6 @@ const DashboardLayout = ({ adminData }) => {
       </aside>
 
       <main className="main-content">
-        <header className="top-header">
-          <div className="welcome-text">
-            <h2 style={{ display: '-webkit-box', WebkitLineClamp: '1', WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>Welcome back, <span className="admin-highlight">{adminData?.StudName || 'Admin'}</span></h2>
-          </div>
-          <div className="badge-area">
-            <span className="role-tag">Grandmaster Admin</span>
-          </div>
-        </header>
-
         <section className="content-body">
           <Outlet context={{ adminData }} />
         </section>

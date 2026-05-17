@@ -129,6 +129,13 @@ const Announcements = () => {
     return isNaN(d.getTime()) ? '' : d.toLocaleDateString();
   };
 
+  if (loading) return (
+    <div class="overlay">
+      <div class="spinner"></div>
+      <p>Loading Announcements...</p>
+    </div>
+  );
+
   return (
     <div className="card">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', alignItems: 'flex-start', overflowY: 'hidden', scrollbarGutter: 'stable both-edges' }}>
@@ -142,7 +149,7 @@ const Announcements = () => {
       </div>
 
       <div style={{ marginTop: '30px' }}>
-        {loading ? <p>Loading...</p> : announcements.map((ann) => (
+        {announcements.map((ann) => (
           <div 
             key={ann.AnnID} 
             className="stat-item" 
