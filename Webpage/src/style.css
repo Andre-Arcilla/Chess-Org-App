@@ -300,6 +300,16 @@ button:disabled {
     box-shadow: 0 10px 20px rgba(0,0,0,0.4);
 }
 
+.top-bar a.active {
+    background: #FF5A00;
+    color: #FFFFFF;
+    box-shadow: inset 0 0 0 2px rgba(255,255,255,0.15);
+}
+
+.top-bar a.active:hover {
+    transform: translateY(0);
+}
+
 /* Content Area */
 .main-content {
     flex-grow: 1;
