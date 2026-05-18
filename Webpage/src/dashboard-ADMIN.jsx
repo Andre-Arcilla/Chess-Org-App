@@ -18,7 +18,6 @@ const Bouncer = ({ children }) => {
   useEffect(() => {
     const checkSession = async () => {
       try {
-        // Get user from localStorage (set by login.js)
         const storedUser = localStorage.getItem('currentUser');
         
         if (!storedUser) {

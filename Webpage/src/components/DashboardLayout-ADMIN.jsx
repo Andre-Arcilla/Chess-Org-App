@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { supabase } from '../db';
 
 const DashboardLayout = ({ adminData }) => {
@@ -8,15 +8,17 @@ const DashboardLayout = ({ adminData }) => {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     window.location.href = '/index.html';
+    localStorage.removeItem('currentUser');
   };
 
   return (
     <div className="dashboard-layout">
       <aside className="top-bar">
-        <div className="brand">
-            <img src="src/assets/chess-club-logo.png" alt="Chess Logo" class="logo"></img>
-            <h1>Chessistant</h1>
-        </div>
+        <NavLink to="/" className="brand" style={{ all: 'unset', cursor: 'pointer', display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '5px', height: '100%' }}>
+          <img src="src/assets/chess-club-logo.png" alt="Chess Logo" className="logo" />
+          <h1>Chessistant</h1>
+        </NavLink>
+        
         <nav>
           <NavLink to="/" end className={({ isActive }) => isActive ? 'active' : ''}>
             Overview
@@ -27,9 +29,6 @@ const DashboardLayout = ({ adminData }) => {
           <NavLink to="/registrations" className={({ isActive }) => isActive ? 'active' : ''}>
             Registrations
           </NavLink>
-          {/* <NavLink to="/roster" className={({ isActive }) => isActive ? 'active' : ''}>
-            Org Roster
-          </NavLink> */}
           <NavLink to="/tournaments" className={({ isActive }) => isActive ? 'active' : ''}>
             Tournaments
           </NavLink>

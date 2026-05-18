@@ -1,18 +1,15 @@
 import { supabase } from './db.js';
 
-// Elements
 const loginSection = document.getElementById('login-section');
 const registerSection = document.getElementById('register-section');
 const showRegisterLink = document.getElementById('show-register');
 const showLoginLink = document.getElementById('show-login');
 const formTitle = document.getElementById('form-title');
 const formSubtitle = document.getElementById('form-subtitle');
-
 const loginForm = document.getElementById('login-form');
 const emailInput = document.getElementById('email');
 const passwordInput = document.getElementById('password');
 const loginBtn = document.getElementById('login-btn');
-
 const registerForm = document.getElementById('register-form');
 const regNameInput = document.getElementById('reg-name');
 const regIdInput = document.getElementById('reg-id');
@@ -20,13 +17,12 @@ const regEmailInput = document.getElementById('reg-email');
 const regPasswordInput = document.getElementById('reg-password');
 const registerBtn = document.getElementById('register-btn');
 
-// CLEAR NATIVE ERRORS ON TYPE (Crucial so users can re-submit after fixing inputs)
 emailInput.addEventListener('input', () => emailInput.setCustomValidity(''));
 passwordInput.addEventListener('input', () => passwordInput.setCustomValidity(''));
 regEmailInput.addEventListener('input', () => regEmailInput.setCustomValidity(''));
 regIdInput.addEventListener('input', () => regIdInput.setCustomValidity(''));
 
-/**
+/*
  * Toggle UI between Login and Register
  */
 function toggleForms(e, showForm) {

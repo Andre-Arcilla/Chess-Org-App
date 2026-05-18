@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chessistant | Premium Chess Club Portal</title>
+    <link rel="stylesheet" href="/src/style.css">
+    
+    <!-- Premium Serif & Sans Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Source+Sans+Pro:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+    <body class="login-page">
+        <div class="top-bar">
+            <div class="brand" style="cursor: pointer;">
+                <img src="src/assets/chess-club-logo.png" alt="Chess Logo" class="logo" onclick="window.location.href='/index.html'"></img>
+                <h1 onclick="window.location.href='/index.html'">Chessistant</h1>
+            </div>
+            <div class="sidebar-footer">
+                <button onclick="window.location.href='/portal.html'" class="btn-link">Sign in</button>
+            </div>
+        </div>
+        <div style="height: stretch; width: stretch; display: flex; justify-content: center; align-items: center;">
+            <div class="login-container">
+                <div class="login-card">
+                    <header>
+                        <h1 id="form-title">Chessistant</h1>
+                        <p class="subtitle" id="form-subtitle">A UMak Chess Club Portal</p>
+                    </header>
+                    
+                    <div id="login-section">
+                        <form id="login-form">
+                            <div class="form-group" style="width: 400px;">
+                                <label for="email">Email</label>
+                                <input type="email" id="email" required placeholder="grandmaster@chess.club" autocomplete="email">
+                            </div>
+                            <div class="form-group" style="width: 400px;">
+                                <label for="password">Password</label>
+                                <input type="password" id="password" required placeholder="••••••••" autocomplete="current-password">
+                            </div>
+                            <button type="submit" id="login-btn">Enter Club</button>
+                        </form>
+                        <span style="display: block; margin-top: 20px;">
+                            <p>Don't have an account? <a href="#" id="show-register">Register now</a></p>
+                        </span>
+                    </div>
+
+                    <div id="register-section" hidden>
+                        <form id="register-form">
+                            <div style="display: flex; flex-direction: row; gap: 30px;">
+                                <div class="form-group" style="width: 300px;">
+                                    <label for="reg-name">Full Name</label>
+                                    <input type="text" id="reg-name" required placeholder="John Smith">
+                                </div>
+                                <div class="form-group" style="width: 300px;">
+                                    <label for="reg-id">Student ID</label>
+                                    <input type="text" id="reg-id" required placeholder="A123456789">
+                                </div>
+                            </div>
+                            <div style="display: flex; flex-direction: row; gap: 30px;">
+                                <div class="form-group" style="width: 300px;">
+                                    <label for="reg-email">Email</label>
+                                    <input type="email" id="reg-email" required placeholder="grandmaster@chess.club">
+                                </div>
+                                <div class="form-group" style="width: 300px;">
+                                    <label for="reg-password">Password</label>
+                                    <input type="password" id="reg-password" required minlength="8" placeholder="••••••••">
+                                </div>
+                            </div>
+                            <button type="submit" id="register-btn">Submit Registration</button>
+                        </form>
+                        <span style="display: block; margin-top: 20px;">
+                            <p>Already a member? <a href="#" id="show-login">Login here</a></p>
+                        </span>
+                    </div>
+                    
+                    <div id="error-message" class="error-msg" hidden></div>
+                </div>
+            </div>
+        </div>
+        
+        <script type="module" src="/src/portal.js"></script>
+    </body>
+</html>
