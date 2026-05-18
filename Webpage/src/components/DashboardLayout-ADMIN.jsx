@@ -38,7 +38,7 @@ const DashboardLayout = ({ adminData }) => {
           </NavLink>
         </nav>
         <div className="sidebar-footer">
-          <button onClick={handleLogout} className="btn-link">Leave Club</button>
+          <button onClick={handleLogout} className="btn-link">Sign out</button>
         </div>
       </aside>
 

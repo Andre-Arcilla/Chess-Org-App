@@ -102,8 +102,7 @@ h1, h2, h3 {
 }
 
 .login-container {
-    width: 100%;
-    max-width: 450px;
+    width: fit-content;
 }
 
 .login-card {
