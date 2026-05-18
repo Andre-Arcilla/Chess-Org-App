@@ -69,9 +69,10 @@ const Members = () => {
         .update({
           Email: editForm.Email,
           StudName: editForm.StudName,
+          StudNum: editForm.StudNum,
           Role: editForm.Role,
           Rating: editForm.Rating,
-          LastModified: updatedTimestamp // Use Unix timestamp for bigint type
+          LastModified: updatedTimestamp 
         })
         .eq('UserID', editingId);
 
@@ -96,8 +97,8 @@ const Members = () => {
   };
 
   if (loading) return (
-    <div class="overlay">
-      <div class="spinner"></div>
+    <div className="overlay">
+      <div className="spinner"></div>
       <p>Loading Members...</p>
     </div>
   );
@@ -106,20 +107,23 @@ const Members = () => {
     <div className="card">
       <h3 style={{ fontSize: '2rem' }}>Member Management</h3>
       <div style={{ overflowX: 'auto', marginTop: '20px' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', tableLayout: 'fixed' }}>
           <thead>
             <tr style={{ borderBottom: '2px solid var(--oak)' }}>
-              <th style={{ padding: '10px', width: '30%' }}>Name</th>
-              <th style={{ padding: '10px', width: '30%' }}>Email</th>
-              <th style={{ padding: '10px', width: '10%', textAlign: 'center' }}>Role</th>
-              <th style={{ padding: '10px', width: '8%', textAlign: 'center' }}>Rating</th>
+              <th style={{ padding: '10px', width: '25%' }}>Name</th>
+              <th style={{ padding: '10px', width: '25%' }}>Email</th>
+              <th style={{ padding: '10px', width: '12%' }}>Student ID</th>
+              <th style={{ padding: '10px', width: '13%', textAlign: 'center' }}>Role</th>
+              <th style={{ padding: '10px', width: '10%', textAlign: 'center' }}>Rating</th>
               <th style={{ padding: '10px', width: '15%', textAlign: 'center' }}>Actions</th>
             </tr>
           </thead>
           <tbody>
             {members.map((member) => (
-              <tr key={member.UserID} style={{ borderBottom: '1.5px solid var(--gold)' }}>
-                <td style={{ padding: '10px' }}>
+              /* FIX 1: Locked the row height to exactly 55px to prevent stretching */
+              <tr key={member.UserID} style={{ height: '55px', borderBottom: '1.5px solid var(--gold)' }}>
+                {/* FIX 2: Changed cell paddings to '0 10px' so the row height dictates the vertical spacing */}
+                <td style={{ padding: '0 10px' }}>
                   {editingId === member.UserID ? (
                     <input
                       value={editForm.StudName || ''} 
@@ -128,7 +132,7 @@ const Members = () => {
                     />
                   ) : member.StudName}
                 </td>
-                <td style={{ padding: '10px' }}>
+                <td style={{ padding: '0 10px' }}>
                   {editingId === member.UserID ? (
                     <input 
                       value={editForm.Email || ''} 
@@ -137,12 +141,21 @@ const Members = () => {
                     />
                   ) : member.Email}
                 </td>
-                <td style={{ padding: '10px' }}>
+                <td style={{ padding: '0 10px' }}>
+                  {editingId === member.UserID ? (
+                    <input 
+                      value={editForm.StudNum || ''} 
+                      onChange={(e) => setEditForm({...editForm, StudNum: e.target.value})}
+                      style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
+                    />
+                  ) : member.StudNum}
+                </td>
+                <td style={{ padding: '0 10px' }}>
                   {editingId === member.UserID ? (
                     <select 
                       value={editForm.Role || ''} 
                       onChange={(e) => setEditForm({...editForm, Role: e.target.value})}
-                      style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
+                      style={{ width: '100%', padding: '8px', boxSizing: 'border-box', textAlign: 'center' }}
                     >
                       <option value="Admin">Admin</option>
                       <option value="Member">Member</option>
@@ -152,17 +165,17 @@ const Members = () => {
                     <span className="role-tag">{member.Role}</span>
                   )}
                 </td>
-                <td style={{ padding: '10px' }}>
+                <td style={{ padding: '0 10px', textAlign: 'center' }}>
                   {editingId === member.UserID ? (
                     <input 
                       type="number"
                       value={editForm.Rating || 0} 
-                      onChange={(e) => setEditForm({...editForm, Rating: parseInt(e.target.value)})}
-                      style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
+                      onChange={(e) => setEditForm({...editForm, Rating: parseInt(e.target.value) || 0})}
+                      style={{ width: '100%', padding: '8px', boxSizing: 'border-box', textAlign: 'center' }}
                     />
                   ) : member.Rating}
                 </td>
-                <td style={{ padding: '10px' }}>
+                <td style={{ padding: '0 10px' }}>
                   {editingId === member.UserID ? (
                     <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', gap: '10px' }}>
                       <button onClick={handleUpdate} style={{ fontSize: '0.85rem', width: 'stretch' }}>Save</button>
