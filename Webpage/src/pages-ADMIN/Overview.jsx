@@ -43,7 +43,7 @@ const Overview = () => {
 
         const formattedAnnouncements = (announcementsResult.data || []).map(item => ({
           id: item.AnnID,
-          title: 'Recent Announcement: ' + (item.Title || 'Announcement not available.'),
+          title: item.Title || 'Announcement not available.',
           text: item.Text || 'Announcement details not available.',
           date: new Date(item.Date),
           type: 'announcement'
@@ -51,7 +51,7 @@ const Overview = () => {
 
         const formattedTournaments = (tournamentsResult.data || []).map(item => ({
           id: item.TourID,
-          title: 'Upcoming Tournament: ' + (item.Title || 'Tournament not available.'),
+          title: item.Title || 'Tournament not available.',
           text: item.Text || 'Tournament details not available.',
           date: new Date(item.Date),
           type: 'tournament'
@@ -148,7 +148,7 @@ const Overview = () => {
       </header>
       
       <div className="card" style={{ height: 'stretch', display: 'flex', flexDirection: 'column', gap: '10px', overflow: 'hidden' }}>
-        <h3 style={{ fontSize: '2rem' }}>Latest Announcements and Tournaments</h3>
+        <h3 style={{ fontSize: '2rem', borderBottom: '2px solid var(--gold)', paddingBottom: '10px', color: '#002965', letterSpacing: '1px', textTransform: 'uppercase' }}>Latest Announcements and Tournaments</h3>
         
         <div className="carousel" style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1, overflow: 'hidden' }}>
           
@@ -158,33 +158,31 @@ const Overview = () => {
             style={{
               position: 'absolute',
               left: '0',
-              width: '75px',
-              height: '50px',
+              width: '80px',
+              height: '40px',
               border: 'none',
-              borderRadius: '10px',
+              borderRadius: '12px',
               backgroundColor: '#002965',
               cursor: 'pointer',
-              fontSize: '1.5rem',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: '#FF5A00',
-              transition: 'background-color 0.3s ease, color 0.3s ease',
-              fontWeight: 'bold',
+              transition: 'background-color 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease',
               fontFamily: 'var(--font-sans)',
               zIndex: 10,
+              boxShadow: '0 4px 12px rgba(0,0,0,0.35)',
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.backgroundColor = '#FF5A00';
-              e.currentTarget.style.color = '#002965';
+              e.currentTarget.style.boxShadow = '0 6px 18px rgba(0,0,0,0.5)';
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.backgroundColor = '#002965';
-              e.currentTarget.style.color = '#FF5A00';
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.35)';
             }}
             aria-label="Previous post"
           >
-            <img src="src/assets/left.png" alt="" />
+            <img src="src/assets/left.png" alt="" style={{ width: '22px', height: '22px' }} />
           </button>
 
           {/* Carousel Viewport */}
@@ -193,8 +191,9 @@ const Overview = () => {
             height: '100%',
             overflow: 'hidden', 
             position: 'relative',
-            borderRadius: '25px',
-            margin: '30px'
+            borderRadius: '16px',
+            margin: '0 45px',
+            border: '2px solid var(--gold)',
           }}>
             {/* Sliding Track */}
             <div 
@@ -219,24 +218,42 @@ const Overview = () => {
                     margin: '0 auto',
                     width: '100%',
                     height: '100%',
-                    padding: '25px 60px',
+                    padding: '30px 50px',
                     display: 'flex',
                     flexDirection: 'column',
                     justifyContent: 'center',
                     gap: '0',
                     boxSizing: 'border-box',
-                    cursor: 'pointer'
+                    cursor: 'pointer',
+                    background: 'linear-gradient(135deg, #d0d8e4 0%, #b8c5d6 100%)',
+                    transition: 'filter 0.2s ease'
                   }} 
                   onClick={() => navigate(
                     post.type === 'announcement' ? '/announcements' : '/tournaments',
                     { state: { openId: post.id } }
                   )}>
-                    <div className="title">
+                    <div style={{
+                      display: 'inline-block',
+                      alignSelf: 'flex-start',
+                      background: post.type === 'announcement' ? '#002965' : '#FF5A00',
+                      color: '#ffffff',
+                      fontSize: '0.7rem',
+                      fontWeight: '700',
+                      letterSpacing: '2px',
+                      textTransform: 'uppercase',
+                      padding: '4px 12px',
+                      borderRadius: '6px',
+                      border: '2px solid var(--gold)',
+                    }}>
+                      {post.type === 'announcement' ? '📢 Announcement' : '🏆 Tournament'}
+                    </div>
+                    <div className="title" style={{ color: '#002965' }}>
                       {post.title}
                     </div>
-                    <div className="date">
-                      {post.date.toLocaleDateString()}
+                    <div className="date" style={{ color: 'var(--oak)', fontSize: '1.1rem', fontStyle: 'italic' }}>
+                      {post.date.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                     </div>
+                    <hr style={{ border: 'none', borderTop: '1.5px solid var(--gold)', margin: '5px 0' }} />
                     <div className="text">
                       {post.text}
                     </div>
@@ -252,33 +269,31 @@ const Overview = () => {
             style={{
               position: 'absolute',
               right: '0px',
-              width: '75px',
-              height: '50px',
+              width: '80px',
+              height: '40px',
               border: 'none',
-              borderRadius: '10px',
+              borderRadius: '12px',
               backgroundColor: '#002965',
               cursor: 'pointer',
-              fontSize: '1.5rem',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: '#FF5A00',
-              transition: 'background-color 0.3s ease, color 0.3s ease',
-              fontWeight: 'bold',
+              transition: 'background-color 0.3s ease, box-shadow 0.2s ease',
               fontFamily: 'var(--font-sans)',
-              zIndex: 10
+              zIndex: 10,
+              boxShadow: '0 4px 12px rgba(0,0,0,0.35)',
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.backgroundColor = '#FF5A00';
-              e.currentTarget.style.color = '#002965';
+              e.currentTarget.style.boxShadow = '0 6px 18px rgba(0,0,0,0.5)';
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.backgroundColor = '#002965';
-              e.currentTarget.style.color = '#FF5A00';
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.35)';
             }}
             aria-label="Next post"
           >
-            <img src="src/assets/right.png" alt="" />
+            <img src="src/assets/right.png" alt="" style={{ width: '22px', height: '22px' }} />
           </button>
         </div>
 
@@ -286,22 +301,25 @@ const Overview = () => {
         <div style={{
           display: 'flex',
           justifyContent: 'center',
+          alignItems: 'center',
           gap: '10px',
-          marginTop: '10px'
+          paddingTop: '6px',
+          paddingBottom: '4px',
         }}>
           {posts.map((_, index) => (
             <button
               key={index}
               onClick={() => goToSlide(index)}
               style={{
-                width: '15px',
-                height: '15px',
-                borderRadius: '50%',
+                width: index === activeDotIndex ? '32px' : '12px',
+                height: '12px',
+                borderRadius: index === activeDotIndex ? '6px' : '50%',
                 border: '2px solid var(--gold)',
-                backgroundColor: index === activeDotIndex ? 'var(--gold)' : 'var(--antique-white)',
+                backgroundColor: index === activeDotIndex ? '#002965' : 'var(--antique-white)',
                 cursor: 'pointer',
-                transition: 'background-color 0.3s ease',
-                padding: 0
+                transition: 'all 0.35s ease',
+                padding: 0,
+                boxShadow: index === activeDotIndex ? '0 2px 8px rgba(0,41,101,0.4)' : 'none',
               }}
               aria-label={`Go to post ${index + 1}`}
             />

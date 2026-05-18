@@ -5,18 +5,17 @@ const Registrations = () => {
   const [registrations, setRegistrations] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchRegistrations = async () => {
+  const fetchRegistrations = async (silent = false) => {
     try {
-      setLoading(true);
-      const minimumDelay = new Promise(resolve => setTimeout(resolve, 750));
-      const [_, { data, error }] = await Promise.all([
-        minimumDelay,
-        supabase
-          .schema('Chessistant')
-          .from('Registrations')
-          .select('*')
-          .order('Date', { ascending: false })
-      ]);      
+      // Only trigger full-screen loading on initial mount, not during updates
+      if (!silent) setLoading(true);
+      
+      const { data, error } = await supabase
+        .schema('Chessistant')
+        .from('Registrations')
+        .select('*')
+        .order('Date', { ascending: false });
+          
       if (error) throw error;
       setRegistrations(data || []);
     } catch (err) {
@@ -45,8 +44,8 @@ const Registrations = () => {
           Rating: 100, 
           PuzzlesWin: 0,
           PuzzlesTotal: 0,
-          Date: new Date().toISOString(), // Date is standard string
-          LastModified: Date.now()        // FIX: LastModified requires BigInt integer
+          Date: new Date().toISOString(), 
+          LastModified: Date.now()
         }]);
 
       if (profileError) throw profileError;
@@ -58,7 +57,7 @@ const Registrations = () => {
         .insert([{
           StudName: reg.StudName,
           StudNum: reg.StudNum,
-          LastModified: Date.now()        // FIX: LastModified requires BigInt integer
+          LastModified: Date.now()
         }]);
 
       if (rosterError) throw rosterError;
@@ -72,7 +71,8 @@ const Registrations = () => {
 
       if (deleteError) throw deleteError;
 
-      fetchRegistrations();
+      // Fetch silently in the background to update the table instantly
+      fetchRegistrations(true);
       alert('Application Accepted and Profile Created.');
     } catch (err) {
       console.error('Error accepting registration:', err.message);
@@ -92,7 +92,8 @@ const Registrations = () => {
 
       if (error) throw error;
       
-      fetchRegistrations();
+      // Fetch silently in the background here too
+      fetchRegistrations(true);
     } catch (err) {
       console.error('Error denying registration:', err.message);
       alert('Action failed: ' + (err.message || 'Unknown error'));
@@ -106,8 +107,8 @@ const Registrations = () => {
   };
 
   if (loading) return (
-    <div class="overlay">
-      <div class="spinner"></div>
+    <div className="overlay">
+      <div className="spinner"></div>
       <p>Loading Registrations...</p>
     </div>
   );
@@ -122,23 +123,25 @@ const Registrations = () => {
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
             <thead>
               <tr style={{ borderBottom: '2px solid var(--oak)' }}>
-                <th style={{ padding: '10px' }}>Name</th>
-                <th style={{ padding: '10px' }}>Student ID</th>
-                <th style={{ padding: '10px' }}>Email</th>
-                <th style={{ padding: '10px' }}>Date</th>
-                <th style={{ padding: '10px' }}>Actions</th>
+                <th style={{ padding: '10px', width: '25%' }}>Name</th>
+                <th style={{ padding: '10px', width: '25%' }}>Email</th>
+                <th style={{ padding: '10px', width: '15%' }}>Student ID</th>
+                <th style={{ padding: '10px', width: '15%', textAlign: 'center' }}>Date</th>
+                <th style={{ padding: '10px', width: '10%', textAlign: 'center' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {registrations.map((reg) => (
-                <tr key={reg.RegID} style={{ borderBottom: '1px solid var(--antique-white)' }}>
+                <tr key={reg.RegID} style={{ borderBottom: '1.5px solid var(--gold)' }}>
                   <td style={{ padding: '10px' }}>{reg.StudName}</td>
-                  <td style={{ padding: '10px' }}>{reg.StudNum}</td>
                   <td style={{ padding: '10px' }}>{reg.Email}</td>
+                  <td style={{ padding: '10px' }}>{reg.StudNum}</td>
                   <td style={{ padding: '10px' }}>{displayDate(reg.Date)}</td>
                   <td style={{ padding: '10px' }}>
-                    <button onClick={() => handleAccept(reg)} style={{ padding: '5px 10px', fontSize: '0.8rem', width: 'auto', marginRight: '5px' }}>Accept</button>
-                    <button onClick={() => handleDeny(reg.RegID)} style={{ padding: '5px 10px', fontSize: '0.8rem', width: 'auto', background: 'var(--error)' }}>Deny</button>
+                    <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', gap: '10px' }}>
+                      <button onClick={() => handleAccept(reg)} style={{ fontSize: '0.85rem', width: 'stretch' }}>Accept</button>
+                      <button onClick={() => handleDeny(reg.RegID)} style={{ fontSize: '0.85rem', width: 'stretch', background: 'var(--oak)' }}>Deny</button>
+                    </div>
                   </td>
                 </tr>
               ))}

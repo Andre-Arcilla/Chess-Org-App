@@ -410,8 +410,7 @@ td:nth-child(4) {
 
 .role-tag {
     display: block;
-    background: var(--oak);
-    background-image: var(--texture);
+    background: var(--gold-muted);
     color: white;
     padding: 8px 20px;
     border-radius: 0;
@@ -419,7 +418,6 @@ td:nth-child(4) {
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 1px;
-    border: 1px solid var(--gold);
     width: 100%;
     text-align: center;
     border-radius: 12px;
@@ -434,6 +432,7 @@ td:nth-child(4) {
         0 15px 60px rgba(0,0,0,0.35),
         inset 0 0 80px rgba(139, 90, 43, 0.15);
     border-radius: 20px;
+    border-top: 4px solid var(--gold);
 }
 
 .card h3 {
@@ -526,8 +525,8 @@ td:nth-child(4) {
     display: -webkit-box;
     overflow: hidden;
     -webkit-box-orient: vertical;
-    -webkit-line-clamp: 9;
-    line-clamp: 9;
+    -webkit-line-clamp: 7;
+    line-clamp: 7;
     text-overflow: ellipsis;
     word-break: break-word;
     font-weight: 600;
