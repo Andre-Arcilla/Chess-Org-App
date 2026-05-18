@@ -15,7 +15,7 @@ const DashboardLayout = ({ adminData }) => {
       <aside className="top-bar">
         <div className="brand">
             <img src="src/assets/chess-club-logo.png" alt="Chess Logo" class="logo"></img>
-            <h1>Chessistant</h1> 
+            <h1>Chessistant</h1>
         </div>
         <nav>
           <NavLink to="/" end className={({ isActive }) => isActive ? 'active' : ''}>

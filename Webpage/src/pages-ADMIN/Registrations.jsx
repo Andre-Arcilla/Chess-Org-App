@@ -8,12 +8,15 @@ const Registrations = () => {
   const fetchRegistrations = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .schema('Chessistant')
-        .from('Registrations')
-        .select('*')
-        .order('Date', { ascending: false });
-      
+      const minimumDelay = new Promise(resolve => setTimeout(resolve, 750));
+      const [_, { data, error }] = await Promise.all([
+        minimumDelay,
+        supabase
+          .schema('Chessistant')
+          .from('Registrations')
+          .select('*')
+          .order('Date', { ascending: false })
+      ]);      
       if (error) throw error;
       setRegistrations(data || []);
     } catch (err) {

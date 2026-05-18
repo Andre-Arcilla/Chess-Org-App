@@ -95,19 +95,19 @@ const Tournaments = () => {
   const fetchTournaments = async () => {
     try {
       setLoading(true);
-      const now = new Date().toISOString();
+      
+      // Fetch all tournaments at once without a backend filter
       let query = supabase
         .schema('Chessistant')
         .from('Tournaments')
         .select('*');
-
-      if (view === 'upcoming') {
-        query = query.gte('Date', now).order('Date', { ascending: true });
-      } else {
-        query = query.lt('Date', now).order('Date', { ascending: false });
-      }
       
-      const { data, error } = await query;
+      const minimumDelay = new Promise(resolve => setTimeout(resolve, 750));
+      
+      const [_, { data, error }] = await Promise.all([
+        minimumDelay,
+        query
+      ]);
       
       if (error) throw error;
       setTournaments(data || []);
@@ -120,9 +120,8 @@ const Tournaments = () => {
 
   useEffect(() => {
     fetchTournaments();
-  }, [view]);
+  }, []);
 
-  // Real-time subscription for participants
   useEffect(() => {
     if (!selectedTournament?.TourID) return;
 
@@ -220,14 +219,11 @@ const Tournaments = () => {
         Text: formData.Text,
         Style: 'Round Robin',
         ParticipantCount: formData.ParticipantCount,
-        // The Date column expects a standard Timestamp string (ISO)
         Date: combinedDate.toISOString(), 
-        // FIX 1: LastModified requires a BigInt integer!
         LastModified: Date.now() 
       };
 
       if (editingId) {
-        // FIX 2: Use StudNum for the foreign key
         payload.LastEditor = adminData?.StudNum;
         const { error } = await supabase
           .schema('Chessistant')
@@ -235,9 +231,13 @@ const Tournaments = () => {
           .update(payload)
           .eq('TourID', editingId);
         if (error) throw error;
+        
+        // Update local state smoothly
+        setTournaments(prev => 
+          prev.map(t => t.TourID === editingId ? { ...t, ...payload } : t)
+        );
         setSelectedTournament({ ...selectedTournament, ...payload });
       } else {
-        // FIX 3: Use StudNum and satisfy the not-null constraint for BOTH fields
         payload.Author = adminData?.StudNum;
         payload.LastEditor = adminData?.StudNum;
         
@@ -248,12 +248,14 @@ const Tournaments = () => {
           .select();
         if (error) throw error;
         if (data && data[0]) {
+          // Append new tournament directly into your local storage array
+          setTournaments(prev => [data[0], ...prev]);
           setSelectedTournament(data[0]);
           setEditingId(data[0].TourID);
         }
       }
 
-      fetchTournaments();
+      // REMOVED: fetchTournaments(); <-- Kept completely silent
       setIsModalEditing(false);
       setIsModalAdding(false);
     } catch (err) {
@@ -404,7 +406,10 @@ const Tournaments = () => {
         .delete()
         .eq('TourID', tourId);
       if (error) throw error;
-      fetchTournaments();
+      
+      // Instantly wipe the tournament out of your local state array
+      setTournaments(prev => prev.filter(t => t.TourID !== tourId));
+      
     } catch (err) {
       console.error('Error deleting tournament:', err);
     }
@@ -418,23 +423,32 @@ const Tournaments = () => {
       day: 'numeric', 
       year: 'numeric', 
       hour: '2-digit', 
+      minute: '2-digit',
       hour12: true
     });
   };
 
+  const nowStr = new Date().toISOString();
+  const displayedTournaments = [...tournaments]
+    .filter(tour => view === 'upcoming' ? tour.Date >= nowStr : tour.Date < nowStr)
+    .sort((a, b) => view === 'upcoming' 
+      ? new Date(a.Date) - new Date(b.Date)   // Newest first for upcoming
+      : new Date(b.Date) - new Date(a.Date)   // Oldest first for past
+    );
+
   if (loading) return (
-    <div class="overlay">
-      <div class="spinner"></div>
+    <div className="overlay">
+      <div className="spinner"></div>
       <p>Loading Tournaments...</p>
     </div>
   );
 
   return (
     <div className="card">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', alignItems: 'flex-start', overflowY: 'hidden', scrollbarGutter: 'stable both-edges' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', overflowY: 'hidden', scrollbarGutter: 'stable both-edges' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px'}}>
           <h3 style={{ fontSize: '2rem' }}>Tournament Management</h3>
-          <div style={{ display: 'flex', flexDirection: 'row', gap: '10px', alignItems: 'center' }}> 
+          <div className="sort" style={{ display: 'flex', flexDirection: 'row', gap: '10px', alignItems: 'center' }}> 
             <h3 style={{ fontSize: '1rem', margin: 0 }}>Sort by:</h3>
             <button 
               onClick={() => setView('upcoming')}
@@ -443,17 +457,14 @@ const Tournaments = () => {
                 height: 'fit-content', 
                 padding: '6px 12px', 
                 fontSize: '0.75rem',
-                backgroundColor: view === 'upcoming' ? 'var(--gold)' : 'var(--oak-muted, #5d4037)',
-                color: view === 'upcoming' ? 'var(--mahogany)' : 'var(--antique-white, #f5f5dc)',
-                border: '2px solid',
-                borderColor: view === 'upcoming' ? 'var(--mahogany)' : 'var(--oak)',
+                backgroundColor: view === 'past' ? '#002965' : '#FF5A00',
+                border: 'none',
                 cursor: 'pointer',
                 fontWeight: view === 'upcoming' ? 'bold' : 'normal',
-                transition: 'background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease',
                 boxSizing: 'border-box'
               }}
             >
-              Upcoming Tournaments
+              New Tournaments
             </button>
             <button 
               onClick={() => setView('past')}
@@ -462,17 +473,14 @@ const Tournaments = () => {
                 height: 'fit-content', 
                 padding: '6px 12px', 
                 fontSize: '0.75rem',
-                backgroundColor: view === 'past' ? 'var(--gold)' : 'var(--oak-muted, #5d4037)',
-                color: view === 'past' ? 'var(--mahogany)' : 'var(--antique-white, #f5f5dc)',
-                border: '2px solid',
-                borderColor: view === 'past' ? 'var(--mahogany)' : 'var(--oak)',
+                backgroundColor: view === 'past' ? '#FF5A00' : '#002965',
+                border: 'none',
                 cursor: 'pointer',
                 fontWeight: view === 'past' ? 'bold' : 'normal',
-                transition: 'background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease',
                 boxSizing: 'border-box'
               }}
             >
-              Past Tournaments
+              Old Tournaments
             </button>
           </div>
         </div>
@@ -485,20 +493,20 @@ const Tournaments = () => {
         </button>
       </div>
 
-      <div style={{ marginTop: '30px' }}>
-        {tournaments.length === 0 ? (
+      <div className="stat-container" style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        {displayedTournaments.length === 0 ? (
           <p>No pending applications.</p>
         ) : (
-          tournaments.map((tour) => (
+          displayedTournaments.map((tour) => (
           <div 
             key={tour.TourID} 
             className="stat-item" 
-            style={{ marginBottom: '20px', borderLeft: '5px solid var(--gold)', position: 'relative', cursor: 'pointer' }}
+            style={{ position: 'relative', cursor: 'pointer', justifyContent: 'space-between', height: '150px', boxSizing: 'border-box', width: '100%', gap: '0', borderRadius: '15px' }}
             onClick={() => openModal(tour)}
           >
             <span className="label">{displayDate(tour.Date)}</span>
             <span className="value" style={{ fontSize: '1.5rem' }}>{tour.Title}</span>
-            <p style={{ marginTop: '10px', color: 'var(--text-muted)', display: '-webkit-box', WebkitLineClamp: '1', WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{tour.Text}</p>
+            <p style={{ display: '-webkit-box', WebkitLineClamp: '1', WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{tour.Text}</p>
           </div>
           ))
         )}
@@ -515,26 +523,21 @@ const Tournaments = () => {
                 {/* modal header */}
                 <div style={{ textAlign: 'center', padding: '20px 10px 0px 10px', flexShrink: 0 }}>
                   {isModalEditing ? (
-                    <div style={{ marginBottom: '10px' }}>
+                    <div style={{ marginBottom: '10px', justifyItems: 'center' }}>
                       <input 
                         value={formData.Title} 
                         onChange={(e) => setFormData({...formData, Title: e.target.value})} 
                         style={{ 
-                          fontSize: '2.5rem', 
-                          width: '100%', 
-                          textAlign: 'center', 
-                          padding: '10px', 
-                          background: 'var(--antique-white)', 
-                          border: '1px solid var(--oak)', 
-                          color: 'var(--mahogany)', 
-                          fontFamily: 'var(--font-serif)',
-                          fontWeight: 'bold',
-                          outline: 'none'
+                        fontSize: '2rem', 
+                        width: '95%', 
+                        textAlign: 'center', 
+                        padding: '10px', 
+                        fontWeight: 'bold'
                         }}
                         placeholder="Tournament Title"
                         required 
                       />
-                      <div style={{ marginTop: '10px', width: '100%', display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ marginTop: '10px', width: '95%', display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div style={{ width: '50%' }}>
                           <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.8rem', color: 'var(--gold)', fontWeight: 'bold', textAlign: 'left' }}>Date</label>
                           <input 
@@ -545,10 +548,6 @@ const Tournaments = () => {
                             style={{ 
                               width: '100%', 
                               padding: '10px', 
-                              background: 'var(--antique-white)', 
-                              border: '1px solid var(--oak)', 
-                              color: 'var(--mahogany)', 
-                              outline: 'none',
                               fontSize: '1rem'
                             }}
                             required 
@@ -562,12 +561,7 @@ const Tournaments = () => {
                             style={{ 
                               width: '100%', 
                               padding: '10px', 
-                              background: 'var(--antique-white)', 
-                              border: '1px solid var(--oak)', 
-                              color: 'var(--mahogany)', 
-                              outline: 'none',
-                              fontSize: '1rem',
-                              cursor: 'pointer'
+                              fontSize: '1rem'
                             }}
                             required 
                           >
@@ -645,11 +639,7 @@ const Tournaments = () => {
                             max={16}
                             style={{ 
                               width: '100%', 
-                              padding: '10px', 
-                              background: 'var(--antique-white)', 
-                              border: '1px solid var(--oak)', 
-                              color: 'var(--mahogany)', 
-                              outline: 'none',
+                              padding: '11px', 
                               fontSize: '1rem'
                             }}
                             required 
@@ -659,7 +649,7 @@ const Tournaments = () => {
                     </div>
                   ) : (
                     <>
-                      <h2 style={{ color: 'var(--mahogany)', fontSize: '2.5rem' }}>{selectedTournament.Title}</h2>
+                      <h2 style={{ color: 'black', fontSize: '2.5rem' }}>{selectedTournament.Title}</h2>
                       <div style={{ marginTop: '10px', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                         <span className="label" style={{ color: 'var(--gold-muted)', fontWeight: 'bold' }}>{displayDate(selectedTournament.Date)}</span>
                         <span className="label" style={{ color: 'var(--gold-muted)', fontWeight: 'bold' }}>{selectedTournament.ParticipantCount} Player {selectedTournament.Style} Tournament</span>
@@ -676,23 +666,19 @@ const Tournaments = () => {
                       value={formData.Text} 
                       onChange={(e) => setFormData({...formData, Text: e.target.value})} 
                       style={{ 
-                        width: '100%',
+                        width: '95%',
                         height: '100%',
                         padding: '10px', 
-                        background: 'var(--antique-white)', 
-                        border: '1px solid var(--oak)', 
                         fontSize: '1rem', 
-                        fontFamily: 'inherit',
-                        lineHeight: '1.6',
-                        color: 'var(--text)',
-                        outline: 'none',
-                        resize: 'none'
+                        resize: 'none',
+                        textAlign: 'left',
+                        fontFamily: 'var(--sarif-sans)'
                       }}
                       placeholder="Tournament Description / Details"
                       required 
                     />
                   ) : (
-                    <p style={{ whiteSpace: 'pre-wrap' }}>{selectedTournament.Text}</p>
+                    <p style={{ whiteSpace: 'pre-wrap', textAlign: 'left', padding: '0 25px' }}>{selectedTournament.Text}</p>
                   )}
                 </div>
               </div>
@@ -733,7 +719,7 @@ const Tournaments = () => {
             </div>
             
             {/* modal footer */}
-            <div style={{ padding: '0px 10px 20px 10px', backgroundColor: 'var(--parchment)', flexShrink: 0, overflowY: 'hidden', scrollbarGutter: 'stable both-edges' }}>
+            <div style={{ padding: '0px 10px 20px 10px', flexShrink: 0, overflowY: 'hidden', scrollbarGutter: 'stable both-edges' }}>
               <hr className="modal-hr" />
               <br></br>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>

@@ -55,49 +55,31 @@ const RoundRobinCrossTable = ({ participantCount, results, setResults, readOnly 
   return (
     <>
       <div style={{ padding: '20px 20px 0 20px' }}>
-        <h4 style={{ fontFamily: 'var(--font-serif)', color: 'var(--mahogany)', marginBottom: '15px' }}>Tournament Crosstable</h4>
+        <h4 style={{ fontFamily: 'var(--font-sans)', color: 'black', marginBottom: '10px', fontSize: '1.5rem' }}>Tournament Crosstable</h4>
       </div>
-      <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0, backgroundColor: 'rgba(255,255,255,0.5)', borderLeft: 'none', borderRight: 'none', borderBottom: '1px solid var(--oak)' }}>
-        <thead style={{ position: 'sticky', top: 0, zIndex: 10, backgroundColor: 'var(--mahogany)', color: 'var(--parchment)' }}>
-          <tr style={{ backgroundColor: 'var(--mahogany)', color: 'var(--parchment)' }}>
-            <th style={{ 
-              padding: '8px', 
-              border: '1px solid var(--oak)', 
-              fontSize: '0.8rem', 
-              width: '40px',
-              position: 'sticky',
-              left: 0,
-              backgroundColor: 'var(--mahogany)',
-              zIndex: 11
-            }}>Rank</th>
-            <th style={{ padding: '8px', border: '1px solid var(--oak)', fontSize: '0.8rem', width: '180px', minWidth: '180px' }}>Player</th>
+      <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0, backgroundColor: 'rgb(255, 255, 255)', borderLeft: 'none', borderRight: 'none', border: '1px solid var(--gold)' }}>
+        <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
+          <tr style={{ backgroundColor: '#002965', color: 'white' }}>
+            <th style={{ padding: '8px', border: '1px solid var(--gold)', fontSize: '1rem', width: '40px', position: 'sticky', left: 0, backgroundColor: '#002965', zIndex: 11 }}>Rank</th>
+            <th style={{ padding: '8px', border: '1px solid var(--gold)', fontSize: '1rem', width: '180px', minWidth: '180px' }}>Player</th>
             {Array.from({ length: participantCount }).map((_, i) => (
-              <th key={i} style={{ padding: '8px', border: '1px solid var(--oak)', fontSize: '0.8rem', width: '40px', minWidth: '40px' }}>{i + 1}</th>
+              <th key={i} style={{ padding: '8px', border: '1px solid var(--gold)', fontSize: '1rem', width: '40px', minWidth: '40px' }}>{i + 1}</th>
             ))}
-            <th style={{ padding: '8px', border: '1px solid var(--oak)', fontSize: '0.8rem', width: '60px', minWidth: '60px' }}>Score</th>
+            <th style={{ padding: '8px', border: '1px solid var(--gold)', fontSize: '0.8rem', width: '60px', minWidth: '60px' }}>Score</th>
           </tr>
         </thead>
         <tbody>
           {Array.from({ length: participantCount }).map((_, rowIndex) => (
             <tr key={rowIndex}>
-              <td style={{ 
-                padding: '8px', 
-                border: '1px solid var(--oak)', 
-                textAlign: 'center', 
-                fontSize: '0.8rem', 
-                backgroundColor: 'var(--antique-white)',
-                position: 'sticky',
-                left: 0,
-                zIndex: 5
-              }}>
+              <td style={{ padding: '8px', border: '1px solid var(--gold)', textAlign: 'center', fontSize: '1rem', backgroundColor: '#002965', color: 'white', position: 'sticky', left: 0, zIndex: 5 }}>
                 {rowIndex + 1}
               </td>
               <td style={{ 
                 padding: '8px', 
-                border: '1px solid var(--oak)', 
+                border: '1px solid var(--gold)', 
                 fontWeight: 'bold', 
                 fontSize: '0.8rem', 
-                backgroundColor: 'var(--antique-white)', 
+                backgroundColor: '#dde8f8', 
                 width: '180px', 
                 minWidth: '180px',
                 maxWidth: '180px',
@@ -112,14 +94,14 @@ const RoundRobinCrossTable = ({ participantCount, results, setResults, readOnly 
                   key={colIndex} 
                   style={{ 
                     padding: '0', 
-                    border: '1px solid var(--oak)', 
+                    border: '1px solid var(--gold)', 
                     textAlign: 'center', 
                     fontSize: '0.8rem',
                     width: '40px',
                     height: '40px',
                     minWidth: '40px',
-                    backgroundColor: rowIndex === colIndex ? 'var(--mahogany-light)' : 'transparent',
-                    color: rowIndex === colIndex ? 'var(--parchment)' : 'inherit'
+                    backgroundColor: rowIndex === colIndex ? '#d64c01' : 'transparent',
+                    color: rowIndex === colIndex ? 'white' : 'inherit'
                   }}
                 >
                   {rowIndex === colIndex ? '—' : (
@@ -144,7 +126,8 @@ const RoundRobinCrossTable = ({ participantCount, results, setResults, readOnly 
                           height: '100%',
                           textAlign: 'center',
                           border: 'none',
-                          background: (!participants[rowIndex] || !participants[colIndex]) ? 'rgba(0,0,0,0.05)' : 'transparent',
+                          borderRadius: '0px',
+                          background: 'transparent',
                           outline: 'none',
                           padding: 0,
                           color: 'inherit',
@@ -157,7 +140,7 @@ const RoundRobinCrossTable = ({ participantCount, results, setResults, readOnly 
                   )}
                 </td>
               ))}
-              <td style={{ padding: '8px', border: '1px solid var(--oak)', textAlign: 'center', fontWeight: 'bold', fontSize: '0.8rem' }}>
+              <td style={{ padding: '8px', border: '1px solid var(--gold)', textAlign: 'center', fontWeight: 'bold', fontSize: '0.8rem' }}>
                 {getScore(rowIndex)}
               </td>
             </tr>

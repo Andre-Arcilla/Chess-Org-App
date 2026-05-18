@@ -10,11 +10,15 @@ const Members = () => {
   const fetchMembers = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .schema('Chessistant')
-        .from('Profiles')
-        .select('*')
-        .order('StudName', { ascending: true });
+      const minimumDelay = new Promise(resolve => setTimeout(resolve, 750));
+      const [_, { data, error }] = await Promise.all([
+        minimumDelay,
+        supabase
+          .schema('Chessistant')
+          .from('Profiles')
+          .select('*')
+          .order('StudName', { ascending: true })
+      ]);
       if (error) throw error;
       setMembers(data || []);
     } catch (err) {

@@ -16,7 +16,12 @@ const Overview = () => {
         setLoading(true);
         const now = new Date().toISOString();
 
-        const [announcementsResult, tournamentsResult] = await Promise.all([
+        // Create a timer promise that resolves after 1000ms
+        const minimumDelay = new Promise(resolve => setTimeout(resolve, 1000));
+
+        // Run the delay timer and both Supabase queries concurrently
+        const [_, announcementsResult, tournamentsResult] = await Promise.all([
+          minimumDelay,
           supabase
             .schema('Chessistant')
             .from('Announcements')
@@ -66,15 +71,15 @@ const Overview = () => {
 
   const extendedPosts = posts.length > 0 ? [posts[posts.length - 1], ...posts, posts[0]] : [];
 
-  // useEffect(() => {
-  //   if (posts.length <= 1) return;
+  useEffect(() => {
+    if (posts.length <= 1) return;
 
-  //   const interval = setInterval(() => {
-  //     handleNext();
-  //   }, 4000);
+    const interval = setInterval(() => {
+      handleNext();
+    }, 4000);
 
-  //   return () => clearInterval(interval);
-  // }, [currentIndex, posts]);
+    return () => clearInterval(interval);
+  }, [currentIndex, posts]);
 
   const handleNext = () => {
     if (isAnimating.current || posts.length <= 1) return;
@@ -119,8 +124,8 @@ const Overview = () => {
   if (currentIndex === extendedPosts.length - 1) activeDotIndex = 0;
 
   if (loading) return (
-    <div class="overlay">
-      <div class="spinner"></div>
+    <div className="overlay">
+      <div className="spinner"></div>
       <p>Loading Overview page...</p>
     </div>
   );
@@ -139,7 +144,7 @@ const Overview = () => {
         </div>
       </header>
       
-      <div className="card" style={{ height: 'stretch', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+      <div className="card" style={{ height: 'stretch', display: 'flex', flexDirection: 'column', gap: '10px', overflow: 'hidden' }}>
         <h3 style={{ fontSize: '2rem' }}>Latest Announcements and Tournaments</h3>
         
         <div className="carousel" style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1, overflow: 'hidden' }}>
@@ -163,19 +168,20 @@ const Overview = () => {
               color: '#FF5A00',
               transition: 'background-color 0.3s ease, color 0.3s ease',
               fontWeight: 'bold',
-              zIndex: 10
+              fontFamily: 'var(--font-sans)',
+              zIndex: 10,
             }}
             onMouseEnter={(e) => {
-              e.target.style.backgroundColor = '#FF5A00';
-              e.target.style.color = '#002965';
+              e.currentTarget.style.backgroundColor = '#FF5A00';
+              e.currentTarget.style.color = '#002965';
             }}
             onMouseLeave={(e) => {
-              e.target.style.backgroundColor = '#002965';
-              e.target.style.color = '#FF5A00';
+              e.currentTarget.style.backgroundColor = '#002965';
+              e.currentTarget.style.color = '#FF5A00';
             }}
             aria-label="Previous post"
           >
-            ‹
+            <img src="src/assets/left.png" alt="" />
           </button>
 
           {/* Carousel Viewport */}
@@ -214,18 +220,18 @@ const Overview = () => {
                     display: 'flex',
                     flexDirection: 'column',
                     justifyContent: 'center',
-                    gap: '10px',
+                    gap: '0',
                     boxSizing: 'border-box'
                   }}>
-                    <span className="title">
+                    <div className="title">
                       {post.title}
-                    </span>
-                    <span className="date">
+                    </div>
+                    <div className="date">
                       {post.date.toLocaleDateString()}
-                    </span>
-                    <span className="text">
+                    </div>
+                    <div className="text">
                       {post.text}
-                    </span>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -251,19 +257,20 @@ const Overview = () => {
               color: '#FF5A00',
               transition: 'background-color 0.3s ease, color 0.3s ease',
               fontWeight: 'bold',
+              fontFamily: 'var(--font-sans)',
               zIndex: 10
             }}
             onMouseEnter={(e) => {
-              e.target.style.backgroundColor = '#FF5A00';
-              e.target.style.color = '#002965';
+              e.currentTarget.style.backgroundColor = '#FF5A00';
+              e.currentTarget.style.color = '#002965';
             }}
             onMouseLeave={(e) => {
-              e.target.style.backgroundColor = '#002965';
-              e.target.style.color = '#FF5A00';
+              e.currentTarget.style.backgroundColor = '#002965';
+              e.currentTarget.style.color = '#FF5A00';
             }}
             aria-label="Next post"
           >
-            ›
+            <img src="src/assets/right.png" alt="" />
           </button>
         </div>
 
