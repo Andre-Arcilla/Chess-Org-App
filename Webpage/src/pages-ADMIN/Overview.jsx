@@ -1,46 +1,90 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useOutletContext } from 'react-router-dom';
+import { supabase } from '../db';
 
 const Overview = () => {
-  const { adminData } = useOutletContext();
-  
-  const stats = [
-    { label: 'Registered Members', value: '124' },
-    { label: 'Active Matches', value: '12' },
-    { label: 'Pending Applications', value: '3' },
-    { label: 'Completed Tournaments', value: '8' },
-    { label: 'Average Rating', value: '1850' }
-  ];
-
-  // 1. Create an extended array with clones at both ends for the infinite effect
-  const extendedStats = [stats[stats.length - 1], ...stats, stats[0]];
-
-  // 2. Start at index 1, which is our first "real" stat
+  const { adminData } = useOutletContext();  
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(1);
   const [isTransitioning, setIsTransitioning] = useState(true);
-  
-  // NEW: Add a ref to track if an animation is currently happening
   const isAnimating = useRef(false);
 
-  // Auto-play timer
   useEffect(() => {
-    const interval = setInterval(() => {
-      handleNext();
-    }, 4000);
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        const now = new Date().toISOString();
 
-    // Clears the timer whenever the slide changes so manual clicks reset the clock
-    return () => clearInterval(interval);
-  }, [currentIndex]);
+        const [announcementsResult, tournamentsResult] = await Promise.all([
+          supabase
+            .schema('Chessistant')
+            .from('Announcements')
+            .select('*')
+            .order('Date', { ascending: false })
+            .limit(5),
+          supabase
+            .schema('Chessistant')
+            .from('Tournaments')
+            .select('*')
+            .gte('Date', now)
+            .order('Date', { ascending: true })
+            .limit(5)
+        ]);
+
+        if (announcementsResult.error) throw announcementsResult.error;
+        if (tournamentsResult.error) throw tournamentsResult.error;
+
+        const formattedAnnouncements = (announcementsResult.data || []).map(item => ({
+          title: 'Recent Announcement: ' + (item.Title || 'Announcement not available.'),
+          text: item.Text || 'Announcement details not available.',
+          date: new Date(item.Date),
+          type: 'announcement'
+        }));
+
+        const formattedTournaments = (tournamentsResult.data || []).map(item => ({
+          title: 'Upcoming Tournament: ' + (item.Title || 'Tournament not available.'),
+          text: item.Text || 'Tournament details not available.',
+          date: new Date(item.Date),
+          type: 'tournament'
+        }));
+
+        const combined = [...formattedAnnouncements, ...formattedTournaments]
+          .sort((a, b) => b.date - a.date)
+          .slice(0, 5);
+
+        setPosts(combined);
+      } catch (err) {
+        console.error('Error fetching dashboard items:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
+
+  const extendedPosts = posts.length > 0 ? [posts[posts.length - 1], ...posts, posts[0]] : [];
+
+  // useEffect(() => {
+  //   if (posts.length <= 1) return;
+
+  //   const interval = setInterval(() => {
+  //     handleNext();
+  //   }, 4000);
+
+  //   return () => clearInterval(interval);
+  // }, [currentIndex, posts]);
 
   const handleNext = () => {
-    if (isAnimating.current) return; // Prevent spam clicking
+    if (isAnimating.current || posts.length <= 1) return;
     isAnimating.current = true;
     setIsTransitioning(true);
     setCurrentIndex((prev) => prev + 1);
   };
 
   const handlePrev = () => {
-    if (isAnimating.current) return; // Prevent spam clicking
+    if (isAnimating.current || posts.length <= 1) return;
     isAnimating.current = true;
     setIsTransitioning(true);
     setCurrentIndex((prev) => prev - 1);
@@ -48,37 +92,42 @@ const Overview = () => {
 
   const goToSlide = (realIndex) => {
     const targetIndex = realIndex + 1;
-    if (targetIndex === currentIndex) return; // Do nothing if clicking the active dot
-    if (isAnimating.current) return; // Prevent spam clicking
+    if (targetIndex === currentIndex) return;
+    if (isAnimating.current) return;
     
     isAnimating.current = true;
     setIsTransitioning(true);
     setCurrentIndex(targetIndex);
   };
 
-  // 3. The magic trick: jump instantly when we reach a clone
   const handleTransitionEnd = (e) => {
-    // Prevent bubbled transition events from children triggering this
     if (e.target !== e.currentTarget) return; 
     
-    // Release the animation lock when the sliding finishes
     isAnimating.current = false;
 
     if (currentIndex === 0) {
-      // Reached the clone of the last item at the beginning -> jump to real last item
       setIsTransitioning(false);
-      setCurrentIndex(stats.length);
-    } else if (currentIndex === extendedStats.length - 1) {
-      // Reached the clone of the first item at the end -> jump to real first item
+      setCurrentIndex(posts.length);
+    } else if (currentIndex === extendedPosts.length - 1) {
       setIsTransitioning(false);
       setCurrentIndex(1);
     }
   };
 
-  // Calculate which indicator dot should be active based on our current position
   let activeDotIndex = currentIndex - 1;
-  if (currentIndex === 0) activeDotIndex = stats.length - 1;
-  if (currentIndex === extendedStats.length - 1) activeDotIndex = 0;
+  if (currentIndex === 0) activeDotIndex = posts.length - 1;
+  if (currentIndex === extendedPosts.length - 1) activeDotIndex = 0;
+
+  if (loading) return (
+    <div class="overlay">
+      <div class="spinner"></div>
+      <p>Loading Overview page...</p>
+    </div>
+  );
+
+  if (posts.length === 0) {
+    return <div style={{ padding: '20px', textAlign: 'center' }}>No recent updates available.</div>;
+  }
 
   return (
     <>
@@ -124,7 +173,7 @@ const Overview = () => {
               e.target.style.backgroundColor = '#002965';
               e.target.style.color = '#FF5A00';
             }}
-            aria-label="Previous stat"
+            aria-label="Previous post"
           >
             ‹
           </button>
@@ -144,14 +193,13 @@ const Overview = () => {
               style={{
                 display: 'flex',
                 height: '100%',
-                width: `${extendedStats.length * 100}%`,
-                transform: `translateX(-${currentIndex * (100 / extendedStats.length)}%)`,
+                width: `${extendedPosts.length * 100}%`,
+                transform: `translateX(-${currentIndex * (100 / extendedPosts.length)}%)`,
                 transition: isTransitioning ? 'transform 0.5s ease-in-out' : 'none'
             }}>
-              {/* Map out extended stat items (including clones) */}
-              {extendedStats.map((stat, index) => (
+              {extendedPosts.map((post, index) => (
                 <div key={index} style={{
-                  width: `${100 / extendedStats.length}%`,
+                  width: `${100 / extendedPosts.length}%`,
                   height: '100%',
                   display: 'flex',
                   alignItems: 'center',
@@ -162,10 +210,22 @@ const Overview = () => {
                     margin: '0 auto',
                     width: '100%',
                     height: '100%',
-                    padding: '25px 60px' 
+                    padding: '25px 60px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    gap: '10px',
+                    boxSizing: 'border-box'
                   }}>
-                    <span className="label">{stat.label}</span>
-                    <span className="value">{stat.value}</span>
+                    <span className="title">
+                      {post.title}
+                    </span>
+                    <span className="date">
+                      {post.date.toLocaleDateString()}
+                    </span>
+                    <span className="text">
+                      {post.text}
+                    </span>
                   </div>
                 </div>
               ))}
@@ -201,7 +261,7 @@ const Overview = () => {
               e.target.style.backgroundColor = '#002965';
               e.target.style.color = '#FF5A00';
             }}
-            aria-label="Next stat"
+            aria-label="Next post"
           >
             ›
           </button>
@@ -214,7 +274,7 @@ const Overview = () => {
           gap: '10px',
           marginTop: '10px'
         }}>
-          {stats.map((_, index) => (
+          {posts.map((_, index) => (
             <button
               key={index}
               onClick={() => goToSlide(index)}
@@ -228,7 +288,7 @@ const Overview = () => {
                 transition: 'background-color 0.3s ease',
                 padding: 0
               }}
-              aria-label={`Go to stat ${index + 1}`}
+              aria-label={`Go to post ${index + 1}`}
             />
           ))}
         </div>
