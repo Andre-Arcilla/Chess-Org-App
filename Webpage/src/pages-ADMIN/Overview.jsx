@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useOutletContext, useNavigate } from 'react-router-dom';
 import { supabase } from '../db';
 
 const Overview = () => {
@@ -9,6 +9,7 @@ const Overview = () => {
   const [currentIndex, setCurrentIndex] = useState(1);
   const [isTransitioning, setIsTransitioning] = useState(true);
   const isAnimating = useRef(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -41,6 +42,7 @@ const Overview = () => {
         if (tournamentsResult.error) throw tournamentsResult.error;
 
         const formattedAnnouncements = (announcementsResult.data || []).map(item => ({
+          id: item.AnnID,
           title: 'Recent Announcement: ' + (item.Title || 'Announcement not available.'),
           text: item.Text || 'Announcement details not available.',
           date: new Date(item.Date),
@@ -48,6 +50,7 @@ const Overview = () => {
         }));
 
         const formattedTournaments = (tournamentsResult.data || []).map(item => ({
+          id: item.TourID,
           title: 'Upcoming Tournament: ' + (item.Title || 'Tournament not available.'),
           text: item.Text || 'Tournament details not available.',
           date: new Date(item.Date),
@@ -221,8 +224,13 @@ const Overview = () => {
                     flexDirection: 'column',
                     justifyContent: 'center',
                     gap: '0',
-                    boxSizing: 'border-box'
-                  }}>
+                    boxSizing: 'border-box',
+                    cursor: 'pointer'
+                  }} 
+                  onClick={() => navigate(
+                    post.type === 'announcement' ? '/announcements' : '/tournaments',
+                    { state: { openId: post.id } }
+                  )}>
                     <div className="title">
                       {post.title}
                     </div>

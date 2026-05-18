@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useOutletContext, useLocation } from 'react-router-dom';
 import { supabase } from '../db';
 import RoundRobinCrossTable from '../components/RoundRobinCrossTable';
 
@@ -22,6 +22,7 @@ const Tournaments = () => {
   const [view, setView] = useState('upcoming');
   const [results, setResults] = useState({});
   const [participants, setParticipants] = useState([]);
+  const location = useLocation();
 
   const fetchMatches = async (tourId, currentParticipants) => {
     if (!tourId || !currentParticipants || currentParticipants.length === 0) return;
@@ -123,6 +124,12 @@ const Tournaments = () => {
   }, []);
 
   useEffect(() => {
+    if (loading || !location.state?.openId || tournaments.length === 0) return;
+    const tour = tournaments.find(t => t.TourID === location.state.openId);
+    if (tour) openModal(tour);
+  }, [loading, tournaments]);
+
+  useEffect(() => {
     if (!selectedTournament?.TourID) return;
 
     fetchParticipants(selectedTournament.TourID);
@@ -210,6 +217,13 @@ const Tournaments = () => {
 
     if (combinedDate < new Date()) {
       alert('Cannot set a tournament date in the past!');
+      return;
+    }
+
+    // Ensure participant count is an even number
+    const pc = parseInt(formData.ParticipantCount, 10);
+    if (isNaN(pc) || pc % 2 !== 0) {
+      alert('Participant count must be an even number.');
       return;
     }
 
@@ -609,40 +623,47 @@ const Tournaments = () => {
                         </div> */}
                         <div style={{ width: '15%' }}>
                           <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.8rem', color: 'var(--gold)', fontWeight: 'bold', textAlign: 'left' }}>Max Players</label>
-                          <input 
+                          <input
                             type="number"
-                            value={formData.ParticipantCount} 
+                            step={2}
+                            value={formData.ParticipantCount}
                             onChange={(e) => {
-                              const val = parseInt(e.target.value);
-                              const min = 3;
-                              const max = 16;
-                              
-                              if (isNaN(val)) {
-                                setFormData({...formData, ParticipantCount: ''});
-                              } else {
-                                // Clamp the value
-                                const clamped = Math.max(0, Math.min(val, max));
-                                setFormData({...formData, ParticipantCount: clamped});
+                              const raw = e.target.value;
+                              const num = Number(raw);
+                              const min = 4;
+                              const max = 30;
+                              if (Number.isNaN(num)) {
+                                setFormData({ ...formData, ParticipantCount: '' });
+                                return;
                               }
-                            }} 
-                            onBlur={(e) => {
-                              const val = parseInt(e.target.value);
-                              const min = 3;
-                              const max = 16;
-                              if (isNaN(val) || val < min) {
-                                setFormData({...formData, ParticipantCount: min});
-                              } else if (val > max) {
-                                setFormData({...formData, ParticipantCount: max});
-                              }
+                              let v = Math.round(num);
+                              v = Math.max(min, Math.min(v, max));
+                              // keep even by lowering if odd (spinner will produce even with step=2)
+                              if (v % 2 !== 0) v = v - 1;
+                              setFormData({ ...formData, ParticipantCount: v });
                             }}
-                            min={3}
-                            max={16}
-                            style={{ 
-                              width: '100%', 
-                              padding: '11px', 
+                            onBlur={(e) => {
+                              let val = Number(e.target.value);
+                              const min = 4;
+                              const max = 30;
+                              if (Number.isNaN(val)) val = min;
+                              val = Math.round(val);
+                              if (val < min) val = min;
+                              if (val > max) val = max;
+                              if (val % 2 !== 0) {
+                                // prefer next higher even unless at max
+                                val = val === max ? val - 1 : val + 1;
+                              }
+                              setFormData({ ...formData, ParticipantCount: val });
+                            }}
+                            min={4}
+                            max={30}
+                            style={{
+                              width: '100%',
+                              padding: '11px',
                               fontSize: '1rem'
                             }}
-                            required 
+                            required
                           />
                         </div>
                       </div>

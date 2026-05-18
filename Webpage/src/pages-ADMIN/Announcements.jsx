@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useOutletContext, useLocation } from 'react-router-dom';
 import { supabase } from '../db';
 
 const Announcements = () => {
@@ -12,6 +12,7 @@ const Announcements = () => {
   const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
   const [formData, setFormData] = useState({ Title: '', Date: '', Text: '' });
   const [view, setView] = useState('upcoming');
+  const location = useLocation();
 
   const fetchAnnouncements = async () => {
     try {
@@ -37,6 +38,12 @@ const Announcements = () => {
   useEffect(() => {
     fetchAnnouncements();
   }, []);
+
+  useEffect(() => {
+    if (loading || !location.state?.openId || announcements.length === 0) return;
+    const ann = announcements.find(a => a.AnnID === location.state.openId);
+    if (ann) openModal(ann);
+  }, [loading, announcements]);
 
   const openModal = (ann) => {
     const initialDate = ann.Date || new Date().toISOString();
