@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { supabase } from '../db';
 
@@ -8,6 +8,9 @@ const Members = () => {
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({});
+  
+  // NEW: State to track the active sort column and direction
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'ascending' });
 
   const fetchMembers = async () => {
     try {
@@ -46,10 +49,8 @@ const Members = () => {
 
   const handleUpdate = async () => {
     try {
-      // 1. If demoting an admin, check how many admins remain
       const originalMember = members.find(m => m.UserID === editingId);
 
-      // Prevent self-role change
       if (originalMember?.StudNum === adminData?.StudNum && editForm.Role !== originalMember?.Role) {
         alert('You cannot change your own role.');
         return;
@@ -70,7 +71,6 @@ const Members = () => {
         }
       }
 
-      // 2. Perform the database update
       const updatedTimestamp = Date.now();
       const { error } = await supabase
         .schema('Chessistant')
@@ -87,7 +87,6 @@ const Members = () => {
 
       if (error) throw error;
       
-      // 3. Update the local UI state directly without setting loading = true
       setMembers(prevMembers => 
         prevMembers.map(member => 
           member.UserID === editingId 
@@ -96,13 +95,64 @@ const Members = () => {
         )
       );
 
-      // 4. Exit edit mode cleanly
       setEditingId(null);
 
     } catch (err) {
       console.error('Error updating member:', err.message);
       alert('Update failed: ' + (err.message || 'Unknown error'));
     }
+  };
+
+  // NEW: Function to handle when a header is clicked
+  const requestSort = (key) => {
+    let direction = 'ascending';
+    if (sortConfig.key === key && sortConfig.direction === 'ascending') {
+      direction = 'descending';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  // NEW: useMemo hook to sort members based on sortConfig
+  const sortedMembers = useMemo(() => {
+    let sortableMembers = [...members];
+    
+    sortableMembers.sort((a, b) => {
+      // 1. Always keep the logged-in Admin pinned to the top
+      if (a.StudNum === adminData?.StudNum) return -1;
+      if (b.StudNum === adminData?.StudNum) return 1;
+
+      // 2. Perform column sorting
+      if (sortConfig.key !== null) {
+        let aValue = a[sortConfig.key];
+        let bValue = b[sortConfig.key];
+
+        // Handle null/undefined values safely
+        if (aValue === null || aValue === undefined) aValue = '';
+        if (bValue === null || bValue === undefined) bValue = '';
+
+        // Make string sorting case-insensitive
+        if (typeof aValue === 'string') aValue = aValue.toLowerCase();
+        if (typeof bValue === 'string') bValue = bValue.toLowerCase();
+
+        if (aValue < bValue) {
+          return sortConfig.direction === 'ascending' ? -1 : 1;
+        }
+        if (aValue > bValue) {
+          return sortConfig.direction === 'ascending' ? 1 : -1;
+        }
+      }
+      return 0;
+    });
+    
+    return sortableMembers;
+  }, [members, sortConfig, adminData]);
+
+  // NEW: Helper to display the visual sort indicator (Arrows)
+  const getSortIndicator = (columnKey) => {
+    if (sortConfig.key === columnKey) {
+      return sortConfig.direction === 'ascending' ? ' ↑' : ' ↓';
+    }
+    return ' ↕';
   };
 
   if (loading) return (
@@ -119,23 +169,43 @@ const Members = () => {
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', tableLayout: 'fixed' }}>
           <thead>
             <tr style={{ borderBottom: '2px solid var(--oak)' }}>
-              <th style={{ padding: '10px', width: '25%' }}>Name</th>
-              <th style={{ padding: '10px', width: '25%' }}>Email</th>
-              <th style={{ padding: '10px', width: '12%' }}>Student ID</th>
-              <th style={{ padding: '10px', width: '13%', textAlign: 'center' }}>Role</th>
-              <th style={{ padding: '10px', width: '10%', textAlign: 'center' }}>Rating</th>
+              {/* UPDATED: Headers are now clickable and show sort indicators */}
+              <th 
+                onClick={() => requestSort('StudName')} 
+                style={{ padding: '10px', width: '25%', cursor: 'pointer', userSelect: 'none' }}
+              >
+                Name {getSortIndicator('StudName')}
+              </th>
+              <th 
+                onClick={() => requestSort('Email')} 
+                style={{ padding: '10px', width: '25%', cursor: 'pointer', userSelect: 'none' }}
+              >
+                Email {getSortIndicator('Email')}
+              </th>
+              <th 
+                onClick={() => requestSort('StudNum')} 
+                style={{ padding: '10px', width: '12%', cursor: 'pointer', userSelect: 'none' }}
+              >
+                Student ID {getSortIndicator('StudNum')}
+              </th>
+              <th 
+                onClick={() => requestSort('Role')} 
+                style={{ padding: '10px', width: '13%', textAlign: 'center', cursor: 'pointer', userSelect: 'none' }}
+              >
+                Role {getSortIndicator('Role')}
+              </th>
+              <th 
+                onClick={() => requestSort('Rating')} 
+                style={{ padding: '10px', width: '10%', textAlign: 'center', cursor: 'pointer', userSelect: 'none' }}
+              >
+                Rating {getSortIndicator('Rating')}
+              </th>
               <th style={{ padding: '10px', width: '15%', textAlign: 'center' }}>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {[...members]
-              .sort((a, b) => {
-                if (a.StudNum === adminData?.StudNum) return -1;
-                if (b.StudNum === adminData?.StudNum) return 1;
-                return 0;
-              })
-              .map((member) => (
-              /* FIX 1: Locked the row height to exactly 55px to prevent stretching */
+            {/* UPDATED: We now map over 'sortedMembers' instead of the inline sort */}
+            {sortedMembers.map((member) => (
               <tr 
                 key={member.UserID} 
                 style={{ 
@@ -144,7 +214,6 @@ const Members = () => {
                   fontWeight: member.StudNum === adminData?.StudNum ? 'bold' : 'normal'
                 }}
               >
-                {/* FIX 2: Changed cell paddings to '0 10px' so the row height dictates the vertical spacing */}
                 <td style={{ padding: '0 10px' }}>
                   {editingId === member.UserID ? (
                     <input
