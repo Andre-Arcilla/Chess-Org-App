@@ -91,9 +91,11 @@ async function handleLogin(e) {
 
         if (profile.Role === 'Admin') {
             window.location.href = '/dashboard-ADMIN.html';
-        } else if (profile.Role === 'Member' || profile.Role === 'Player') {
+        } else if (profile.Role === 'Coach') {
+            window.location.href = '/dashboard-COACH.html';
+        } else if (profile.Role === 'Member') {
             window.location.href = '/dashboard-MEMBER.html';
-        } else {
+        }  else {
             emailInput.setCustomValidity('This account holds an unassigned role profile.');
             loginForm.reportValidity();
         }
@@ -143,10 +145,10 @@ async function handleRegister(e) {
         if (profileCheck.data && profileCheck.data.length > 0) {
             const match = profileCheck.data[0];
             if (match.Email.toLowerCase() === email.toLowerCase()) {
-                regEmailInput.setCustomValidity('An active member account already uses this email.');
+                regEmailInput.setCustomValidity('An account already uses this email.');
                 registerForm.reportValidity();
             } else {
-                regIdInput.setCustomValidity('An active member account already uses this Student ID.');
+                regIdInput.setCustomValidity('An account already uses this Student ID.');
                 registerForm.reportValidity();
             }
             return; 

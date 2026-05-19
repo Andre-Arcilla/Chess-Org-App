@@ -142,11 +142,11 @@ const Overview = () => {
       <header className="top-header">
         <div className="welcome-text">
           <h2 style={{ display: '-webkit-box', WebkitLineClamp: '1', WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-            Welcome back, Admin <span className="admin-highlight">{adminData?.StudName || 'Admin'}</span>
+            Welcome back, <span className="admin-highlight">{adminData?.StudName || 'Admin'}</span>
           </h2>
         </div>
       </header>
-      
+
       <div className="card" style={{ height: 'stretch', display: 'flex', flexDirection: 'column', gap: '10px', overflow: 'hidden' }}>
         <h3 style={{ fontSize: '2rem', borderBottom: '2px solid var(--gold)', paddingBottom: '10px', color: '#002965', letterSpacing: '1px', textTransform: 'uppercase' }}>Latest Announcements and Tournaments</h3>
         

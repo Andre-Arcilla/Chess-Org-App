@@ -2,11 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { supabase } from './db';
-import DashboardLayout from './components/DashboardLayout-MEMBER';
-import Overview from './pages-MEMBER/Overview';
-import Profile from './pages-MEMBER/MyProfile';
-import Tournaments from './pages-MEMBER/Tournaments';
-import Announcements from './pages-MEMBER/Announcements';
+import DashboardLayout from './components/DashboardLayout-COACH';
+import Overview from './pages-COACH/Overview';
+import Members from './pages-COACH/Members';
+import Registrations from './pages-COACH/Registrations';
+import Tournaments from './pages-COACH/Tournaments';
+import Announcements from './pages-COACH/Announcements';
 
 const Bouncer = ({ children }) => {
   const [loading, setLoading] = useState(true);
@@ -74,7 +75,8 @@ const App = () => {
           }
         >
           <Route index element={<Overview />} />
-          <Route path="profile" element={<Profile />} />
+          <Route path="members" element={<Members />} />
+          <Route path="registrations" element={<Registrations />} />
           <Route path="tournaments" element={<Tournaments />} />
           <Route path="announcements" element={<Announcements />} />
           <Route path="*" element={<Navigate to="/" replace />} />

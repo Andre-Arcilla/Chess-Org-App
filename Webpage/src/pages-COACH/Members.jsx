@@ -9,19 +9,22 @@ const Members = () => {
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({});
   
-  // NEW: State to track the active sort column and direction
+  // State to track the active sort column and direction
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'ascending' });
 
   const fetchMembers = async () => {
     try {
       setLoading(true);
+      const orFilter = adminData?.StudNum 
+        ? `Role.eq.Member,StudNum.eq.${adminData.StudNum}`
+        : 'Role.eq.Member';
       const minimumDelay = new Promise(resolve => setTimeout(resolve, 750));
       const [_, { data, error }] = await Promise.all([
         minimumDelay,
         supabase
           .schema('Chessistant')
           .from('Profiles')
-          .select('*')
+          .select('*').or(orFilter)
           .order('StudName', { ascending: true })
       ]);
       if (error) throw error;
@@ -79,7 +82,6 @@ const Members = () => {
           Email: editForm.Email,
           StudName: editForm.StudName,
           StudNum: editForm.StudNum,
-          Role: editForm.Role,
           Rating: editForm.Rating,
           LastModified: updatedTimestamp 
         })
@@ -103,7 +105,7 @@ const Members = () => {
     }
   };
 
-  // NEW: Function to handle when a header is clicked
+  // Function to handle when a header is clicked
   const requestSort = (key) => {
     let direction = 'ascending';
     if (sortConfig.key === key && sortConfig.direction === 'ascending') {
@@ -112,7 +114,7 @@ const Members = () => {
     setSortConfig({ key, direction });
   };
 
-  // NEW: useMemo hook to sort members based on sortConfig
+  // useMemo hook to sort members based on sortConfig
   const sortedMembers = useMemo(() => {
     let sortableMembers = [...members];
     
@@ -147,7 +149,7 @@ const Members = () => {
     return sortableMembers;
   }, [members, sortConfig, adminData]);
 
-  // NEW: Helper to display the visual sort indicator (Arrows)
+  // Helper to display the visual sort indicator (Arrows)
   const getSortIndicator = (columnKey) => {
     if (sortConfig.key === columnKey) {
       return sortConfig.direction === 'ascending' ? ' ↑' : ' ↓';
@@ -169,7 +171,6 @@ const Members = () => {
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', tableLayout: 'fixed' }}>
           <thead>
             <tr style={{ borderBottom: '2px solid var(--oak)' }}>
-              {/* UPDATED: Headers are now clickable and show sort indicators */}
               <th 
                 onClick={() => requestSort('StudName')} 
                 style={{ padding: '10px', width: '25%', cursor: 'pointer', userSelect: 'none' }}
@@ -189,12 +190,6 @@ const Members = () => {
                 Student ID {getSortIndicator('StudNum')}
               </th>
               <th 
-                onClick={() => requestSort('Role')} 
-                style={{ padding: '10px', width: '13%', textAlign: 'center', cursor: 'pointer', userSelect: 'none' }}
-              >
-                Role {getSortIndicator('Role')}
-              </th>
-              <th 
                 onClick={() => requestSort('Rating')} 
                 style={{ padding: '10px', width: '10%', textAlign: 'center', cursor: 'pointer', userSelect: 'none' }}
               >
@@ -204,7 +199,6 @@ const Members = () => {
             </tr>
           </thead>
           <tbody>
-            {/* UPDATED: We now map over 'sortedMembers' instead of the inline sort */}
             {sortedMembers.map((member) => (
               <tr 
                 key={member.UserID} 
@@ -216,7 +210,8 @@ const Members = () => {
                 }}
               >
                 <td style={{ padding: '0 10px' }}>
-                  {editingId === member.UserID ? (
+                  {/* ONLY show input if editing AND it is the current user's row */}
+                  {editingId === member.UserID && member.StudNum === adminData?.StudNum ? (
                     <input
                       value={editForm.StudName || ''} 
                       onChange={(e) => setEditForm({...editForm, StudName: e.target.value})}
@@ -225,7 +220,8 @@ const Members = () => {
                   ) : member.StudName}
                 </td>
                 <td style={{ padding: '0 10px' }}>
-                  {editingId === member.UserID ? (
+                  {/* ONLY show input if editing AND it is the current user's row */}
+                  {editingId === member.UserID && member.StudNum === adminData?.StudNum ? (
                     <input 
                       value={editForm.Email || ''} 
                       onChange={(e) => setEditForm({...editForm, Email: e.target.value})}
@@ -234,7 +230,8 @@ const Members = () => {
                   ) : member.Email}
                 </td>
                 <td style={{ padding: '0 10px' }}>
-                  {editingId === member.UserID ? (
+                  {/* ONLY show input if editing AND it is the current user's row */}
+                  {editingId === member.UserID && member.StudNum === adminData?.StudNum ? (
                     <input 
                       value={editForm.StudNum || ''} 
                       onChange={(e) => setEditForm({...editForm, StudNum: e.target.value})}
@@ -242,31 +239,8 @@ const Members = () => {
                     />
                   ) : member.StudNum}
                 </td>
-                <td style={{ padding: '0 10px' }}>
-                  {editingId === member.UserID ? (
-                    <select 
-                      value={editForm.Role || ''} 
-                      onChange={(e) => setEditForm({...editForm, Role: e.target.value})}
-                      disabled={member.StudNum === adminData?.StudNum}
-                      style={{ 
-                        width: '100%', 
-                        padding: '8px', 
-                        boxSizing: 'border-box', 
-                        textAlign: 'center',
-                        cursor: member.StudNum === adminData?.StudNum ? 'not-allowed' : 'default',
-                        opacity: member.StudNum === adminData?.StudNum ? 0.7 : 1
-                      }}
-                    >
-                      <option value="Admin">Admin</option>
-                      <option value="Coach">Coach</option>
-                      <option value="Member">Member</option>
-                      <option value="Inactive">Inactive</option>
-                    </select>
-                  ) : (
-                    <span className="role-tag">{member.Role}</span>
-                  )}
-                </td>
                 <td style={{ padding: '0 10px', textAlign: 'center' }}>
+                  {/* Rating is editable for ANY row */}
                   {editingId === member.UserID ? (
                     <input 
                       type="number"

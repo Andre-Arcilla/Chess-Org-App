@@ -142,7 +142,7 @@ const Overview = () => {
       <header className="top-header">
         <div className="welcome-text">
           <h2 style={{ display: '-webkit-box', WebkitLineClamp: '1', WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-            Welcome back, Admin <span className="admin-highlight">{adminData?.StudName || 'Admin'}</span>
+            Welcome back, Coach <span className="admin-highlight">{adminData?.StudName || 'Admin'}</span>
           </h2>
         </div>
       </header>

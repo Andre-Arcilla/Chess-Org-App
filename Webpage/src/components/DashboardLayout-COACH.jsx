@@ -23,8 +23,11 @@ const DashboardLayout = ({ adminData }) => {
           <NavLink to="/" end className={({ isActive }) => isActive ? 'active' : ''}>
             Overview
           </NavLink>
-          <NavLink to="/profile" className={({ isActive }) => isActive ? 'active' : ''}>
-            My Profile
+          <NavLink to="/members" className={({ isActive }) => isActive ? 'active' : ''}>
+            Members
+          </NavLink>
+          <NavLink to="/registrations" className={({ isActive }) => isActive ? 'active' : ''}>
+            Registrations
           </NavLink>
           <NavLink to="/tournaments" className={({ isActive }) => isActive ? 'active' : ''}>
             Tournaments
