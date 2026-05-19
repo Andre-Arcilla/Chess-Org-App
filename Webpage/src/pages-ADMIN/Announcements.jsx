@@ -70,24 +70,29 @@ const Announcements = () => {
     if (e && e.preventDefault) {
       e.preventDefault();
     }
-    try {
-      const dateValue = editingId
-        ? new Date(formData.Date).toISOString()
-        : (() => {
-            const now = new Date();
-            if (!formData.Date) return now.toISOString();
-            const selected = new Date(formData.Date);
-            if (isNaN(selected.getTime())) return now.toISOString();
-            selected.setHours(now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds());
-            return selected.toISOString();
-          })();
 
+    if (!formData.Title.trim() || !formData.Text.trim()) {
+      alert('Announcement title and content cannot be empty.');
+      return;
+    }
+
+    try {
       const payload = {
         Title: formData.Title,
         Text: formData.Text,
-        Date: dateValue,
         LastModified: Date.now()
       };
+
+      if (!editingId) {
+        payload.Date = (() => {
+          const now = new Date();
+          if (!formData.Date) return now.toISOString();
+          const selected = new Date(formData.Date);
+          if (isNaN(selected.getTime())) return now.toISOString();
+          selected.setHours(now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds());
+          return selected.toISOString();
+        })();
+      }
 
       if (editingId) {
         payload.LastEditor = adminData?.StudNum;
@@ -211,7 +216,7 @@ const Announcements = () => {
                 boxSizing: 'border-box'
               }}
             >
-              New Announcements
+              Newest
             </button>
             <button 
               onClick={() => setView('past')}
@@ -227,7 +232,7 @@ const Announcements = () => {
                 boxSizing: 'border-box'
               }}
             >
-              Old Announcements
+              Oldest
             </button>
           </div>
         </div>

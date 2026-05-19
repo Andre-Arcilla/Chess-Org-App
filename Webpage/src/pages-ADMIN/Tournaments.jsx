@@ -213,6 +213,11 @@ const Tournaments = () => {
       e.preventDefault();
     }
 
+    if (!formData.Title.trim() || !formData.Text.trim()) {
+      alert('Tournament title and description cannot be empty.');
+      return;
+    }
+
     const combinedDate = new Date(`${formData.Date}T${formData.Hour}:00`);
 
     if (combinedDate < new Date()) {
@@ -501,7 +506,7 @@ const Tournaments = () => {
                 boxSizing: 'border-box'
               }}
             >
-              New Tournaments
+              Newest
             </button>
             <button 
               onClick={() => setView('past')}
@@ -517,7 +522,7 @@ const Tournaments = () => {
                 boxSizing: 'border-box'
               }}
             >
-              Old Tournaments
+              Oldest
             </button>
           </div>
         </div>
