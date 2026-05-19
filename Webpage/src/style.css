@@ -361,6 +361,21 @@ button:disabled {
     transform: translateY(0);
 }
 
+.dropdown-panel a:hover {
+    background: none;
+    transform: none;
+    box-shadow: none;
+}
+
+.dropdown-panel a.active {
+    background: #fff0f0;
+    box-shadow: none;
+}
+
+.dropdown-panel a.active:hover {
+    transform: none;
+}
+
 /* Content Area */
 .main-content {
     flex-grow: 1;

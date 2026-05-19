@@ -9,6 +9,7 @@ import Registrations from './pages-ADMIN/Registrations';
 import Tournaments from './pages-ADMIN/Tournaments';
 import OrgRoster from './pages-ADMIN/OrgRoster';
 import Announcements from './pages-ADMIN/Announcements';
+import Profile from './pages-MEMBER/MyProfile';
 
 const Bouncer = ({ children }) => {
   const [loading, setLoading] = useState(true);
@@ -74,6 +75,7 @@ const App = () => {
           }
         >
           <Route index element={<Overview />} />
+          <Route path="profile" element={<Profile />} />
           <Route path="members" element={<Members />} />
           <Route path="registrations" element={<Registrations />} />
           <Route path="tournaments" element={<Tournaments />} />

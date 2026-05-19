@@ -128,14 +128,10 @@ const Members = () => {
 
   // useMemo hook to sort members based on sortConfig
   const sortedMembers = useMemo(() => {
-    let sortableMembers = [...members];
+    let sortableMembers = members.filter(m => m.StudNum !== adminData?.StudNum);
     
     sortableMembers.sort((a, b) => {
-      // 1. Always keep the logged-in Admin pinned to the top
-      if (a.StudNum === adminData?.StudNum) return -1;
-      if (b.StudNum === adminData?.StudNum) return 1;
-
-      // 2. Perform column sorting
+      // Perform column sorting
       if (sortConfig.key !== null) {
         let aValue = a[sortConfig.key];
         let bValue = b[sortConfig.key];
@@ -216,40 +212,17 @@ const Members = () => {
                 key={member.UserID} 
                 style={{ 
                   height: '55px', 
-                  borderBottom: '1.5px solid var(--gold)',
-                  fontWeight: member.StudNum === adminData?.StudNum ? 'bold' : 'normal',
-                  backgroundColor: member.StudNum === adminData?.StudNum ? 'var(--gold)' : 'transparent'
+                  borderBottom: '1.5px solid var(--gold)'
                 }}
               >
                 <td style={{ padding: '0 10px' }}>
-                  {/* ONLY show input if editing AND it is the current user's row */}
-                  {editingId === member.UserID && member.StudNum === adminData?.StudNum ? (
-                    <input
-                      value={editForm.StudName || ''} 
-                      onChange={(e) => setEditForm({...editForm, StudName: e.target.value})}
-                      style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
-                    />
-                  ) : member.StudName}
+                  {member.StudName}
                 </td>
                 <td style={{ padding: '0 10px' }}>
-                  {/* ONLY show input if editing AND it is the current user's row */}
-                  {editingId === member.UserID && member.StudNum === adminData?.StudNum ? (
-                    <input 
-                      value={editForm.Email || ''} 
-                      onChange={(e) => setEditForm({...editForm, Email: e.target.value})}
-                      style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
-                    />
-                  ) : member.Email}
+                  {member.Email}
                 </td>
                 <td style={{ padding: '0 10px' }}>
-                  {/* ONLY show input if editing AND it is the current user's row */}
-                  {editingId === member.UserID && member.StudNum === adminData?.StudNum ? (
-                    <input 
-                      value={editForm.StudNum || ''} 
-                      onChange={(e) => setEditForm({...editForm, StudNum: e.target.value})}
-                      style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
-                    />
-                  ) : member.StudNum}
+                  {member.StudNum}
                 </td>
                 <td style={{ padding: '0 10px', textAlign: 'center' }}>
                   {/* Rating is editable for ANY row */}

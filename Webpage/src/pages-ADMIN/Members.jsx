@@ -127,14 +127,10 @@ const Members = () => {
 
   // NEW: useMemo hook to sort members based on sortConfig
   const sortedMembers = useMemo(() => {
-    let sortableMembers = [...members];
+    let sortableMembers = members.filter(m => m.StudNum !== adminData?.StudNum);
     
     sortableMembers.sort((a, b) => {
-      // 1. Always keep the logged-in Admin pinned to the top
-      if (a.StudNum === adminData?.StudNum) return -1;
-      if (b.StudNum === adminData?.StudNum) return 1;
-
-      // 2. Perform column sorting
+      // Perform column sorting
       if (sortConfig.key !== null) {
         let aValue = a[sortConfig.key];
         let bValue = b[sortConfig.key];
@@ -217,15 +213,12 @@ const Members = () => {
             </tr>
           </thead>
           <tbody>
-            {/* UPDATED: We now map over 'sortedMembers' instead of the inline sort */}
             {sortedMembers.map((member) => (
               <tr 
                 key={member.UserID} 
                 style={{ 
                   height: '55px', 
-                  borderBottom: '1.5px solid var(--gold)',
-                  fontWeight: member.StudNum === adminData?.StudNum ? 'bold' : 'normal',
-                  backgroundColor: member.StudNum === adminData?.StudNum ? 'var(--gold)' : 'transparent'
+                  borderBottom: '1.5px solid var(--gold)'
                 }}
               >
                 <td style={{ padding: '0 10px' }}>
@@ -260,14 +253,11 @@ const Members = () => {
                     <select 
                       value={editForm.Role || ''} 
                       onChange={(e) => setEditForm({...editForm, Role: e.target.value})}
-                      disabled={member.StudNum === adminData?.StudNum}
                       style={{ 
                         width: '100%', 
                         padding: '8px', 
                         boxSizing: 'border-box', 
-                        textAlign: 'center',
-                        cursor: member.StudNum === adminData?.StudNum ? 'not-allowed' : 'default',
-                        opacity: member.StudNum === adminData?.StudNum ? 0.7 : 1
+                        textAlign: 'center'
                       }}
                     >
                       <option value="Admin">Admin</option>
