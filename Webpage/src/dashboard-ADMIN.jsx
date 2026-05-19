@@ -57,9 +57,7 @@ const Bouncer = ({ children }) => {
     );
   }
 
-  if (!authorized) return null;
-
-  return React.cloneElement(children, { adminData });
+  return React.cloneElement(children, { adminData, setAdminData });
 };
 
 const App = () => {

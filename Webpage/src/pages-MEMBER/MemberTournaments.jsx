@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
 import { supabase } from '../db';
 import RoundRobinCrossTable from '../components/RoundRobinCrossTable';
 
@@ -9,16 +8,10 @@ const Tournaments = () => {
   const [selectedTournament, setSelectedTournament] = useState(null);
   const [view, setView] = useState('upcoming');
   const [results, setResults] = useState({});
-  const [participants, setParticipants] = useState([]);
-
-  // Registration state (from MemberTournaments)
   const [registeredTournaments, setRegisteredTournaments] = useState(new Set());
   const [studentNum, setStudentNum] = useState(null);
+  const [participants, setParticipants] = useState([]);
   const [canUnregisterCurrent, setCanUnregisterCurrent] = useState(true);
-
-  const location = useLocation();
-
-  // ─── Data Fetching ────────────────────────────────────────────────────────
 
   const fetchMatches = async (tourId, currentParticipants) => {
     if (!tourId || !currentParticipants || currentParticipants.length === 0) return;
@@ -81,8 +74,8 @@ const Tournaments = () => {
         StudName: profileMap[p.StudNum] || 'Unknown Player'
       }));
       setParticipants(updatedParticipants);
-
-      // Fetch matches after participants are loaded so we can map StudNum → index
+      
+      // Fetch matches after participants are loaded
       fetchMatches(tourId, updatedParticipants);
     } catch (err) {
       console.error('Error fetching participants:', err);
@@ -92,16 +85,20 @@ const Tournaments = () => {
   const fetchTournaments = async () => {
     try {
       setLoading(true);
+      const now = new Date().toISOString();
+      let query = supabase
+        .schema('Chessistant')
+        .from('Tournaments')
+        .select('*');
 
-      const minimumDelay = new Promise(resolve => setTimeout(resolve, 750));
-      const [_, { data, error }] = await Promise.all([
-        minimumDelay,
-        supabase
-          .schema('Chessistant')
-          .from('Tournaments')
-          .select('*')
-      ]);
-
+      if (view === 'upcoming') {
+        query = query.gte('Date', now).order('Date', { ascending: true });
+      } else {
+        query = query.lt('Date', now).order('Date', { ascending: false });
+      }
+      
+      const { data, error } = await query;
+      
       if (error) throw error;
       setTournaments(data || []);
     } catch (err) {
@@ -113,38 +110,28 @@ const Tournaments = () => {
 
   const fetchRegistrations = async (studNum) => {
     try {
-      const { data, error } = await supabase
+      // Trying both names since there was confusion earlier
+      let { data, error } = await supabase
         .schema('Chessistant')
         .from('TournamentParticipants')
         .select('TourID')
         .eq('StudNum', studNum);
-
-      if (error) throw error;
-
-      setRegisteredTournaments(new Set(data?.map(r => r.TourID) || []));
+      
+      if (error) {
+        const { data: data2, error: error2 } = await supabase
+          .schema('Chessistant')
+          .from('TournamentParticipants')
+          .select('TourID')
+          .eq('StudNum', studNum);
+        if (error2) throw error2;
+        data = data2;
+      }
+      
+      const tourIds = new Set(data?.map(r => r.TourID) || []);
+      setRegisteredTournaments(tourIds);
     } catch (err) {
       console.error('Error fetching registrations:', err);
     }
-  };
-
-  // ─── Registration Logic (from MemberTournaments) ──────────────────────────
-
-  const checkCanUnregister = async (tourId) => {
-    if (!studentNum || !tourId) return true;
-
-    const { data: matches, error } = await supabase
-      .schema('Chessistant')
-      .from('TournamentMatches')
-      .select('matchid')
-      .eq('tourid', tourId)
-      .or(`player1.eq.${studentNum},player2.eq.${studentNum}`)
-      .limit(1);
-
-    if (error) { console.error(error); return true; }
-
-    const canUnregister = !matches || matches.length === 0;
-    setCanUnregisterCurrent(canUnregister);
-    return canUnregister;
   };
 
   const toggleRegistration = async (tourId) => {
@@ -152,6 +139,8 @@ const Tournaments = () => {
       console.error('No student number available');
       return;
     }
+
+    const table = 'TournamentParticipants';
 
     try {
       if (registeredTournaments.has(tourId)) {
@@ -161,28 +150,44 @@ const Tournaments = () => {
           return;
         }
 
-        const { error } = await supabase
+        // Unregister
+        let { error } = await supabase
           .schema('Chessistant')
-          .from('TournamentParticipants')
+          .from(table)
           .delete()
           .eq('TourID', tourId)
           .eq('StudNum', studentNum);
-
-        if (error) throw error;
-
+        
+        if (error) {
+          const { error: error2 } = await supabase
+            .schema('Chessistant')
+            .from('TournamentParticipants')
+            .delete()
+            .eq('TourID', tourId)
+            .eq('StudNum', studentNum);
+          if (error2) throw error2;
+        }
+        
         setRegisteredTournaments(prev => {
           const updated = new Set(prev);
           updated.delete(tourId);
           return updated;
         });
       } else {
-        const { error } = await supabase
+        // Register
+        let { error } = await supabase
           .schema('Chessistant')
-          .from('TournamentParticipants')
+          .from(table)
           .insert([{ TourID: tourId, StudNum: studentNum }]);
-
-        if (error) throw error;
-
+        
+        if (error) {
+          const { error: error2 } = await supabase
+            .schema('Chessistant')
+            .from('TournamentParticipants')
+            .insert([{ TourID: tourId, StudNum: studentNum }]);
+          if (error2) throw error2;
+        }
+        
         setRegisteredTournaments(prev => new Set([...prev, tourId]));
       }
 
@@ -193,30 +198,10 @@ const Tournaments = () => {
     }
   };
 
-  // ─── Modal ────────────────────────────────────────────────────────────────
-
-  const openModal = (tour) => {
-    // Reset to prevent "ghosting" from a previously viewed tournament
-    setResults({});
-    setParticipants([]);
-    setCanUnregisterCurrent(true);
-    setSelectedTournament(tour);
-    checkCanUnregister(tour.TourID);
-  };
-
-  const closeModal = () => {
-    setSelectedTournament(null);
-    setResults({});
-    setParticipants([]);
-  };
-
-  // ─── Effects ──────────────────────────────────────────────────────────────
-
   useEffect(() => {
     fetchTournaments();
-  }, []);
+  }, [view]);
 
-  // Read student number from localStorage and pre-fetch registrations
   useEffect(() => {
     const initializeStudent = async () => {
       try {
@@ -230,17 +215,11 @@ const Tournaments = () => {
         console.error('Error initializing student data:', err);
       }
     };
+
     initializeStudent();
   }, []);
 
-  // Auto-open a specific tournament if navigated here with location.state.openId
-  useEffect(() => {
-    if (loading || !location.state?.openId || tournaments.length === 0) return;
-    const tour = tournaments.find(t => t.TourID === location.state.openId);
-    if (tour) openModal(tour);
-  }, [loading, tournaments]);
-
-  // Subscribe to real-time participant changes while a tournament is open
+  // Real-time subscription for participants
   useEffect(() => {
     if (!selectedTournament?.TourID) return;
 
@@ -250,8 +229,25 @@ const Tournaments = () => {
       .channel('participants_changes')
       .on(
         'postgres_changes',
-        { event: '*', schema: 'Chessistant', table: 'TournamentParticipants' },
-        () => { fetchParticipants(selectedTournament.TourID); }
+        {
+          event: '*',
+          schema: 'Chessistant',
+          table: 'TournamentParticipants'
+        },
+        () => {
+          fetchParticipants(selectedTournament.TourID);
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'Chessistant',
+          table: 'TournamentParticipants'
+        },
+        () => {
+          fetchParticipants(selectedTournament.TourID);
+        }
       )
       .subscribe();
 
@@ -260,114 +256,132 @@ const Tournaments = () => {
     };
   }, [selectedTournament?.TourID]);
 
-  // ─── Helpers ──────────────────────────────────────────────────────────────
+  const checkCanUnregister = async (tourId) => {
+    if (!studentNum || !tourId) return true;
+    
+    const { data: matches, error } = await supabase
+      .schema('Chessistant')
+      .from('TournamentMatches')
+      .select('matchid')
+      .eq('tourid', tourId)
+      .or(`player1.eq.${studentNum},player2.eq.${studentNum}`)
+      .limit(1);
+
+    if (error) { console.error(error); return true; }
+    
+    const canUnregister = !matches || matches.length === 0;
+    setCanUnregisterCurrent(canUnregister);
+    return canUnregister;
+  };
+
+  const openModal = (tour) => {
+    // Reset data to prevent "ghosting" from previously viewed tournaments
+    setResults({});
+    setParticipants([]);
+    setSelectedTournament(tour);
+    setCanUnregisterCurrent(true);
+    checkCanUnregister(tour.TourID);
+  };
+
+  const closeModal = () => {
+    setSelectedTournament(null);
+    setResults({});
+    setParticipants([]);
+  };
 
   const displayDate = (dateVal) => {
     if (!dateVal) return '';
     const d = new Date(dateVal);
-    return isNaN(d.getTime()) ? '' : d.toLocaleString([], {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
+    return isNaN(d.getTime()) ? '' : d.toLocaleString([], { 
+      month: 'short', 
+      day: 'numeric', 
+      year: 'numeric', 
+      hour: '2-digit', 
       hour12: true
     });
   };
 
-  const nowStr = new Date().toISOString();
-  const displayedTournaments = [...tournaments]
-    .filter(tour => view === 'upcoming' ? tour.Date >= nowStr : tour.Date < nowStr)
-    .sort((a, b) => view === 'upcoming'
-      ? new Date(a.Date) - new Date(b.Date)   // Soonest first for upcoming
-      : new Date(b.Date) - new Date(a.Date)   // Most recent first for past
-    );
-
-  // ─── Render ───────────────────────────────────────────────────────────────
-
-  if (loading) return (
-    <div className="overlay">
-      <div className="spinner"></div>
-      <p>Loading Tournaments...</p>
-    </div>
-  );
-
   return (
     <div className="card">
-      {/* Header + sort toggles */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', overflowY: 'hidden', scrollbarGutter: 'stable both-edges' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <h3 style={{ fontSize: '2rem' }}>Tournaments</h3>
-          <div className="sort" style={{ display: 'flex', flexDirection: 'row', gap: '10px', alignItems: 'center' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', alignItems: 'flex-start', overflowY: 'hidden', scrollbarGutter: 'stable both-edges' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px'}}>
+          <h3 style={{ fontSize: '2rem' }}>Tournament Management</h3>
+          <div style={{ display: 'flex', flexDirection: 'row', gap: '10px', alignItems: 'center' }}> 
             <h3 style={{ fontSize: '1rem', margin: 0 }}>Sort by:</h3>
-            <button
+            <button 
               onClick={() => setView('upcoming')}
-              style={{
-                width: 'fit-content',
-                height: 'fit-content',
-                padding: '6px 12px',
+              style={{ 
+                width: 'fit-content', 
+                height: 'fit-content', 
+                padding: '6px 12px', 
                 fontSize: '0.75rem',
-                backgroundColor: view === 'past' ? '#002965' : '#FF5A00',
-                border: 'none',
+                backgroundColor: view === 'upcoming' ? 'var(--gold)' : 'var(--oak-muted, #5d4037)',
+                color: view === 'upcoming' ? 'var(--mahogany)' : 'var(--antique-white, #f5f5dc)',
+                border: '2px solid',
+                borderColor: view === 'upcoming' ? 'var(--mahogany)' : 'var(--oak)',
                 cursor: 'pointer',
                 fontWeight: view === 'upcoming' ? 'bold' : 'normal',
+                transition: 'background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease',
                 boxSizing: 'border-box'
               }}
             >
-              Upcoming
+              Upcoming Tournaments
             </button>
-            <button
+            <button 
               onClick={() => setView('past')}
-              style={{
-                width: 'fit-content',
-                height: 'fit-content',
-                padding: '6px 12px',
+              style={{ 
+                width: 'fit-content', 
+                height: 'fit-content', 
+                padding: '6px 12px', 
                 fontSize: '0.75rem',
-                backgroundColor: view === 'past' ? '#FF5A00' : '#002965',
-                border: 'none',
+                backgroundColor: view === 'past' ? 'var(--gold)' : 'var(--oak-muted, #5d4037)',
+                color: view === 'past' ? 'var(--mahogany)' : 'var(--antique-white, #f5f5dc)',
+                border: '2px solid',
+                borderColor: view === 'past' ? 'var(--mahogany)' : 'var(--oak)',
                 cursor: 'pointer',
                 fontWeight: view === 'past' ? 'bold' : 'normal',
+                transition: 'background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease',
                 boxSizing: 'border-box'
               }}
             >
-              Past
+              Past Tournaments
             </button>
           </div>
         </div>
       </div>
 
-      {/* Tournament list */}
-      <div className="stat-container" style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-        {displayedTournaments.length === 0 ? (
-          <p>No tournaments found.</p>
+      <div style={{ marginTop: '30px' }}>
+        {loading ? (
+          <p>Loading...</p>
+        ) : tournaments.length === 0 ? (
+          <p>No pending applications.</p>
         ) : (
-          displayedTournaments.map((tour) => (
-            <div
-              key={tour.TourID}
-              className="stat-item"
-              style={{ position: 'relative', cursor: 'pointer', justifyContent: 'space-between', height: '150px', boxSizing: 'border-box', width: '100%', gap: '0', borderRadius: '15px' }}
-              onClick={() => openModal(tour)}
-            >
-              <span className="label">{displayDate(tour.Date)}</span>
-              <span className="value" style={{ fontSize: '1.5rem' }}>{tour.Title}</span>
-              <p style={{ display: '-webkit-box', WebkitLineClamp: '1', WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{tour.Text}</p>
-            </div>
+          tournaments.map((tour) => (
+          <div 
+            key={tour.TourID} 
+            className="stat-item" 
+            style={{ marginBottom: '20px', borderLeft: '5px solid var(--gold)', position: 'relative', cursor: 'pointer' }}
+            onClick={() => openModal(tour)}
+          >
+            <span className="label">{displayDate(tour.Date)}</span>
+            <span className="value" style={{ fontSize: '1.5rem' }}>{tour.Title}</span>
+            <p style={{ marginTop: '10px', color: 'var(--text-muted)', display: '-webkit-box', WebkitLineClamp: '1', WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{tour.Text}</p>
+          </div>
           ))
         )}
       </div>
 
-      {/* Modal */}
       {selectedTournament && (
         <div className="modal-overlay" onClick={closeModal}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <span className="modal-close" onClick={closeModal}>&times;</span>
 
             <div className="modal-info">
-              {/* Scrollable left panel: header + description */}
-              <div className="modal-scroll">
-                {/* Modal header */}
+              {/* scrollable container for header and body */}
+              <div className="modal-scroll"> 
+                {/* modal header */}
                 <div style={{ textAlign: 'center', padding: '20px 10px 0px 10px', flexShrink: 0 }}>
-                  <h2 style={{ color: 'black', fontSize: '2.5rem' }}>{selectedTournament.Title}</h2>
+                  <h2 style={{ color: 'var(--mahogany)', fontSize: '2.5rem' }}>{selectedTournament.Title}</h2>
                   <div style={{ marginTop: '10px', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                     <span className="label" style={{ color: 'var(--gold-muted)', fontWeight: 'bold' }}>{displayDate(selectedTournament.Date)}</span>
                     <span className="label" style={{ color: 'var(--gold-muted)', fontWeight: 'bold' }}>{selectedTournament.ParticipantCount} Player {selectedTournament.Style} Tournament</span>
@@ -375,16 +389,15 @@ const Tournaments = () => {
                   <hr className="modal-hr" style={{ marginTop: '20px' }} />
                 </div>
 
-                {/* Modal body */}
+                {/* modal body */}
                 <div className="modal-body">
-                  <p style={{ whiteSpace: 'pre-wrap', textAlign: 'left', padding: '0 25px' }}>{selectedTournament.Text}</p>
+                  <p style={{ whiteSpace: 'pre-wrap' }}>{selectedTournament.Text}</p>
                 </div>
               </div>
 
-              {/* Right panel: bracket / cross table (read-only) */}
-              <div className="tournament-bracket" style={{ flexBasis: '60%', overflow: 'auto', padding: '0 20px 0 0' }}>
+              <div className="tournament-bracket" style={{ flexBasis: "60%", overflow: 'auto' }}>
                 {selectedTournament.Style === 'Round Robin' ? (
-                  <RoundRobinCrossTable
+                  <RoundRobinCrossTable 
                     participantCount={selectedTournament.ParticipantCount}
                     results={results}
                     setResults={setResults}
@@ -392,12 +405,12 @@ const Tournaments = () => {
                     participants={participants}
                   />
                 ) : (
-                  <div style={{
-                    height: '100%',
-                    display: 'flex',
+                  <div style={{ 
+                    height: '100%', 
+                    display: 'flex', 
                     flexDirection: 'column',
-                    justifyContent: 'center',
-                    alignItems: 'center',
+                    justifyContent: 'center', 
+                    alignItems: 'center', 
                     padding: '40px',
                     textAlign: 'center',
                     color: 'var(--text-muted)'
@@ -408,17 +421,15 @@ const Tournaments = () => {
                 )}
               </div>
             </div>
-
-            {/* Modal footer: register / unregister */}
+            
+            {/* modal footer */}
             <div style={{ padding: '0px 10px 20px 10px', backgroundColor: 'var(--parchment)', flexShrink: 0, overflowY: 'hidden', scrollbarGutter: 'stable both-edges' }}>
               <hr className="modal-hr" />
-              <br />
+              <br></br>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                <button
+                <button 
                   onClick={() => toggleRegistration(selectedTournament.TourID)}
-                  style={{ padding: '10px 20px', margin: '0', fontSize: '0.9rem', width: 'auto', cursor: (!canUnregisterCurrent || view === 'past') ? 'default' : 'pointer' }}
-                  disabled={!canUnregisterCurrent || view === 'past'}
-                >
+                  style={{ padding: '10px 20px', margin: '0', fontSize: '0.9rem', width: 'auto', cursor: !canUnregisterCurrent ? 'default' : 'pointer' }} disabled={!canUnregisterCurrent || view === 'past'}>
                   {registeredTournaments.has(selectedTournament.TourID) ? 'Unregister' : 'Register'}
                 </button>
               </div>

@@ -10,7 +10,8 @@ export default defineConfig({
         main: resolve(__dirname, 'index.html'),
         portal: resolve(__dirname, 'portal.html'),
         'dashboard-ADMIN': resolve(__dirname, 'dashboard-ADMIN.html'),
-        'dashboard-MEMBER': resolve(__dirname, 'dashboard-MEMBER.html')
+        'dashboard-MEMBER': resolve(__dirname, 'dashboard-MEMBER.html'),
+        'dashboard-COACH': resolve(__dirname, 'dashboard-COACH.html')
       },
     },
   },

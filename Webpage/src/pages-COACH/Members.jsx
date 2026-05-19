@@ -3,7 +3,7 @@ import { useOutletContext } from 'react-router-dom';
 import { supabase } from '../db';
 
 const Members = () => {
-  const { adminData } = useOutletContext();
+  const { adminData, setAdminData } = useOutletContext();
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState(null);
@@ -89,6 +89,18 @@ const Members = () => {
 
       if (error) throw error;
       
+      // Update global session data if editing self
+      if (originalMember?.StudNum === adminData?.StudNum) {
+        const updatedUser = {
+          ...adminData,
+          Email: editForm.Email,
+          StudName: editForm.StudName,
+          StudNum: editForm.StudNum,
+        };
+        localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+        if (setAdminData) setAdminData(updatedUser);
+      }
+
       setMembers(prevMembers => 
         prevMembers.map(member => 
           member.UserID === editingId 

@@ -236,12 +236,12 @@ const Announcements = () => {
             </button>
           </div>
         </div>
-        <button onClick={() => {
+        {/* <button onClick={() => {
           const now = new Date().toISOString();
           openModal({ Title: '', Date: now, Text: '' });
         }} style={{ width: 'fit-content', height: 'fit-content', padding: '10px 20px' }}>
           Post Announcement
-        </button>
+        </button> */}
       </div>
 
       <div className="stat-container" style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -312,7 +312,7 @@ const Announcements = () => {
               </div>
             </div>
 
-            <div style={{ padding: '0px 10px 20px 10px', flexShrink: 0, overflowY: 'hidden', scrollbarGutter: 'stable both-edges' }}>
+            {/* <div style={{ padding: '0px 10px 20px 10px', flexShrink: 0, overflowY: 'hidden', scrollbarGutter: 'stable both-edges' }}>
               <hr className="modal-hr" />
               <br></br>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
@@ -366,7 +366,7 @@ const Announcements = () => {
                   </>
                 )}
               </div>
-            </div>
+            </div> */}
           </div>
         </div>
       )}

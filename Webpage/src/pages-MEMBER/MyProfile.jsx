@@ -3,7 +3,7 @@ import { useOutletContext } from 'react-router-dom';
 import { supabase } from '../db';
 
 const Profile = () => {
-  const { adminData } = useOutletContext();
+  const { adminData, setAdminData } = useOutletContext();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
@@ -109,6 +109,17 @@ const Profile = () => {
         .eq('UserID', profile.UserID);
 
       if (error) throw error;
+
+      const updatedUser = {
+        ...adminData,
+        StudName: name,
+        Email: email,
+        StudNum: studNum,
+      };
+
+      // Update global session data
+      localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+      if (setAdminData) setAdminData(updatedUser);
 
       setProfile({
         ...profile,

@@ -2,7 +2,7 @@ import React from 'react';
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { supabase } from '../db';
 
-const DashboardLayout = ({ adminData }) => {
+const DashboardLayout = ({ adminData, setAdminData }) => {
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -40,7 +40,7 @@ const DashboardLayout = ({ adminData }) => {
 
       <main className="main-content">
         <section className="content-body">
-          <Outlet context={{ adminData }} />
+          <Outlet context={{ adminData, setAdminData }} />
         </section>
       </main>
     </div>
