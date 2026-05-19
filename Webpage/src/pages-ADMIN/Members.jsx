@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import { supabase } from '../db';
 
 const Members = () => {
+  const { adminData } = useOutletContext();
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState(null);
@@ -46,6 +48,13 @@ const Members = () => {
     try {
       // 1. If demoting an admin, check how many admins remain
       const originalMember = members.find(m => m.UserID === editingId);
+
+      // Prevent self-role change
+      if (originalMember?.StudNum === adminData?.StudNum && editForm.Role !== originalMember?.Role) {
+        alert('You cannot change your own role.');
+        return;
+      }
+
       if (originalMember?.Role === 'Admin' && editForm.Role !== 'Admin') {
         const { count, error: countError } = await supabase
           .schema('Chessistant')
@@ -119,9 +128,22 @@ const Members = () => {
             </tr>
           </thead>
           <tbody>
-            {members.map((member) => (
+            {[...members]
+              .sort((a, b) => {
+                if (a.StudNum === adminData?.StudNum) return -1;
+                if (b.StudNum === adminData?.StudNum) return 1;
+                return 0;
+              })
+              .map((member) => (
               /* FIX 1: Locked the row height to exactly 55px to prevent stretching */
-              <tr key={member.UserID} style={{ height: '55px', borderBottom: '1.5px solid var(--gold)' }}>
+              <tr 
+                key={member.UserID} 
+                style={{ 
+                  height: '55px', 
+                  borderBottom: '1.5px solid var(--gold)',
+                  fontWeight: member.StudNum === adminData?.StudNum ? 'bold' : 'normal'
+                }}
+              >
                 {/* FIX 2: Changed cell paddings to '0 10px' so the row height dictates the vertical spacing */}
                 <td style={{ padding: '0 10px' }}>
                   {editingId === member.UserID ? (
@@ -155,11 +177,20 @@ const Members = () => {
                     <select 
                       value={editForm.Role || ''} 
                       onChange={(e) => setEditForm({...editForm, Role: e.target.value})}
-                      style={{ width: '100%', padding: '8px', boxSizing: 'border-box', textAlign: 'center' }}
+                      disabled={member.StudNum === adminData?.StudNum}
+                      style={{ 
+                        width: '100%', 
+                        padding: '8px', 
+                        boxSizing: 'border-box', 
+                        textAlign: 'center',
+                        cursor: member.StudNum === adminData?.StudNum ? 'not-allowed' : 'default',
+                        opacity: member.StudNum === adminData?.StudNum ? 0.7 : 1
+                      }}
                     >
                       <option value="Admin">Admin</option>
+                      <option value="Coach">Coach</option>
                       <option value="Member">Member</option>
-                      <option value="Player">Player</option>
+                      <option value="Inactive">Inactive</option>
                     </select>
                   ) : (
                     <span className="role-tag">{member.Role}</span>
