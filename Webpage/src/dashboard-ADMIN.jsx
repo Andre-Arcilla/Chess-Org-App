@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { supabase } from './db';
 import DashboardLayout from './components/DashboardLayout-ADMIN';
 import Overview from './pages-ADMIN/Overview';
@@ -64,7 +64,7 @@ const Bouncer = ({ children }) => {
 
 const App = () => {
   return (
-    <BrowserRouter>
+    <HashRouter>
       <Routes>
         {/* FIX: Bouncer MUST tightly wrap DashboardLayout like a burrito */}
         <Route 
@@ -84,7 +84,7 @@ const App = () => {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
-    </BrowserRouter>
+    </HashRouter>
   );
 };
 

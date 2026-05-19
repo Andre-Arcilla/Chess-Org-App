@@ -413,19 +413,42 @@ const Tournaments = () => {
   const handleDelete = async (tourId, e) => {
     if (e) e.stopPropagation();
     if (!window.confirm('Are you sure you want to delete this tournament?')) return;
+    
     try {
-      const { error } = await supabase
+      // 1. Clear existing matches for this tournament to prevent foreign key violations
+      const { error: matchesError } = await supabase
+        .schema('Chessistant')
+        .from('TournamentMatches')
+        .delete()
+        .eq('tourid', tourId); // Note: lowercase 'tourid' based on your fetchMatches
+      if (matchesError) throw matchesError;
+
+      // 2. Clear participants for this tournament
+      const { error: participantsError } = await supabase
+        .schema('Chessistant')
+        .from('TournamentParticipants')
+        .delete()
+        .eq('TourID', tourId); // Note: uppercase 'TourID' based on your fetchParticipants
+      if (participantsError) throw participantsError;
+
+      // 3. Delete the tournament itself
+      const { error: tourError } = await supabase
         .schema('Chessistant')
         .from('Tournaments')
         .delete()
         .eq('TourID', tourId);
-      if (error) throw error;
+      if (tourError) throw tourError;
       
       // Instantly wipe the tournament out of your local state array
       setTournaments(prev => prev.filter(t => t.TourID !== tourId));
       
+      // Close the modal ONLY after a completely successful deletion
+      closeModal();
+      alert('Tournament deleted successfully!');
+      
     } catch (err) {
       console.error('Error deleting tournament:', err);
+      alert('Failed to delete tournament. Check the console for details.');
     }
   };
 
@@ -791,7 +814,7 @@ const Tournaments = () => {
                       Edit
                     </button>
                     <button 
-                      onClick={(e) => { handleDelete(selectedTournament.TourID, e); closeModal(); }} 
+                      onClick={(e) => handleDelete(selectedTournament.TourID, e)}
                       style={{ padding: '10px 20px', margin: '0', fontSize: '0.9rem', width: 'auto', background: 'var(--error)' }}>
                       Delete
                     </button>

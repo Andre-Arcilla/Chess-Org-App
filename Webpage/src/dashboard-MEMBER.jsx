@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import MemberDashboardLayout from './components/DashboardLayout-MEMBER';
 import MemberHome from './pages-MEMBER/MemberHome';
 import MemberProfile from './pages-MEMBER/MemberProfile';
@@ -60,7 +60,7 @@ const MemberBouncer = ({ children }) => {
 
 const App = () => {
     return (
-        <BrowserRouter>
+        <HashRouter>
             <Routes>
                 <Route 
                 path="/" 
@@ -76,7 +76,7 @@ const App = () => {
                 <Route path="*" element={<Navigate to="/" replace />} />
                 </Route>
             </Routes>
-        </BrowserRouter>
+        </HashRouter>
     );
 };
 
