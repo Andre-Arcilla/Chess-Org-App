@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { supabase } from '../db';
 
@@ -9,8 +9,12 @@ const Members = () => {
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({});
   
-  // NEW: State to track the active sort column and direction
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'ascending' });
+
+  // Refs to capture DOM nodes for constraint validation reporting
+  const nameRef = useRef(null);
+  const emailRef = useRef(null);
+  const studNumRef = useRef(null);
 
   const fetchMembers = async () => {
     try {
@@ -49,6 +53,57 @@ const Members = () => {
 
   const handleUpdate = async () => {
     try {
+      // Reset any previous custom validities
+      if (nameRef.current) nameRef.current.setCustomValidity('');
+      if (emailRef.current) emailRef.current.setCustomValidity('');
+      if (studNumRef.current) studNumRef.current.setCustomValidity('');
+
+      // 1. Don't allow empty fields validation
+      if (!editForm.StudName || !editForm.StudName.trim()) {
+        if (nameRef.current) {
+          nameRef.current.setCustomValidity('Name cannot be empty.');
+          nameRef.current.reportValidity();
+        }
+        return;
+      }
+
+      if (!editForm.Email || !editForm.Email.trim()) {
+        if (emailRef.current) {
+          emailRef.current.setCustomValidity('Email cannot be empty.');
+          emailRef.current.reportValidity();
+        }
+        return;
+      }
+
+      if (!editForm.StudNum || !editForm.StudNum.trim()) {
+        if (studNumRef.current) {
+          studNumRef.current.setCustomValidity('Student ID cannot be empty.');
+          studNumRef.current.reportValidity();
+        }
+        return;
+      }
+
+      // 2. Email domain validation (Only allow @umak.edu.ph)
+      const sanitizedEmail = editForm.Email.trim();
+      if (!sanitizedEmail.endsWith('@umak.edu.ph')) {
+        if (emailRef.current) {
+          emailRef.current.setCustomValidity('Only emails using the @umak.edu.ph domain are allowed.');
+          emailRef.current.reportValidity();
+        }
+        return;
+      }
+
+      // 3. Student ID Format validation (1 letter followed by 8 numbers)
+      const sanitizedStudNum = editForm.StudNum.trim();
+      const studNumRegex = /^[A-Za-z]\d{8}$/;
+      if (!studNumRegex.test(sanitizedStudNum)) {
+        if (studNumRef.current) {
+          studNumRef.current.setCustomValidity('Student ID must be 1 letter followed by exactly 8 digits (e.g., A12345678).');
+          studNumRef.current.reportValidity();
+        }
+        return;
+      }
+
       const originalMember = members.find(m => m.UserID === editingId);
 
       if (originalMember?.StudNum === adminData?.StudNum && editForm.Role !== originalMember?.Role) {
@@ -76,9 +131,9 @@ const Members = () => {
         .schema('Chessistant')
         .from('Profiles')
         .update({
-          Email: editForm.Email,
-          StudName: editForm.StudName,
-          StudNum: editForm.StudNum,
+          Email: sanitizedEmail,
+          StudName: editForm.StudName.trim(),
+          StudNum: sanitizedStudNum,
           Role: editForm.Role,
           Rating: editForm.Rating,
           LastModified: updatedTimestamp 
@@ -87,13 +142,12 @@ const Members = () => {
 
       if (error) throw error;
 
-      // Update global session data if editing self
       if (originalMember?.StudNum === adminData?.StudNum) {
         const updatedUser = {
           ...adminData,
-          Email: editForm.Email,
-          StudName: editForm.StudName,
-          StudNum: editForm.StudNum,
+          Email: sanitizedEmail,
+          StudName: editForm.StudName.trim(),
+          StudNum: sanitizedStudNum,
           Role: editForm.Role,
         };
         localStorage.setItem('currentUser', JSON.stringify(updatedUser));
@@ -103,7 +157,7 @@ const Members = () => {
       setMembers(prevMembers => 
         prevMembers.map(member => 
           member.UserID === editingId 
-            ? { ...member, ...editForm, LastModified: updatedTimestamp } 
+            ? { ...member, ...editForm, Email: sanitizedEmail, StudName: editForm.StudName.trim(), StudNum: sanitizedStudNum, LastModified: updatedTimestamp } 
             : member
         )
       );
@@ -116,38 +170,72 @@ const Members = () => {
     }
   };
 
-  // NEW: Function to handle when a header is clicked
+  // requestSort handles cycling through roles
   const requestSort = (key) => {
-    let direction = 'ascending';
-    if (sortConfig.key === key && sortConfig.direction === 'ascending') {
-      direction = 'descending';
+    if (key === 'Role') {
+      const roleCycle = ['Admin', 'Coach', 'Member', 'Disabled'];
+      let nextTargetRole = roleCycle[0];
+
+      if (sortConfig.key === 'Role') {
+        const currentIndex = roleCycle.indexOf(sortConfig.direction);
+        if (currentIndex !== -1 && currentIndex < roleCycle.length - 1) {
+          nextTargetRole = roleCycle[currentIndex + 1];
+        } else {
+          nextTargetRole = roleCycle[0]; 
+        }
+      }
+      setSortConfig({ key, direction: nextTargetRole });
+    } else {
+      let direction = 'ascending';
+      if (sortConfig.key === key && sortConfig.direction === 'ascending') {
+        direction = 'descending';
+      }
+      setSortConfig({ key, direction });
     }
-    setSortConfig({ key, direction });
   };
 
-  // NEW: useMemo hook to sort members based on sortConfig
+  // useMemo interprets specific role targets or typical asc/desc columns
   const sortedMembers = useMemo(() => {
     let sortableMembers = members.filter(m => m.StudNum !== adminData?.StudNum);
     
     sortableMembers.sort((a, b) => {
-      // Perform column sorting
       if (sortConfig.key !== null) {
-        let aValue = a[sortConfig.key];
-        let bValue = b[sortConfig.key];
+        if (sortConfig.key === 'Role') {
+          const topRole = sortConfig.direction;
+          
+          if (a.Role === topRole && b.Role !== topRole) return -1;
+          if (b.Role === topRole && a.Role !== topRole) return 1;
+          
+          const hierarchy = { 'Admin': 1, 'Coach': 2, 'Member': 3, 'Disabled': 4 };
+          const weightA = a.Role === topRole ? 0 : (hierarchy[a.Role] || 5);
+          const weightB = b.Role === topRole ? 0 : (hierarchy[b.Role] || 5);
+          
+          if (weightA !== weightB) {
+            return weightA - weightB;
+          }
 
-        // Handle null/undefined values safely
-        if (aValue === null || aValue === undefined) aValue = '';
-        if (bValue === null || bValue === undefined) bValue = '';
+          let nameA = (a.StudName || '').toLowerCase();
+          let nameB = (b.StudName || '').toLowerCase();
+          if (nameA < nameB) return -1;
+          if (nameA > nameB) return 1;
+          return 0;
 
-        // Make string sorting case-insensitive
-        if (typeof aValue === 'string') aValue = aValue.toLowerCase();
-        if (typeof bValue === 'string') bValue = bValue.toLowerCase();
+        } else {
+          let aValue = a[sortConfig.key];
+          let bValue = b[sortConfig.key];
 
-        if (aValue < bValue) {
-          return sortConfig.direction === 'ascending' ? -1 : 1;
-        }
-        if (aValue > bValue) {
-          return sortConfig.direction === 'ascending' ? 1 : -1;
+          if (aValue === null || aValue === undefined) aValue = '';
+          if (bValue === null || bValue === undefined) bValue = '';
+
+          if (typeof aValue === 'string') aValue = aValue.toLowerCase();
+          if (typeof bValue === 'string') bValue = bValue.toLowerCase();
+
+          if (aValue < bValue) {
+            return sortConfig.direction === 'ascending' ? -1 : 1;
+          }
+          if (aValue > bValue) {
+            return sortConfig.direction === 'ascending' ? 1 : -1;
+          }
         }
       }
       return 0;
@@ -156,9 +244,11 @@ const Members = () => {
     return sortableMembers;
   }, [members, sortConfig, adminData]);
 
-  // NEW: Helper to display the visual sort indicator (Arrows)
   const getSortIndicator = (columnKey) => {
     if (sortConfig.key === columnKey) {
+      if (columnKey === 'Role') {
+        return ` ↕`; 
+      }
       return sortConfig.direction === 'ascending' ? ' ↑' : ' ↓';
     }
     return ' ↕';
@@ -178,7 +268,6 @@ const Members = () => {
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', tableLayout: 'fixed' }}>
           <thead>
             <tr style={{ borderBottom: '2px solid var(--oak)' }}>
-              {/* UPDATED: Headers are now clickable and show sort indicators */}
               <th 
                 onClick={() => requestSort('StudName')} 
                 style={{ padding: '10px', width: '25%', cursor: 'pointer', userSelect: 'none' }}
@@ -199,7 +288,7 @@ const Members = () => {
               </th>
               <th 
                 onClick={() => requestSort('Role')} 
-                style={{ padding: '10px', width: '13%', textAlign: 'center', cursor: 'pointer', userSelect: 'none' }}
+                style={{ padding: '10px', width: '13%', textAlign: 'center', cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap' }}
               >
                 Role {getSortIndicator('Role')}
               </th>
@@ -224,27 +313,48 @@ const Members = () => {
                 <td style={{ padding: '0 10px' }}>
                   {editingId === member.UserID ? (
                     <input
+                      ref={nameRef}
                       value={editForm.StudName || ''} 
-                      onChange={(e) => setEditForm({...editForm, StudName: e.target.value})}
+                      onChange={(e) => {
+                        e.target.setCustomValidity('');
+                        setEditForm({...editForm, StudName: e.target.value});
+                      }}
                       style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
+                      placeholder="John Smith"
+                      type="text"
+                      required
                     />
                   ) : member.StudName}
                 </td>
                 <td style={{ padding: '0 10px' }}>
                   {editingId === member.UserID ? (
                     <input 
+                      ref={emailRef}
                       value={editForm.Email || ''} 
-                      onChange={(e) => setEditForm({...editForm, Email: e.target.value})}
+                      onChange={(e) => {
+                        e.target.setCustomValidity('');
+                        setEditForm({...editForm, Email: e.target.value});
+                      }}
                       style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
+                      placeholder="grandmaster@umak.edu.ph"
+                      type="email"
+                      required
                     />
                   ) : member.Email}
                 </td>
                 <td style={{ padding: '0 10px' }}>
                   {editingId === member.UserID ? (
                     <input 
+                      ref={studNumRef}
                       value={editForm.StudNum || ''} 
-                      onChange={(e) => setEditForm({...editForm, StudNum: e.target.value})}
+                      onChange={(e) => {
+                        e.target.setCustomValidity('');
+                        setEditForm({...editForm, StudNum: e.target.value});
+                      }}
                       style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
+                      placeholder="A12345678"
+                      type="text"
+                      required
                     />
                   ) : member.StudNum}
                 </td>
@@ -263,10 +373,10 @@ const Members = () => {
                       <option value="Admin">Admin</option>
                       <option value="Coach">Coach</option>
                       <option value="Member">Member</option>
-                      <option value="Inactive">Inactive</option>
+                      <option value="Disabled">Disabled</option>
                     </select>
                   ) : (
-                    <span className="role-tag">{member.Role}</span>
+                    <span className={`role-tag role-tag--${member.Role?.toLowerCase()}`}>{member.Role}</span>
                   )}
                 </td>
                 <td style={{ padding: '0 10px', textAlign: 'center' }}>

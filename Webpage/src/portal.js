@@ -95,6 +95,9 @@ async function handleLogin(e) {
             window.location.href = '/dashboard-COACH.html';
         } else if (profile.Role === 'Member') {
             window.location.href = '/dashboard-MEMBER.html';
+        }  else if (profile.Role === 'Disabled') {
+            emailInput.setCustomValidity('This account has been deactivated.');
+            loginForm.reportValidity();
         }  else {
             emailInput.setCustomValidity('This account holds an unassigned role profile.');
             loginForm.reportValidity();

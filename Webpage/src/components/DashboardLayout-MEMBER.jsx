@@ -88,7 +88,7 @@ const DashboardLayout = ({ adminData, setAdminData }) => {
               position: 'absolute',
               top: 'calc(100% + 8px)',
               right: 0,
-              minWidth: '200px',
+              width: '250px',
               background: '#fff',
               borderRadius: '12px',
               boxShadow: '0 12px 40px rgba(0,0,0,0.35)',
