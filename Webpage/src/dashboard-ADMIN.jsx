@@ -9,7 +9,7 @@ import Registrations from './pages-ADMIN/Registrations';
 import Tournaments from './pages-ADMIN/Tournaments';
 import OrgRoster from './pages-ADMIN/OrgRoster';
 import Announcements from './pages-ADMIN/Announcements';
-import Profile from './pages-MEMBER/MyProfile';
+import Profile from './pages-ADMIN/MyProfile';
 
 const Bouncer = ({ children }) => {
   const [loading, setLoading] = useState(true);

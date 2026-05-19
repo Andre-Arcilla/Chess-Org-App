@@ -8,7 +8,7 @@ import Members from './pages-COACH/Members';
 import Registrations from './pages-COACH/Registrations';
 import Tournaments from './pages-COACH/Tournaments';
 import Announcements from './pages-COACH/Announcements';
-import Profile from './pages-MEMBER/MyProfile';
+import Profile from './pages-COACH/MyProfile';
 
 const Bouncer = ({ children }) => {
   const [loading, setLoading] = useState(true);

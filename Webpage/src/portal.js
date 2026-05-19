@@ -17,10 +17,13 @@ const regEmailInput = document.getElementById('reg-email');
 const regPasswordInput = document.getElementById('reg-password');
 const registerBtn = document.getElementById('register-btn');
 
+// Clear custom validities dynamically as user types
 emailInput.addEventListener('input', () => emailInput.setCustomValidity(''));
 passwordInput.addEventListener('input', () => passwordInput.setCustomValidity(''));
-regEmailInput.addEventListener('input', () => regEmailInput.setCustomValidity(''));
+regNameInput.addEventListener('input', () => regNameInput.setCustomValidity(''));
 regIdInput.addEventListener('input', () => regIdInput.setCustomValidity(''));
+regEmailInput.addEventListener('input', () => regEmailInput.setCustomValidity(''));
+regPasswordInput.addEventListener('input', () => regPasswordInput.setCustomValidity(''));
 
 /*
  * Toggle UI between Login and Register
@@ -31,8 +34,10 @@ function toggleForms(e, showForm) {
     // Clear any lingering native error bubbles
     emailInput.setCustomValidity('');
     passwordInput.setCustomValidity('');
-    regEmailInput.setCustomValidity('');
+    regNameInput.setCustomValidity('');
     regIdInput.setCustomValidity('');
+    regEmailInput.setCustomValidity('');
+    regPasswordInput.setCustomValidity('');
     
     if (showForm === 'register') {
         loginSection.hidden = true;
@@ -126,7 +131,35 @@ async function handleRegister(e) {
     registerBtn.disabled = true;
     registerBtn.textContent = 'Sending Application...';
 
+    // FRONT-END VALIDATIONS
     try {
+        // 1. Prevent empty or whitespace-only strings
+        if (!name || !studId || !email || !password) {
+            if (!name) regNameInput.setCustomValidity('Full Name cannot be left blank.');
+            else if (!studId) regIdInput.setCustomValidity('Student ID cannot be left blank.');
+            else if (!email) regEmailInput.setCustomValidity('Email cannot be left blank.');
+            else if (!password) regPasswordInput.setCustomValidity('Password cannot be left blank.');
+            
+            registerForm.reportValidity();
+            return; // Triggers finally block to re-enable button
+        }
+
+        // 2. Validate Student ID format (1 letter followed by exactly 8 digits)
+        const studIdRegex = /^[A-Za-z]\d{8}$/;
+        if (!studIdRegex.test(studId)) {
+            regIdInput.setCustomValidity('Student ID format must be 1 letter followed by 8 numbers (e.g., A12345678).');
+            registerForm.reportValidity();
+            return;
+        }
+
+        // 3. Restrict email domain to 'umak.edu.ph'
+        if (!email.toLowerCase().endsWith('@umak.edu.ph')) {
+            regEmailInput.setCustomValidity('Registration is restricted to official UMak emails (@umak.edu.ph) only.');
+            registerForm.reportValidity();
+            return;
+        }
+
+        // DATABASE DUPLICATION CHECKS
         // Fetch database tables to verify duplicate parameters
         const [profileCheck, registrationCheck] = await Promise.all([
             supabase
@@ -144,7 +177,7 @@ async function handleRegister(e) {
         if (profileCheck.error) throw profileCheck.error;
         if (registrationCheck.error) throw registrationCheck.error;
 
-        // 1. Check Active Profiles Row Matches
+        // Check Active Profiles Row Matches
         if (profileCheck.data && profileCheck.data.length > 0) {
             const match = profileCheck.data[0];
             if (match.Email.toLowerCase() === email.toLowerCase()) {
@@ -157,7 +190,7 @@ async function handleRegister(e) {
             return; 
         }
 
-        // 2. Check Pending Applications Row Matches
+        // Check Pending Applications Row Matches
         if (registrationCheck.data && registrationCheck.data.length > 0) {
             const match = registrationCheck.data[0];
             if (match.Email.toLowerCase() === email.toLowerCase()) {
@@ -170,7 +203,7 @@ async function handleRegister(e) {
             return;
         }
 
-        // 3. Submit safely to database
+        // Submit safely to database
         const payload = {
             StudName: name,
             StudNum: studId,
@@ -188,7 +221,7 @@ async function handleRegister(e) {
 
         // Clean success actions
         registerForm.reset();
-        window.alert('Application submitted successfully! Please wait for an Admin to review your registration.')
+        window.alert('Application submitted successfully! Please wait for an Admin to review your registration.');
         toggleForms(new Event('click'), 'login');
 
     } catch (error) {

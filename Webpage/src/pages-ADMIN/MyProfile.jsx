@@ -11,10 +11,12 @@ const Profile = () => {
   const [saveSuccess, setSaveSuccess] = useState(false);
 
   // Refs to target inputs for native browser validation tooltips
-  const nameRef    = useRef(null);
-  const emailRef   = useRef(null);
-  const studNumRef = useRef(null);
-  const ratingRef  = useRef(null);
+  const nameRef            = useRef(null);
+  const emailRef           = useRef(null);
+  const studNumRef         = useRef(null);
+  const ratingRef          = useRef(null);
+  const passwordRef        = useRef(null);
+  const confirmPasswordRef = useRef(null);
 
   const fetchProfile = async () => {
     try {
@@ -43,7 +45,11 @@ const Profile = () => {
   }, []);
 
   const startEdit = () => {
-    setEditForm(profile);
+    setEditForm({
+      ...profile,
+      NewPassword: '',
+      ConfirmPassword: ''
+    });
     setIsEditing(true);
     setSaveSuccess(false);
   };
@@ -51,6 +57,11 @@ const Profile = () => {
   const cancelEdit = () => {
     setIsEditing(false);
     setEditForm({});
+    nameRef.current?.setCustomValidity('');
+    emailRef.current?.setCustomValidity('');
+    studNumRef.current?.setCustomValidity('');
+    passwordRef.current?.setCustomValidity('');
+    confirmPasswordRef.current?.setCustomValidity('');
   };
 
   // Clear native validity on each keystroke — same pattern as the login script
@@ -62,12 +73,14 @@ const Profile = () => {
   const handleUpdate = async () => {
     setSaveSuccess(false);
 
-    const name    = editForm.StudName?.toString().trim();
-    const email   = editForm.Email?.toString().trim();
-    const studNum = editForm.StudNum?.toString().trim();
-    const rating  = parseInt(editForm.Rating, 10);
+    const name         = editForm.StudName?.toString().trim();
+    const email        = editForm.Email?.toString().trim();
+    const studNum      = editForm.StudNum?.toString().trim();
+    const rating       = parseInt(editForm.Rating, 10);
+    const newPassword  = editForm.NewPassword;
+    const confirmPass  = editForm.ConfirmPassword;
 
-    // Validate each field and show a native tooltip on the offending input
+    // 1. Prevent Empty Input Fields
     if (!name) {
       nameRef.current.setCustomValidity('Full name cannot be empty.');
       nameRef.current.reportValidity();
@@ -94,18 +107,59 @@ const Profile = () => {
       return;
     }
 
+    // 2. Format Validation: Student ID Pattern (1 Letter + 8 Numbers)
+    const studIdRegex = /^[A-Za-z]\d{8}$/;
+    if (!studIdRegex.test(studNum)) {
+      studNumRef.current.setCustomValidity('Student ID format must be 1 letter followed by 8 numbers (e.g., A12345678).');
+      studNumRef.current.reportValidity();
+      return;
+    }
+
+    // 3. Format Validation: Restrict email domain to umak.edu.ph
+    if (!email.toLowerCase().endsWith('@umak.edu.ph')) {
+      emailRef.current.setCustomValidity('Emails are restricted to the official institutional domain (@umak.edu.ph).');
+      emailRef.current.reportValidity();
+      return;
+    }
+
+    // 4. New Password validations (Only runs if user attempts to modify password)
+    if (newPassword || confirmPass) {
+      if (!newPassword) {
+        passwordRef.current.setCustomValidity('Please fill out your new password.');
+        passwordRef.current.reportValidity();
+        return;
+      }
+      if (newPassword.length < 8) {
+        passwordRef.current.setCustomValidity('Password must be at least 8 characters long.');
+        passwordRef.current.reportValidity();
+        return;
+      }
+      if (newPassword !== confirmPass) {
+        confirmPasswordRef.current.setCustomValidity('Passwords do not match.');
+        confirmPasswordRef.current.reportValidity();
+        return;
+      }
+    }
+
     try {
       const updatedTimestamp = Date.now();
+      const updatePayload = {
+        Email: email,
+        StudName: name,
+        StudNum: studNum,
+        Rating: rating,
+        LastModified: updatedTimestamp,
+      };
+
+      // Append password to query if changed safely
+      if (newPassword) {
+        updatePayload.Password = newPassword;
+      }
+
       const { error } = await supabase
         .schema('Chessistant')
         .from('Profiles')
-        .update({
-          Email: email,
-          StudName: name,
-          StudNum: studNum,
-          Rating: rating,
-          LastModified: updatedTimestamp,
-        })
+        .update(updatePayload)
         .eq('UserID', profile.UserID);
 
       if (error) throw error;
@@ -134,7 +188,6 @@ const Profile = () => {
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (err) {
       console.error('Error updating profile:', err.message);
-      // Surface a DB/network error on the name field as a general anchor
       nameRef.current?.setCustomValidity('Update failed: ' + (err.message || 'Unknown error'));
       nameRef.current?.reportValidity();
     }
@@ -154,9 +207,31 @@ const Profile = () => {
       </div>
     </div>
   );
+  
+  const getRoleGradient = (role, isOpen) => {
+    switch (role?.toLowerCase()) {
+      case 'admin':
+        return isOpen 
+          ? 'linear-gradient(135deg, #003a8c, #0050b3)' 
+          : 'linear-gradient(135deg, #00183b, #002965)';
+      case 'member':
+        return isOpen 
+          ? 'linear-gradient(135deg, #5b966d, #73b386)' 
+          : 'linear-gradient(135deg, #2d4c37, #4a7c59)';
+      case 'disabled':
+        return isOpen 
+          ? 'linear-gradient(135deg, #999999, #b3b3b3)' 
+          : 'linear-gradient(135deg, #555555, #888888)';
+      case 'coach':
+      default:
+        return isOpen 
+          ? 'linear-gradient(135deg, var(--oak), var(--gold-muted))' 
+          : 'linear-gradient(135deg, var(--mahogany), var(--oak))';
+    }
+  };
 
   return (
-    <div className="card" style={{ maxWidth: '640px', margin: '0 auto', width: '100%' }}>
+    <div className="card" style={{ maxWidth: '750px', margin: '0 auto', width: '100%' }}>
 
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '30px', borderBottom: '2px solid var(--gold)', paddingBottom: '20px' }}>
@@ -164,7 +239,7 @@ const Profile = () => {
           width: '72px',
           height: '72px',
           borderRadius: '50%',
-          background: 'linear-gradient(135deg, var(--mahogany), var(--oak))',
+          background: getRoleGradient(adminData.Role, false),
           border: '3px solid var(--gold)',
           display: 'flex',
           alignItems: 'center',
@@ -177,9 +252,12 @@ const Profile = () => {
         }}>
           {profile.StudName?.charAt(0)?.toUpperCase() ?? '?'}
         </div>
-        <div>
-          <h3 style={{ fontSize: '1.8rem', margin: 0 }}>{profile.StudName}</h3>
-          <span className="role-tag" style={{ marginTop: '6px', display: 'inline-block', width: 'auto', padding: '4px 14px' }}>
+        <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', width: '100%' }}>
+          <div style={{ background: 'transparent', borderRadius: '10px', border: '2px solid transparent', fontSize: '1rem', color: 'var(--text)', boxSizing: 'border-box' }}>
+            <h3 style={{ fontSize: '1.8rem', margin: 0 }}>{profile.StudName}</h3>
+            <h4>Rating: {profile.Rating ?? <span style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>Not set</span>}</h4>
+          </div>
+          <span className={`role-tag role-tag--${adminData.Role?.toLowerCase()}`} style={{ display: 'inline-block', width: 'auto', height: 'fit-content', padding: '5px 20px' }}>
             {profile.Role}
           </span>
         </div>
@@ -187,8 +265,8 @@ const Profile = () => {
 
       {/* Fields */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-
-        {/* Full Name */}
+        
+        {/* Full Name Row */}
         <div>
           <label style={{ display: 'block', marginBottom: '4px', fontWeight: 700, color: 'var(--mahogany)', textTransform: 'uppercase', fontSize: '0.72rem', letterSpacing: '1.5px' }}>
             Full Name
@@ -200,7 +278,7 @@ const Profile = () => {
               value={editForm.StudName ?? ''}
               onChange={(e) => handleChange('StudName', e.target.value, nameRef)}
               style={{ width: '100%', height: '46px', boxSizing: 'border-box', padding: '12px 14px' }}
-              placeholder="John Smith"
+              placeholder="e.g. Juan Dela Cruz"
             />
           ) : (
             <div style={{ padding: '12px 14px', background: 'transparent', borderRadius: '10px', border: '2px solid transparent', fontSize: '1rem', color: 'var(--text)', height: '46px', boxSizing: 'border-box' }}>
@@ -209,55 +287,94 @@ const Profile = () => {
           )}
         </div>
 
-        {/* Email */}
-        <div>
-          <label style={{ display: 'block', marginBottom: '4px', fontWeight: 700, color: 'var(--mahogany)', textTransform: 'uppercase', fontSize: '0.72rem', letterSpacing: '1.5px' }}>
-            Email
-          </label>
-          {isEditing ? (
-            <input
-              ref={emailRef}
-              type="email"
-              value={editForm.Email ?? ''}
-              onChange={(e) => handleChange('Email', e.target.value, emailRef)}
-              style={{ width: '100%', height: '46px', boxSizing: 'border-box', padding: '12px 14px' }}
-              placeholder="grandmaster@chess.club"
-            />
-          ) : (
-            <div style={{ padding: '12px 14px', background: 'transparent', borderRadius: '10px', border: '2px solid transparent', fontSize: '1rem', color: 'var(--text)', height: '46px', boxSizing: 'border-box' }}>
-              {profile.Email ?? <span style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>Not set</span>}
+        {/* Two-Column Form Field Configuration */}
+        <div style={{ display: 'flex', flexDirection: 'row', gap: '18px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '18px', width: '100%' }}>
+            {/* Email */}
+            <div>
+              <label style={{ display: 'block', marginBottom: '4px', fontWeight: 700, color: 'var(--mahogany)', textTransform: 'uppercase', fontSize: '0.72rem', letterSpacing: '1.5px' }}>
+                Email
+              </label>
+              {isEditing ? (
+                <input
+                  ref={emailRef}
+                  type="email"
+                  value={editForm.Email ?? ''}
+                  onChange={(e) => handleChange('Email', e.target.value, emailRef)}
+                  style={{ width: '100%', height: '46px', boxSizing: 'border-box', padding: '12px 14px' }}
+                  placeholder="name@umak.edu.ph"
+                />
+              ) : (
+                <div style={{ padding: '12px 14px', background: 'transparent', borderRadius: '10px', border: '2px solid transparent', fontSize: '1rem', color: 'var(--text)', height: '46px', boxSizing: 'border-box' }}>
+                  {profile.Email ?? <span style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>Not set</span>}
+                </div>
+              )}
             </div>
-          )}
-        </div>
 
-        {/* Student ID */}
-        <div>
-          <label style={{ display: 'block', marginBottom: '4px', fontWeight: 700, color: 'var(--mahogany)', textTransform: 'uppercase', fontSize: '0.72rem', letterSpacing: '1.5px' }}>
-            Student ID
-          </label>
-          {isEditing ? (
-            <input
-              ref={studNumRef}
-              type="text"
-              value={editForm.StudNum ?? ''}
-              onChange={(e) => handleChange('StudNum', e.target.value, studNumRef)}
-              style={{ width: '100%', height: '46px', boxSizing: 'border-box', padding: '12px 14px' }}
-              placeholder="A123456789"
-            />
-          ) : (
-            <div style={{ padding: '12px 14px', background: 'transparent', borderRadius: '10px', border: '2px solid transparent', fontSize: '1rem', color: 'var(--text)', height: '46px', boxSizing: 'border-box' }}>
-              {profile.StudNum ?? <span style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>Not set</span>}
+            {/* New Password */}
+            <div>
+              <label style={{ display: 'block', marginBottom: '4px', fontWeight: 700, color: 'var(--mahogany)', textTransform: 'uppercase', fontSize: '0.72rem', letterSpacing: '1.5px' }}>
+                New Password
+              </label>
+              {isEditing ? (
+                <input
+                  ref={passwordRef}
+                  type="password"
+                  value={editForm.NewPassword ?? ''}
+                  onChange={(e) => handleChange('NewPassword', e.target.value, passwordRef)}
+                  style={{ width: '100%', height: '46px', boxSizing: 'border-box', padding: '12px 14px' }}
+                  placeholder="Leave blank to keep unchanged"
+                />
+              ) : (
+                <div style={{ padding: '12px 14px', background: 'transparent', borderRadius: '10px', border: '2px solid transparent', fontSize: '1rem', color: 'var(--text)', height: '46px', boxSizing: 'border-box' }}>
+                  ••••••••
+                </div>
+              )}
             </div>
-          )}
-        </div>
+          </div>
+          
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '18px',  width: '100%' }}>
+            {/* Student ID */}
+            <div>
+              <label style={{ display: 'block', marginBottom: '4px', fontWeight: 700, color: 'var(--mahogany)', textTransform: 'uppercase', fontSize: '0.72rem', letterSpacing: '1.5px' }}>
+                Student ID
+              </label>
+              {isEditing ? (
+                <input
+                  ref={studNumRef}
+                  type="text"
+                  value={editForm.StudNum ?? ''}
+                  onChange={(e) => handleChange('StudNum', e.target.value, studNumRef)}
+                  style={{ width: '100%', height: '46px', boxSizing: 'border-box', padding: '12px 14px' }}
+                  placeholder="A12345678"
+                />
+              ) : (
+                <div style={{ padding: '12px 14px', background: 'transparent', borderRadius: '10px', border: '2px solid transparent', fontSize: '1rem', color: 'var(--text)', height: '46px', boxSizing: 'border-box' }}>
+                  {profile.StudNum ?? <span style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>Not set</span>}
+                </div>
+              )}
+            </div>
 
-        {/* Rating */}
-        <div>
-          <label style={{ display: 'block', marginBottom: '4px', fontWeight: 700, color: 'var(--mahogany)', textTransform: 'uppercase', fontSize: '0.72rem', letterSpacing: '1.5px' }}>
-            Rating
-          </label>
-          <div style={{ padding: '12px 14px', background: 'transparent', borderRadius: '10px', border: '2px solid transparent', fontSize: '1rem', color: 'var(--text)', height: '46px', boxSizing: 'border-box' }}>
-            {profile.Rating ?? <span style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>Not set</span>}
+            {/* Confirm Password */}
+            <div>
+              <label style={{ display: 'block', marginBottom: '4px', fontWeight: 700, color: 'var(--mahogany)', textTransform: 'uppercase', fontSize: '0.72rem', letterSpacing: '1.5px' }}>
+                Confirm Password
+              </label>
+              {isEditing ? (
+                <input
+                  ref={confirmPasswordRef}
+                  type="password"
+                  value={editForm.ConfirmPassword ?? ''}
+                  onChange={(e) => handleChange('ConfirmPassword', e.target.value, confirmPasswordRef)}
+                  style={{ width: '100%', height: '46px', boxSizing: 'border-box', padding: '12px 14px' }}
+                  placeholder="Confirm new password"
+                />
+              ) : (
+                <div style={{ padding: '12px 14px', background: 'transparent', borderRadius: '10px', border: '2px solid transparent', fontSize: '1rem', color: 'var(--text)', height: '46px', boxSizing: 'border-box' }}>
+                  ••••••••
+                </div>
+              )}
+            </div>
           </div>
         </div>
 

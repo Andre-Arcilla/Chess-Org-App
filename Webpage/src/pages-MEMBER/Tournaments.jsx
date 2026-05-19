@@ -371,6 +371,11 @@ const Tournaments = () => {
                   <div style={{ marginTop: '10px', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                     <span className="label" style={{ color: 'var(--gold-muted)', fontWeight: 'bold' }}>{displayDate(selectedTournament.Date)}</span>
                     <span className="label" style={{ color: 'var(--gold-muted)', fontWeight: 'bold' }}>{selectedTournament.ParticipantCount} Player {selectedTournament.Style} Tournament</span>
+                        {selectedTournament.LastModified && (
+                          <div style={{ fontSize: '1rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+                            Last updated: {new Date(selectedTournament.LastModified).toLocaleString()}
+                          </div>
+                        )}
                   </div>
                   <hr className="modal-hr" style={{ marginTop: '20px' }} />
                 </div>

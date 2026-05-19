@@ -286,6 +286,11 @@ const Announcements = () => {
                   <h2 style={{ color: 'black', fontSize: '2.5rem' }}>{selectedAnnouncement.Title}</h2>
                 )}
                 <span className="label" style={{ color: 'var(--gold-muted)', fontWeight: 'bold' }}>{displayDate(selectedAnnouncement.Date)}</span>
+                {selectedAnnouncement.LastModified && (
+                  <div style={{ fontSize: '1rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+                    Last updated: {new Date(selectedAnnouncement.LastModified).toLocaleString()}
+                  </div>
+                )}
                 <hr className="modal-hr" style={{ marginTop: '20px' }} />
               </div>
 

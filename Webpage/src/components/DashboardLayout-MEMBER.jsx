@@ -25,6 +25,28 @@ const DashboardLayout = ({ adminData, setAdminData }) => {
   }, []);
 
   const initial = adminData?.StudName?.charAt(0)?.toUpperCase() ?? '?';
+  
+  const getRoleGradient = (role, isOpen) => {
+    switch (role?.toLowerCase()) {
+      case 'admin':
+        return isOpen 
+          ? 'linear-gradient(135deg, #003a8c, #0050b3)' 
+          : 'linear-gradient(135deg, #00183b, #002965)';
+      case 'member':
+        return isOpen 
+          ? 'linear-gradient(135deg, #5b966d, #73b386)' 
+          : 'linear-gradient(135deg, #2d4c37, #4a7c59)';
+      case 'disabled':
+        return isOpen 
+          ? 'linear-gradient(135deg, #999999, #b3b3b3)' 
+          : 'linear-gradient(135deg, #555555, #888888)';
+      case 'coach':
+      default:
+        return isOpen 
+          ? 'linear-gradient(135deg, var(--oak), var(--gold-muted))' 
+          : 'linear-gradient(135deg, var(--mahogany), var(--oak))';
+    }
+  };
 
   return (
     <div className="dashboard-layout">
@@ -60,9 +82,7 @@ const DashboardLayout = ({ adminData, setAdminData }) => {
               height: '100%',
               aspectRatio: '1/1',
               borderRadius: '500px',
-              background: menuOpen
-                ? 'linear-gradient(135deg, var(--oak), var(--gold-muted))'
-                : 'linear-gradient(135deg, var(--mahogany), var(--oak))',
+              background: getRoleGradient(adminData.Role, menuOpen),
               border: `3px solid ${menuOpen ? 'var(--gold)' : 'rgba(212,175,55,0.5)'}`,
               display: 'flex',
               alignItems: 'center',
@@ -100,7 +120,7 @@ const DashboardLayout = ({ adminData, setAdminData }) => {
               {/* User info header */}
               <div style={{
                 padding: '14px 18px',
-                background: 'linear-gradient(135deg, var(--mahogany), var(--oak))',
+                background: getRoleGradient(adminData.Role, false),
                 borderBottom: '2px solid var(--gold)',
               }}>
                 <div style={{ color: 'var(--gold)', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px' }}>
