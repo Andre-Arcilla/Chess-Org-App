@@ -191,7 +191,7 @@ const Announcements = () => {
       {selectedAnnouncement && (
         <div className="modal-overlay" onClick={closeModal}>
           <div className="modal-content" style={{ width: '65%', maxWidth: '900px' }} onClick={(e) => e.stopPropagation()}>
-            <span className="modal-close" onClick={closeModal}>&times;</span>
+            <span className="modal-close" onClick={closeModal} style={{ zIndex: '1', color:'white' }}>&times;</span>
 
             <div className="ann-modal-header" style={{ background: getRoleGradient(adminData.Role, false) }}>
               <div className="ann-modal-badge"><Megaphone size={15} strokeWidth={4} /> Announcement</div>

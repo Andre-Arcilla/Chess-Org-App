@@ -587,7 +587,7 @@ const Tournaments = () => {
       {selectedTournament && (
         <div className="modal-overlay" onClick={closeModal}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <span className="modal-close" onClick={closeModal}>&times;</span>
+            <span className="modal-close" onClick={closeModal} style={{ zIndex: '1', color:'white' }}>&times;</span>
 
             {/* ── Full-width navy header ── */}
             <div className="ann-modal-header" style={{ height: '160px' }}>

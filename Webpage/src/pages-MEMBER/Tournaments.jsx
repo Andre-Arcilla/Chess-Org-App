@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useOutletContext, useLocation } from 'react-router-dom';
 import { supabase } from '../db';
 import RoundRobinCrossTable from '../components/RoundRobinCrossTable';
-import { Megaphone, Trophy, Users, Calendar, Save, Pencil, Trash2, Check, X, User } from 'lucide-react';
+import { Megaphone, Trophy, Users, Calendar, Save, Pencil, Trash2, Check, X, Lock } from 'lucide-react';
 
 const Tournaments = () => {
   const { adminData } = useOutletContext();
@@ -396,7 +396,7 @@ const Tournaments = () => {
       {selectedTournament && (
         <div className="modal-overlay" onClick={closeModal}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <span className="modal-close" onClick={closeModal}>&times;</span>
+            <span className="modal-close" onClick={closeModal} style={{ zIndex: '1', color:'white' }}>&times;</span>
 
             <div className="ann-modal-header" style={{ background: getRoleGradient(adminData.Role, false) }}>
               <div className="ann-modal-badge"><Trophy size={15} strokeWidth={4} /> Tournament</div>
@@ -446,7 +446,7 @@ const Tournaments = () => {
                 <>
                   <span className="ann-modal-meta-sep">·</span>
                   <span className="ann-modal-meta-edited" style={{ color: 'var(--error)', fontWeight: 'bold' }}>
-                    🔒 Locked
+                    <Lock size={15} strokeWidth={4} /> Locked
                   </span>
                 </>
               )}

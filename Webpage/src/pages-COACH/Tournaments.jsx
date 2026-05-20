@@ -608,7 +608,7 @@ const Tournaments = () => {
       {selectedTournament && (
         <div className="modal-overlay" onClick={closeModal}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <span className="modal-close" onClick={closeModal}>&times;</span>
+            <span className="modal-close" onClick={closeModal} style={{ zIndex: '1', color:'white' }}>&times;</span>
 
             <div className="ann-modal-header" style={{ background: getRoleGradient(adminData.Role, false), height: '160' }}>
               <div className="ann-modal-badge"><Trophy size={15} strokeWidth={4} /> Tournament</div>
