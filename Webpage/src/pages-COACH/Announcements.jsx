@@ -195,6 +195,28 @@ const Announcements = () => {
       <p>Loading Announcements...</p>
     </div>
   );
+  
+  const getRoleGradient = (role, isOpen) => {
+    switch (role?.toLowerCase()) {
+      case 'admin':
+        return isOpen 
+          ? 'linear-gradient(135deg, #003a8c, #0050b3)' 
+          : 'linear-gradient(135deg, #00183b, #002965)';
+      case 'member':
+        return isOpen 
+          ? 'linear-gradient(135deg, #5b966d, #73b386)' 
+          : 'linear-gradient(135deg, #2d4c37, #4a7c59)';
+      case 'disabled':
+        return isOpen 
+          ? 'linear-gradient(135deg, #999999, #b3b3b3)' 
+          : 'linear-gradient(135deg, #555555, #888888)';
+      case 'coach':
+      default:
+        return isOpen 
+          ? 'linear-gradient(135deg, var(--oak), var(--gold-muted))' 
+          : 'linear-gradient(135deg, var(--mahogany), var(--oak))';
+    }
+  };
 
   return (
     <div className="card">
@@ -265,7 +287,7 @@ const Announcements = () => {
           <div className="modal-content" style={{ width: '65%', maxWidth: '900px' }} onClick={(e) => e.stopPropagation()}>
             <span className="modal-close" onClick={closeModal}>&times;</span>
 
-            <div className="ann-modal-header" style={{ height: '160px' }}>
+            <div className="ann-modal-header" style={{ background: getRoleGradient(adminData.Role, false), height: '160' }}>
               <div className="ann-modal-badge"><Megaphone size={15} strokeWidth={4} /> Announcement</div>
               {isModalEditing ? (
                 <input

@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { supabase } from '../db';
+import { Eye, EyeOff } from 'lucide-react';
 
 const Members = () => {
   const { adminData, setAdminData } = useOutletContext();
@@ -10,6 +11,7 @@ const Members = () => {
   const [editForm, setEditForm] = useState({});
   
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'ascending' });
+  const [showPassword, setShowPassword] = useState(false);
 
   // Refs to capture DOM nodes for constraint validation reporting
   const nameRef = useRef(null);
@@ -44,11 +46,13 @@ const Members = () => {
   const startEdit = (member) => {
     setEditingId(member.UserID);
     setEditForm(member);
+    setShowPassword(false);
   };
 
   const cancelEdit = () => {
     setEditingId(null);
     setEditForm({});
+    setShowPassword(false);
   };
 
   const handleUpdate = async () => {
@@ -127,17 +131,24 @@ const Members = () => {
       }
 
       const updatedTimestamp = Date.now();
+      const updatePayload = {
+        Email: sanitizedEmail,
+        StudName: editForm.StudName.trim(),
+        StudNum: sanitizedStudNum,
+        Role: editForm.Role,
+        Rating: editForm.Rating,
+        LastModified: updatedTimestamp
+      };
+
+      // Updates database with password if it was edited
+      if (editForm.Password && editForm.Password.trim()) {
+        updatePayload.Password = editForm.Password.trim();
+      }
+
       const { error } = await supabase
         .schema('Chessistant')
         .from('Profiles')
-        .update({
-          Email: sanitizedEmail,
-          StudName: editForm.StudName.trim(),
-          StudNum: sanitizedStudNum,
-          Role: editForm.Role,
-          Rating: editForm.Rating,
-          LastModified: updatedTimestamp 
-        })
+        .update(updatePayload)
         .eq('UserID', editingId);
 
       if (error) throw error;
@@ -303,103 +314,133 @@ const Members = () => {
           </thead>
           <tbody>
             {sortedMembers.map((member) => (
-              <tr 
-                key={member.UserID} 
-                style={{ 
-                  height: '55px', 
-                  borderBottom: '1.5px solid var(--gold)'
-                }}
-              >
-                <td style={{ padding: '0 10px' }}>
-                  {editingId === member.UserID ? (
-                    <input
-                      ref={nameRef}
-                      value={editForm.StudName || ''} 
-                      onChange={(e) => {
-                        e.target.setCustomValidity('');
-                        setEditForm({...editForm, StudName: e.target.value});
-                      }}
-                      style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
-                      placeholder="John Smith"
-                      type="text"
-                      required
-                    />
-                  ) : member.StudName}
-                </td>
-                <td style={{ padding: '0 10px' }}>
-                  {editingId === member.UserID ? (
-                    <input 
-                      ref={emailRef}
-                      value={editForm.Email || ''} 
-                      onChange={(e) => {
-                        e.target.setCustomValidity('');
-                        setEditForm({...editForm, Email: e.target.value});
-                      }}
-                      style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
-                      placeholder="grandmaster@umak.edu.ph"
-                      type="email"
-                      required
-                    />
-                  ) : member.Email}
-                </td>
-                <td style={{ padding: '0 10px' }}>
-                  {editingId === member.UserID ? (
-                    <input 
-                      ref={studNumRef}
-                      value={editForm.StudNum || ''} 
-                      onChange={(e) => {
-                        e.target.setCustomValidity('');
-                        setEditForm({...editForm, StudNum: e.target.value});
-                      }}
-                      style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
-                      placeholder="A12345678"
-                      type="text"
-                      required
-                    />
-                  ) : member.StudNum}
-                </td>
-                <td style={{ padding: '0 10px' }}>
-                  {editingId === member.UserID ? (
-                    <select 
-                      value={editForm.Role || ''} 
-                      onChange={(e) => setEditForm({...editForm, Role: e.target.value})}
-                      style={{ 
-                        width: '100%', 
-                        padding: '8px', 
-                        boxSizing: 'border-box', 
-                        textAlign: 'center'
-                      }}
-                    >
-                      <option value="Admin">Admin</option>
-                      <option value="Coach">Coach</option>
-                      <option value="Member">Member</option>
-                      <option value="Disabled">Disabled</option>
-                    </select>
-                  ) : (
-                    <span className={`role-tag role-tag--${member.Role?.toLowerCase()}`}>{member.Role}</span>
-                  )}
-                </td>
-                <td style={{ padding: '0 10px', textAlign: 'center' }}>
-                  {editingId === member.UserID ? (
-                    <input 
-                      type="number"
-                      value={editForm.Rating || 0} 
-                      onChange={(e) => setEditForm({...editForm, Rating: parseInt(e.target.value) || 0})}
-                      style={{ width: '100%', padding: '8px', boxSizing: 'border-box', textAlign: 'center' }}
-                    />
-                  ) : member.Rating}
-                </td>
-                <td style={{ padding: '0 10px' }}>
-                  {editingId === member.UserID ? (
-                    <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', gap: '10px' }}>
-                      <button onClick={handleUpdate} style={{ fontSize: '0.85rem', width: 'stretch' }}>Save</button>
-                      <button onClick={cancelEdit} style={{ fontSize: '0.85rem', width: 'stretch', background: 'var(--oak)' }}>Cancel</button>
-                    </div>
-                  ) : (
-                    <button onClick={() => startEdit(member)} style={{ fontSize: '0.85rem', width: 'stretch' }}>Edit</button>
-                  )}
-                </td>
-              </tr>
+              <React.Fragment key={member.UserID}>
+                <tr 
+                  style={{ 
+                    height: '55px', 
+                    borderBottom: '1.5px solid var(--gold)'
+                  }}
+                >
+                  <td style={{ padding: '0 10px' }}>
+                    {editingId === member.UserID ? (
+                      <input
+                        ref={nameRef}
+                        value={editForm.StudName || ''} 
+                        onChange={(e) => {
+                          e.target.setCustomValidity('');
+                          setEditForm({...editForm, StudName: e.target.value});
+                        }}
+                        style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
+                        placeholder="John Smith"
+                        type="text"
+                        required
+                      />
+                    ) : member.StudName}
+                  </td>
+                  <td style={{ padding: '0 10px' }}>
+                    {editingId === member.UserID ? (
+                      <input 
+                        ref={emailRef}
+                        value={editForm.Email || ''} 
+                        onChange={(e) => {
+                          e.target.setCustomValidity('');
+                          setEditForm({...editForm, Email: e.target.value});
+                        }}
+                        style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
+                        placeholder="grandmaster@umak.edu.ph"
+                        type="email"
+                        required
+                      />
+                    ) : member.Email}
+                  </td>
+                  <td style={{ padding: '0 10px' }}>
+                    {editingId === member.UserID ? (
+                      <input 
+                        ref={studNumRef}
+                        value={editForm.StudNum || ''} 
+                        onChange={(e) => {
+                          e.target.setCustomValidity('');
+                          setEditForm({...editForm, StudNum: e.target.value});
+                        }}
+                        style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
+                        placeholder="A12345678"
+                        type="text"
+                        required
+                      />
+                    ) : member.StudNum}
+                  </td>
+                  <td style={{ padding: '0 10px' }}>
+                    {editingId === member.UserID ? (
+                      <select 
+                        value={editForm.Role || ''} 
+                        onChange={(e) => setEditForm({...editForm, Role: e.target.value})}
+                        style={{ 
+                          width: '100%', 
+                          padding: '8px', 
+                          boxSizing: 'border-box', 
+                          textAlign: 'center'
+                        }}
+                      >
+                        <option value="Admin">Admin</option>
+                        <option value="Coach">Coach</option>
+                        <option value="Member">Member</option>
+                        <option value="Disabled">Disabled</option>
+                      </select>
+                    ) : (
+                      <span className={`role-tag role-tag--${member.Role?.toLowerCase()}`}>{member.Role}</span>
+                    )}
+                  </td>
+                  <td style={{ padding: '0 10px', textAlign: 'center' }}>
+                    {editingId === member.UserID ? (
+                      <input 
+                        type="number"
+                        value={editForm.Rating || 0} 
+                        onChange={(e) => setEditForm({...editForm, Rating: parseInt(e.target.value) || 0})}
+                        style={{ width: '100%', padding: '8px', boxSizing: 'border-box', textAlign: 'center' }}
+                      />
+                    ) : member.Rating}
+                  </td>
+                  <td style={{ padding: '0 10px' }}>
+                    {editingId === member.UserID ? (
+                      <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', gap: '10px' }}>
+                        <button onClick={handleUpdate} style={{ fontSize: '0.85rem', width: 'stretch' }}>Save</button>
+                        <button onClick={cancelEdit} style={{ fontSize: '0.85rem', width: 'stretch', background: 'var(--oak)' }}>Cancel</button>
+                      </div>
+                    ) : (
+                      <button onClick={() => startEdit(member)} style={{ fontSize: '0.85rem', width: 'stretch' }}>Edit</button>
+                    )}
+                  </td>
+                </tr>
+                {editingId === member.UserID && (
+                  <tr style={{ borderBottom: '1.5px solid var(--gold)', background: '#f5f0e8' }}>
+                    <td colSpan={6} style={{ padding: '8px 10px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--oak-dark)', textTransform: 'uppercase', letterSpacing: '1px', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                          Password
+                        </label>
+                        <div style={{ position: 'relative', width: '280px' }}>
+                          <input
+                            type={showPassword ? 'text' : 'password'}
+                            value={editForm.Password || ''}
+                            onChange={(e) => setEditForm({ ...editForm, Password: e.target.value })}
+                            placeholder="Leave blank to keep current"
+                            style={{ width: '100%', padding: '8px 36px 8px 10px', boxSizing: 'border-box' }}
+                          />
+                          <span
+                            onClick={() => setShowPassword(p => !p)}
+                            style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center' }}
+                          >
+                            {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                          </span>
+                        </div>
+                        <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                          Leave blank to keep the current password unchanged.
+                        </span>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </React.Fragment>
             ))}
           </tbody>
         </table>

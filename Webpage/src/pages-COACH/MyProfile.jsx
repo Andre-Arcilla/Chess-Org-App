@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { supabase } from '../db';
+import { Eye, EyeOff } from 'lucide-react';
 
 const Profile = () => {
   const { adminData, setAdminData } = useOutletContext();
@@ -9,6 +10,11 @@ const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({});
   const [saveSuccess, setSaveSuccess] = useState(false);
+
+  // States for password visibility toggles
+  const [showViewPassword, setShowViewPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // Refs to target inputs for native browser validation tooltips
   const nameRef            = useRef(null);
@@ -52,6 +58,8 @@ const Profile = () => {
     });
     setIsEditing(true);
     setSaveSuccess(false);
+    setShowNewPassword(false);
+    setShowConfirmPassword(false);
   };
 
   const cancelEdit = () => {
@@ -59,6 +67,9 @@ const Profile = () => {
     setEditForm({});
     passwordRef.current?.setCustomValidity('');
     confirmPasswordRef.current?.setCustomValidity('');
+    setShowViewPassword(false);
+    setShowNewPassword(false);
+    setShowConfirmPassword(false);
   };
 
   // Clear native validity on each keystroke — same pattern as the login script
@@ -164,6 +175,7 @@ const Profile = () => {
         StudNum: studNum,
         Rating: rating,
         LastModified: updatedTimestamp,
+        ...(newPassword && { Password: newPassword })
       });
       setIsEditing(false);
       setSaveSuccess(true);
@@ -260,27 +272,51 @@ const Profile = () => {
               </div>
             </div>
 
-            {/* New Password */}
+            {/* New Password / Current Password */}
             <div>
-              <label style={{ display: 'block', marginBottom: '4px', fontWeight: 700, color: 'var(--mahogany)', textTransform: 'uppercase', fontSize: '0.72rem', letterSpacing: '1.5px' }}>
-                New Password
-              </label>
               {isEditing ? (
-                <input
-                  ref={passwordRef}
-                  type="password"
-                  value={editForm.NewPassword ?? ''}
-                  onChange={(e) => handleChange('NewPassword', e.target.value, passwordRef)}
-                  style={{ width: '100%', height: '46px', boxSizing: 'border-box', padding: '12px 14px' }}
-                  placeholder="New passowrd"
-                />
+                <>
+                  <label style={{ display: 'block', marginBottom: '4px', fontWeight: 700, color: 'var(--mahogany)', textTransform: 'uppercase', fontSize: '0.72rem', letterSpacing: '1.5px' }}>
+                    New Password
+                  </label>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      ref={passwordRef}
+                      type={showNewPassword ? "text" : "password"}
+                      value={editForm.NewPassword ?? ''}
+                      onChange={(e) => handleChange('NewPassword', e.target.value, passwordRef)}
+                      style={{ width: '100%', height: '46px', boxSizing: 'border-box', padding: '12px 40px 12px 14px' }}
+                      placeholder="Leave blank to keep unchanged"
+                    />
+                    <span
+                      onClick={() => setShowNewPassword(p => !p)}
+                      style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center' }}
+                    >
+                      {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </span>
+                  </div>
+                </>
               ) : (
-                <div style={{ padding: '12px 14px', background: 'transparent', borderRadius: '10px', border: '2px solid transparent', fontSize: '1rem', color: 'var(--text)', height: '46px', boxSizing: 'border-box' }}>
-                  ••••••••
-                </div>
+                <>
+                  <label style={{ display: 'block', marginBottom: '4px', fontWeight: 700, color: 'var(--mahogany)', textTransform: 'uppercase', fontSize: '0.72rem', letterSpacing: '1.5px' }}>
+                    Password
+                  </label>
+                  <div style={{ position: 'relative' }}>
+                    <div style={{ padding: '12px 40px 12px 14px', background: 'transparent', borderRadius: '10px', border: '2px solid transparent', fontSize: '1rem', color: 'var(--text)', height: '46px', boxSizing: 'border-box', display: 'flex', alignItems: 'center' }}>
+                      {showViewPassword ? (profile.Password || <span style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>Not set</span>) : '••••••••'}
+                    </div>
+                    <span
+                      onClick={() => setShowViewPassword(p => !p)}
+                      style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center' }}
+                    >
+                      {showViewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </span>
+                  </div>
+                </>
               )}
             </div>
           </div>
+
           <div style={{ display: 'flex', flexDirection: 'column', gap: '18px',  width: '100%' }}>
             {/* Student ID */}
             <div>
@@ -294,22 +330,30 @@ const Profile = () => {
 
             {/* Confirm Password */}
             <div>
-              <label style={{ display: 'block', marginBottom: '4px', fontWeight: 700, color: 'var(--mahogany)', textTransform: 'uppercase', fontSize: '0.72rem', letterSpacing: '1.5px' }}>
-                Confirm Password
-              </label>
               {isEditing ? (
-                <input
-                  ref={confirmPasswordRef}
-                  type="password"
-                  value={editForm.ConfirmPassword ?? ''}
-                  onChange={(e) => handleChange('ConfirmPassword', e.target.value, confirmPasswordRef)}
-                  style={{ width: '100%', height: '46px', boxSizing: 'border-box', padding: '12px 14px' }}
-                  placeholder="Confirm new password"
-                />
+                <>
+                  <label style={{ display: 'block', marginBottom: '4px', fontWeight: 700, color: 'var(--mahogany)', textTransform: 'uppercase', fontSize: '0.72rem', letterSpacing: '1.5px' }}>
+                    Confirm Password
+                  </label>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      ref={confirmPasswordRef}
+                      type={showConfirmPassword ? "text" : "password"}
+                      value={editForm.ConfirmPassword ?? ''}
+                      onChange={(e) => handleChange('ConfirmPassword', e.target.value, confirmPasswordRef)}
+                      style={{ width: '100%', height: '46px', boxSizing: 'border-box', padding: '12px 40px 12px 14px' }}
+                      placeholder="Confirm new password"
+                    />
+                    <span
+                      onClick={() => setShowConfirmPassword(p => !p)}
+                      style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center' }}
+                    >
+                      {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </span>
+                  </div>
+                </>
               ) : (
-                <div style={{ padding: '12px 14px', background: 'transparent', borderRadius: '10px', border: '2px solid transparent', fontSize: '1rem', color: 'var(--text)', height: '46px', boxSizing: 'border-box' }}>
-                  ••••••••
-                </div>
+                <></>
               )}
             </div>
           </div>

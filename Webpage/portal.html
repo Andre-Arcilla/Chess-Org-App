@@ -6,7 +6,6 @@
     <title>Chessistant | Premium Chess Club Portal</title>
     <link rel="stylesheet" href="/src/style.css">
     
-    <!-- Premium Serif & Sans Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Source+Sans+Pro:wght@400;600;700&display=swap" rel="stylesheet">
@@ -37,7 +36,10 @@
                             </div>
                             <div class="form-group" style="width: 400px;">
                                 <label for="password">Password</label>
-                                <input type="password" id="password" required placeholder="••••••••" autocomplete="current-password">
+                                <div style="position: relative;">
+                                    <input type="password" id="password" required placeholder="••••••••" autocomplete="current-password" style="width: 100%; padding-right: 40px; box-sizing: border-box;">
+                                    <span id="toggle-login-password" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #666; display: flex; align-items: center;"></span>
+                                </div>
                             </div>
                             <button type="submit" id="login-btn">Enter Club</button>
                         </form>
@@ -65,7 +67,10 @@
                                 </div>
                                 <div class="form-group" style="width: 300px;">
                                     <label for="reg-password">Password</label>
-                                    <input type="password" id="reg-password" required minlength="8" placeholder="••••••••">
+                                    <div style="position: relative;">
+                                        <input type="password" id="reg-password" required minlength="8" placeholder="••••••••" style="width: 100%; padding-right: 40px; box-sizing: border-box;">
+                                        <span id="toggle-reg-password" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #666; display: flex; align-items: center;"></span>
+                                    </div>
                                 </div>
                             </div>
                             <button type="submit" id="register-btn">Submit Registration</button>
