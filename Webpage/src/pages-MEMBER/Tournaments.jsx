@@ -344,8 +344,8 @@ const Tournaments = () => {
           displayedTournaments.map((tour) => (
             <div
               key={tour.TourID}
-              className="stat-item"
-              style={{ position: 'relative', cursor: 'pointer', justifyContent: 'space-between', height: '150px', boxSizing: 'border-box', width: '100%', gap: '0', borderRadius: '15px' }}
+              className="stat-item tour-card"
+              style={{ position: 'relative', cursor: 'pointer', justifyContent: 'space-between', height: '150px', boxSizing: 'border-box', width: '100%', gap: '0', borderRadius: '15px', paddingLeft: '28px' }}
               onClick={() => openModal(tour)}
             >
               <span className="label">{displayDate(tour.Date)}</span>
@@ -362,28 +362,35 @@ const Tournaments = () => {
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <span className="modal-close" onClick={closeModal}>&times;</span>
 
-            <div className="modal-info">
-              {/* Scrollable left panel: header + description */}
-              <div className="modal-scroll">
-                {/* Modal header */}
-                <div style={{ textAlign: 'center', padding: '20px 10px 0px 10px', flexShrink: 0 }}>
-                  <h2 style={{ color: 'black', fontSize: '2.5rem' }}>{selectedTournament.Title}</h2>
-                  <div style={{ marginTop: '10px', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                    <span className="label" style={{ color: 'var(--gold-muted)', fontWeight: 'bold' }}>{displayDate(selectedTournament.Date)}</span>
-                    <span className="label" style={{ color: 'var(--gold-muted)', fontWeight: 'bold' }}>{selectedTournament.ParticipantCount} Player {selectedTournament.Style} Tournament</span>
-                        {selectedTournament.LastModified && (
-                          <div style={{ fontSize: '1rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-                            Last updated: {new Date(selectedTournament.LastModified).toLocaleString()}
-                          </div>
-                        )}
-                  </div>
-                  <hr className="modal-hr" style={{ marginTop: '20px' }} />
-                </div>
+            {/* ── Full-width navy header ── */}
+            <div className="ann-modal-header">
+              <div className="ann-modal-badge">🏆 Tournament</div>
+              <h2 className="ann-modal-title">{selectedTournament.Title}</h2>
+            </div>
 
-                {/* Modal body */}
-                <div className="modal-body">
-                  <p style={{ whiteSpace: 'pre-wrap', textAlign: 'left', padding: '0 25px' }}>{selectedTournament.Text}</p>
-                </div>
+            {/* ── Meta strip ── */}
+            <div className="ann-modal-meta">
+              <span className="ann-modal-meta-date">
+                📅 {displayDate(selectedTournament.Date)}
+              </span>
+              <span className="ann-modal-meta-sep">·</span>
+              <span className="ann-modal-meta-date">
+                👥 {selectedTournament.ParticipantCount}-Player {selectedTournament.Style}
+              </span>
+              {selectedTournament.LastModified && (
+                <>
+                  <span className="ann-modal-meta-sep">·</span>
+                  <span className="ann-modal-meta-edited">
+                    Last updated: {new Date(selectedTournament.LastModified).toLocaleString()}
+                  </span>
+                </>
+              )}
+            </div>
+
+            {/* ── Two-column body: description (left) + bracket (right) ── */}
+            <div className="modal-info">
+              <div className="modal-scroll">
+                <p className="ann-modal-body-text">{selectedTournament.Text}</p>
               </div>
 
               {/* Right panel: bracket / cross table (read-only) */}
@@ -414,19 +421,22 @@ const Tournaments = () => {
               </div>
             </div>
 
-            {/* Modal footer: register / unregister */}
-            <div style={{ padding: '0px 10px 20px 10px', backgroundColor: 'var(--parchment)', flexShrink: 0, overflowY: 'hidden', scrollbarGutter: 'stable both-edges' }}>
-              <hr className="modal-hr" />
-              <br />
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                <button
-                  onClick={() => toggleRegistration(selectedTournament.TourID)}
-                  style={{ padding: '10px 20px', margin: '0', fontSize: '0.9rem', width: 'auto', cursor: (!canUnregisterCurrent || view === 'past') ? 'default' : 'pointer' }}
-                  disabled={!canUnregisterCurrent || view === 'past'}
-                >
-                  {registeredTournaments.has(selectedTournament.TourID) ? 'Unregister' : 'Register'}
-                </button>
-              </div>
+            {/* ── Footer: register / unregister ── */}
+            <div className="ann-modal-footer">
+              <button
+                onClick={() => toggleRegistration(selectedTournament.TourID)}
+                style={{
+                  padding: '10px 24px',
+                  margin: 0,
+                  fontSize: '0.85rem',
+                  width: 'auto',
+                  background: registeredTournaments.has(selectedTournament.TourID) ? 'var(--error)' : '#002965',
+                  cursor: (!canUnregisterCurrent || view === 'past') ? 'default' : 'pointer'
+                }}
+                disabled={!canUnregisterCurrent || view === 'past'}
+              >
+                {registeredTournaments.has(selectedTournament.TourID) ? '✖ Unregister' : '✔ Register'}
+              </button>
             </div>
           </div>
         </div>

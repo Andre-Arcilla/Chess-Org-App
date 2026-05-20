@@ -670,3 +670,247 @@ p {
     height: 2px;
     background: var(--gold);
 }
+
+/* ── Modal slide-in animation ── */
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-18px) scale(0.97);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.modal-content {
+    animation: modalSlideIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ── Announcement Modal Header ── */
+.ann-modal-header {
+    background: linear-gradient(160deg, #001533 0%, #002965 55%, #003d8f 100%);
+    padding: 28px 40px 32px 40px;
+    position: relative;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+/* Radial gold glow top-right */
+.ann-modal-header::before {
+    content: '';
+    position: absolute;
+    top: -50px;
+    right: -50px;
+    width: 220px;
+    height: 220px;
+    background: radial-gradient(circle, rgba(212,175,55,0.18) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+/* Gold gradient bottom border */
+.ann-modal-header::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--gold) 0%, rgba(212,175,55,0.2) 100%);
+}
+
+.ann-modal-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(212, 175, 55, 0.15);
+    border: 1px solid rgba(212, 175, 55, 0.45);
+    color: var(--gold);
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 4px;
+    margin-bottom: 14px;
+}
+
+.ann-modal-title {
+    font-family: var(--font-serif);
+    font-size: 2.1rem;
+    color: #ffffff;
+    line-height: 1.25;
+    margin: 0;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+}
+
+/* Title input used in edit mode (inside header) */
+.ann-modal-title-input {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 2px solid rgba(212, 175, 55, 0.4) !important;
+    border-radius: 8px;
+    color: #ffffff !important;
+    font-family: var(--font-serif) !important;
+    font-size: 1.7rem !important;
+    font-weight: 700 !important;
+    padding: 12px 16px !important;
+    box-shadow: none !important;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.ann-modal-title-input::placeholder {
+    color: rgba(255, 255, 255, 0.38);
+}
+
+.ann-modal-title-input:focus {
+    border-color: var(--gold) !important;
+    background: rgba(255, 255, 255, 0.16) !important;
+    box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.18) !important;
+}
+
+/* ── Announcement Modal Meta Strip ── */
+.ann-modal-meta {
+    padding: 13px 40px;
+    background: #faf5e9;
+    border-bottom: 1px solid rgba(212, 175, 55, 0.28);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 20px;
+    flex-shrink: 0;
+}
+
+.ann-modal-meta-date {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--oak-dark);
+    font-weight: 700;
+    font-size: 0.88rem;
+    letter-spacing: 0.4px;
+}
+
+.ann-modal-meta-sep {
+    color: rgba(212, 175, 55, 0.6);
+    font-size: 1rem;
+}
+
+.ann-modal-meta-edited {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    font-style: italic;
+}
+
+/* ── Announcement Modal Body ── */
+.ann-modal-body-text {
+    padding: 28px 40px;
+    line-height: 1.85;
+    color: var(--text);
+    font-size: 1rem;
+    white-space: pre-wrap;
+    text-align: left;
+    font-family: var(--font-sans);
+    word-break: break-word;
+}
+
+.ann-modal-textarea {
+    width: 100%;
+    height: 100%;
+    min-height: 220px;
+    padding: 18px 20px;
+    font-size: 1rem;
+    resize: none;
+    background: #faf6f0 !important;
+    border: 2px solid rgba(212, 175, 55, 0.3) !important;
+    border-radius: 10px;
+    font-family: var(--font-sans);
+    line-height: 1.75;
+    color: var(--text);
+    outline: none;
+    box-shadow: none !important;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.ann-modal-textarea:focus {
+    border-color: var(--gold) !important;
+    box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.14) !important;
+}
+
+/* ── Announcement Modal Footer ── */
+.ann-modal-footer {
+    padding: 16px 40px 22px;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+    background: #fafafa;
+    border-top: 2px solid rgba(212, 175, 55, 0.25);
+}
+
+.ann-modal-footer button {
+    padding: 10px 24px;
+    margin: 0;
+    font-size: 0.85rem;
+    width: auto;
+    letter-spacing: 1px;
+}
+
+/* ── Announcement List Card Accent ── */
+.ann-card {
+    position: relative;
+    overflow: hidden;
+}
+
+.ann-card::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 5px;
+    background: linear-gradient(180deg, var(--gold) 0%, var(--gold-muted) 100%);
+    border-radius: 4px 0 0 4px;
+}
+
+/* ── Tournament List Card Accent (orange) ── */
+.tour-card {
+    position: relative;
+    overflow: hidden;
+}
+
+.tour-card::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 5px;
+    background: linear-gradient(180deg, #FF5A00 0%, #d44a00 100%);
+    border-radius: 4px 0 0 4px;
+}
+
+/* ── Tournament Modal: edit-mode fields strip ── */
+.tour-modal-fields {
+    padding: 14px 40px;
+    background: #faf5e9;
+    border-bottom: 1px solid rgba(212, 175, 55, 0.28);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 12px 20px;
+    flex-shrink: 0;
+}
+
+.tour-field-label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 0.72rem;
+    color: var(--oak-dark);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+}

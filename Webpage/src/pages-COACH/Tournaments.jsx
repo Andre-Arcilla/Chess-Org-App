@@ -541,9 +541,9 @@ const Tournaments = () => {
         ) : (
           displayedTournaments.map((tour) => (
           <div 
-            key={tour.TourID} 
-            className="stat-item" 
-            style={{ position: 'relative', cursor: 'pointer', justifyContent: 'space-between', height: '150px', boxSizing: 'border-box', width: '100%', gap: '0', borderRadius: '15px' }}
+            key={tour.TourID}
+            className="stat-item tour-card" 
+            style={{ position: 'relative', cursor: 'pointer', justifyContent: 'space-between', height: '150px', boxSizing: 'border-box', width: '100%', gap: '0', borderRadius: '15px', paddingLeft: '28px' }}
             onClick={() => openModal(tour)}
           >
             <span className="label">{displayDate(tour.Date)}</span>
@@ -559,209 +559,126 @@ const Tournaments = () => {
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <span className="modal-close" onClick={closeModal}>&times;</span>
 
-            <div className="modal-info">
-              {/* scrollable container for header and body */}
-              <div className="modal-scroll"> 
-                {/* modal header */}
-                <div style={{ textAlign: 'center', padding: '20px 10px 0px 10px', flexShrink: 0 }}>
-                  {isModalEditing ? (
-                    <div style={{ marginBottom: '10px', justifyItems: 'center' }}>
-                      <input 
-                        value={formData.Title} 
-                        onChange={(e) => setFormData({...formData, Title: e.target.value})} 
-                        style={{ 
-                        fontSize: '2rem', 
-                        width: '95%', 
-                        textAlign: 'center', 
-                        padding: '10px', 
-                        fontWeight: 'bold'
-                        }}
-                        placeholder="Tournament Title"
-                        required 
-                      />
-                      <div style={{ marginTop: '10px', width: '95%', display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div style={{ width: '50%' }}>
-                          <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.8rem', color: 'var(--gold)', fontWeight: 'bold', textAlign: 'left' }}>Date</label>
-                          <input 
-                            type="date"
-                            value={formData.Date} 
-                            onChange={(e) => setFormData({...formData, Date: e.target.value})} 
-                            min={new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]}
-                            style={{ 
-                              width: '100%', 
-                              padding: '10px', 
-                              fontSize: '1rem'
-                            }}
-                            required 
-                          />
-                        </div>
-                        <div style={{ width: '30%' }}>
-                          <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.8rem', color: 'var(--gold)', fontWeight: 'bold', textAlign: 'left' }}>Hour</label>
-                          <select 
-                            value={formData.Hour} 
-                            onChange={(e) => setFormData({...formData, Hour: e.target.value})} 
-                            style={{ 
-                              width: '100%', 
-                              padding: '10px', 
-                              fontSize: '1rem'
-                            }}
-                            required 
-                          >
-                            {Array.from({ length: 24 }, (_, i) => {
-                              const hour = i.toString().padStart(2, '0');
-                              const label = i === 0 ? '12 AM' : i === 12 ? '12 PM' : i < 12 ? `${i} AM` : `${i - 12} PM`;
-                              return <option key={hour} value={hour}>{label}</option>;
-                            })}
-                          </select>
-                        </div>
-                        {/* <div style={{ width: '30' }}>
-                          <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.8rem', color: 'var(--gold)', fontWeight: 'bold', textAlign: 'left' }}>Style</label>
-                          <select 
-                            value={formData.Style} 
-                            onChange={(e) => {
-                              const newStyle = e.target.value;
-                              const min = newStyle === 'Round Robin' ? 3 : 4;
-                              const max = newStyle === 'Round Robin' ? 16 : 100;
-                              let newParticipants = formData.ParticipantCount;
-                              
-                              if (newParticipants < min) newParticipants = min;
-                              if (newParticipants > max) newParticipants = max;
-                              
-                              setFormData({
-                                ...formData, 
-                                Style: newStyle,
-                                ParticipantCount: newParticipants
-                              });
-                            }} 
-                            style={{ 
-                              width: '100%', 
-                              padding: '10px', 
-                              background: 'var(--antique-white)', 
-                              border: '1px solid var(--oak)', 
-                              color: 'var(--mahogany)', 
-                              outline: 'none',
-                              fontSize: '1rem',
-                              cursor: 'pointer'
-                            }}
-                            required 
-                          >
-                            <option value="Swiss System">Swiss System</option>
-                            <option value="Round Robin">Round Robin</option>
-                          </select>
-                        </div> */}
-                        <div style={{ width: '15%' }}>
-                          <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.8rem', color: 'var(--gold)', fontWeight: 'bold', textAlign: 'left' }}>Max Players</label>
-                          <input
-                            type="number"
-                            step={2}
-                            value={formData.ParticipantCount}
-                            onChange={(e) => {
-                              const raw = e.target.value;
-                              const num = Number(raw);
-                              const min = 4;
-                              const max = 30;
-                              if (Number.isNaN(num)) {
-                                setFormData({ ...formData, ParticipantCount: '' });
-                                return;
-                              }
-                              let v = Math.round(num);
-                              v = Math.max(min, Math.min(v, max));
-                              // keep even by lowering if odd (spinner will produce even with step=2)
-                              if (v % 2 !== 0) v = v - 1;
-                              setFormData({ ...formData, ParticipantCount: v });
-                            }}
-                            onBlur={(e) => {
-                              let val = Number(e.target.value);
-                              const min = 4;
-                              const max = 30;
-                              if (Number.isNaN(val)) val = min;
-                              val = Math.round(val);
-                              if (val < min) val = min;
-                              if (val > max) val = max;
-                              if (val % 2 !== 0) {
-                                // prefer next higher even unless at max
-                                val = val === max ? val - 1 : val + 1;
-                              }
-                              setFormData({ ...formData, ParticipantCount: val });
-                            }}
-                            min={4}
-                            max={30}
-                            style={{
-                              width: '100%',
-                              padding: '11px',
-                              fontSize: '1rem'
-                            }}
-                            required
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      <h2 style={{ color: 'black', fontSize: '2.5rem' }}>{selectedTournament.Title}</h2>
-                      <div style={{ marginTop: '10px', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                        <span className="label" style={{ color: 'var(--gold-muted)', fontWeight: 'bold' }}>{displayDate(selectedTournament.Date)}</span>
-                        <span className="label" style={{ color: 'var(--gold-muted)', fontWeight: 'bold' }}>{selectedTournament.ParticipantCount} Player {selectedTournament.Style} Tournament</span>
-                        {selectedTournament.LastModified && (
-                          <div style={{ fontSize: '1rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-                            Last updated: {new Date(selectedTournament.LastModified).toLocaleString()}
-                          </div>
-                        )}
-                      </div>
-                    </>
-                  )}
-                  <hr className="modal-hr" style={{ marginTop: '20px' }} />
-                </div>
+            {/* ── Full-width navy header ── */}
+            <div className="ann-modal-header">
+              {!isModalEditing && (
+                <div className="ann-modal-badge">🏆 Tournament</div>
+              )}
+              {isModalEditing ? (
+                <input
+                  className="ann-modal-title-input"
+                  value={formData.Title}
+                  onChange={(e) => setFormData({ ...formData, Title: e.target.value })}
+                  placeholder="Tournament Title"
+                  required
+                />
+              ) : (
+                <h2 className="ann-modal-title">{selectedTournament.Title}</h2>
+              )}
+            </div>
 
-                {/* modal body */}
-                <div className="modal-body">
-                  {isModalEditing ? (
-                    <textarea 
-                      value={formData.Text} 
-                      onChange={(e) => setFormData({...formData, Text: e.target.value})} 
-                      style={{ 
-                        width: '95%',
-                        height: '100%',
-                        padding: '10px', 
-                        fontSize: '1rem', 
-                        resize: 'none',
-                        textAlign: 'left',
-                        fontFamily: 'var(--sarif-sans)'
-                      }}
-                      placeholder="Tournament Description / Details"
-                      required 
-                    />
-                  ) : (
-                    <p style={{ whiteSpace: 'pre-wrap', textAlign: 'left', padding: '0 25px' }}>{selectedTournament.Text}</p>
-                  )}
+            {/* ── View mode: meta strip ── */}
+            {!isModalEditing && (
+              <div className="ann-modal-meta">
+                <span className="ann-modal-meta-date">
+                  📅 {displayDate(selectedTournament.Date)}
+                </span>
+                <span className="ann-modal-meta-sep">·</span>
+                <span className="ann-modal-meta-date">
+                  👥 {selectedTournament.ParticipantCount}-Player {selectedTournament.Style}
+                </span>
+                {selectedTournament.LastModified && (
+                  <>
+                    <span className="ann-modal-meta-sep">·</span>
+                    <span className="ann-modal-meta-edited">
+                      Last updated: {new Date(selectedTournament.LastModified).toLocaleString()}
+                    </span>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* ── Edit mode: date / hour / players fields strip ── */}
+            {isModalEditing && (
+              <div className="tour-modal-fields">
+                <div style={{ flex: '0 0 44%' }}>
+                  <label className="tour-field-label">Date</label>
+                  <input
+                    type="date"
+                    value={formData.Date}
+                    onChange={(e) => setFormData({ ...formData, Date: e.target.value })}
+                    min={new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]}
+                    required
+                  />
+                </div>
+                <div style={{ flex: '0 0 28%' }}>
+                  <label className="tour-field-label">Hour</label>
+                  <select
+                    value={formData.Hour}
+                    onChange={(e) => setFormData({ ...formData, Hour: e.target.value })}
+                    required
+                  >
+                    {Array.from({ length: 24 }, (_, i) => {
+                      const hour = i.toString().padStart(2, '0');
+                      const label = i === 0 ? '12 AM' : i === 12 ? '12 PM' : i < 12 ? `${i} AM` : `${i - 12} PM`;
+                      return <option key={hour} value={hour}>{label}</option>;
+                    })}
+                  </select>
+                </div>
+                <div style={{ flex: '0 0 16%' }}>
+                  <label className="tour-field-label">Max Players</label>
+                  <input
+                    type="number"
+                    step={2}
+                    value={formData.ParticipantCount}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      const num = Number(raw);
+                      const min = 4, max = 30;
+                      if (Number.isNaN(num)) { setFormData({ ...formData, ParticipantCount: '' }); return; }
+                      let v = Math.round(num);
+                      v = Math.max(min, Math.min(v, max));
+                      if (v % 2 !== 0) v = v - 1;
+                      setFormData({ ...formData, ParticipantCount: v });
+                    }}
+                    onBlur={(e) => {
+                      let val = Number(e.target.value);
+                      const min = 4, max = 30;
+                      if (Number.isNaN(val)) val = min;
+                      val = Math.round(val);
+                      if (val < min) val = min;
+                      if (val > max) val = max;
+                      if (val % 2 !== 0) val = val === max ? val - 1 : val + 1;
+                      setFormData({ ...formData, ParticipantCount: val });
+                    }}
+                    min={4}
+                    max={30}
+                    required
+                  />
                 </div>
               </div>
+            )}
 
-              <div className="tournament-bracket" style={{ flexBasis: "60%", overflow: 'auto', padding: '0 20px 0 0' }}>
-                {/* {selectedTournament.Style === 'Round Robin' ? (
-                  <RoundRobinCrossTable 
-                    participantCount={selectedTournament.ParticipantCount}
-                    results={results}
-                    setResults={setResults}
-                    participants={participants}
-                    onSaveMatch={handleSaveMatch}
-                  />
-                ) : (
-                  <div style={{ 
-                    height: '100%', 
-                    display: 'flex', 
-                    flexDirection: 'column',
-                    justifyContent: 'center', 
-                    alignItems: 'center', 
-                    padding: '40px',
-                    textAlign: 'center',
-                    color: 'var(--text-muted)'
-                  }}>
-                    <h4 style={{ fontFamily: 'var(--font-serif)', color: 'var(--mahogany)', marginBottom: '10px' }}>Swiss System Bracket</h4>
-                    <p style={{ fontStyle: 'italic' }}>Bracket generation for Swiss System is currently being optimized for large participant counts. Check back soon for the automated pairing display!</p>
+            {/* ── Two-column body: description (left) + bracket (right) ── */}
+            <div className="modal-info">
+              <div className="modal-scroll">
+                {isModalEditing ? (
+                  <div style={{ padding: '20px 24px', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                    <textarea
+                      className="ann-modal-textarea"
+                      value={formData.Text}
+                      onChange={(e) => setFormData({ ...formData, Text: e.target.value })}
+                      placeholder="Tournament Description / Details"
+                      required
+                    />
                   </div>
-                )} */}
-                <RoundRobinCrossTable 
+                ) : (
+                  <p className="ann-modal-body-text">{selectedTournament.Text}</p>
+                )}
+              </div>
+
+              <div className="tournament-bracket" style={{ flexBasis: '60%', overflow: 'auto', padding: '0 20px 0 0' }}>
+                <RoundRobinCrossTable
                   participantCount={isModalEditing ? formData.ParticipantCount : selectedTournament.ParticipantCount}
                   results={results}
                   setResults={setResults}
@@ -769,68 +686,44 @@ const Tournaments = () => {
                   onSaveMatch={handleSaveMatch}
                 />
               </div>
-
             </div>
-            
-            {/* modal footer */}
-            <div style={{ padding: '0px 10px 20px 10px', flexShrink: 0, overflowY: 'hidden', scrollbarGutter: 'stable both-edges' }}>
-              <hr className="modal-hr" />
-              <br></br>
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                {isModalEditing ? (
-                  <>
-                    {isModalAdding ? (
-                      <>
-                        <button 
-                          onClick={handleSubmit}
-                          style={{ padding: '10px 20px', margin: '0', fontSize: '0.9rem', width: 'auto' }}>
-                          Post
-                        </button>
-                        <button 
-                          onClick={closeModal} 
-                          style={{ padding: '10px 20px', margin: '0', fontSize: '0.9rem', width: 'auto' }}>
-                          Cancel
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <button 
-                          onClick={handleSubmit} 
-                          style={{ padding: '10px 20px', margin: '0', fontSize: '0.9rem', width: 'auto' }}>
-                          Save Changes
-                        </button>
-                        <button 
-                          onClick={() => setIsModalEditing(false)} 
-                          style={{ padding: '10px 20px', margin: '0', fontSize: '0.9rem', width: 'auto' }}>
-                          Cancel
-                        </button>
-                      </>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    {selectedTournament.Style === 'Round Robin' && (
-                      <button 
-                        onClick={handleSaveScores} 
-                        style={{ padding: '10px 20px', margin: '0', fontSize: '0.9rem', width: 'auto', background: 'var(--success, #2e7d32)', color: 'white' }}>
-                        Save Scores
-                      </button>
-                    )}
-                    <button 
-                      onClick={(e) => { 
-                        handleEdit(selectedTournament, e);
-                      }} 
-                      style={{ padding: '10px 20px', margin: '0', fontSize: '0.9rem', width: 'auto' }}>
-                      Edit
+
+            {/* ── Footer ── */}
+            <div className="ann-modal-footer">
+              {isModalEditing ? (
+                <>
+                  <button
+                    onClick={handleSubmit}
+                    style={{ padding: '10px 24px', margin: 0, fontSize: '0.85rem', width: 'auto' }}>
+                    {isModalAdding ? 'Create Tournament' : 'Save Changes'}
+                  </button>
+                  <button
+                    onClick={isModalAdding ? closeModal : () => setIsModalEditing(false)}
+                    style={{ padding: '10px 24px', margin: 0, fontSize: '0.85rem', width: 'auto', background: 'var(--text-muted)' }}>
+                    Cancel
+                  </button>
+                </>
+              ) : (
+                <>
+                  {selectedTournament.Style === 'Round Robin' && (
+                    <button
+                      onClick={handleSaveScores}
+                      style={{ padding: '10px 24px', margin: 0, fontSize: '0.85rem', width: 'auto', background: 'var(--oak)' }}>
+                      💾 Save Scores
                     </button>
-                    <button 
-                      onClick={(e) => handleDelete(selectedTournament.TourID, e)}
-                      style={{ padding: '10px 20px', margin: '0', fontSize: '0.9rem', width: 'auto', background: 'var(--error)' }}>
-                      Delete
-                    </button>
-                  </>
-                )}
-              </div>
+                  )}
+                  <button
+                    onClick={(e) => { handleEdit(selectedTournament, e); }}
+                    style={{ padding: '10px 24px', margin: 0, fontSize: '0.85rem', width: 'auto' }}>
+                    ✏️ Edit
+                  </button>
+                  <button
+                    onClick={(e) => handleDelete(selectedTournament.TourID, e)}
+                    style={{ padding: '10px 24px', margin: 0, fontSize: '0.85rem', width: 'auto', background: 'var(--error)' }}>
+                    🗑 Delete
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>

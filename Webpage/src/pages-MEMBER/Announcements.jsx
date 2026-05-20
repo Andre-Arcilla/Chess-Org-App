@@ -248,8 +248,8 @@ const Announcements = () => {
         {sortedAnnouncements.map((ann) => (
           <div 
             key={ann.AnnID} 
-            className="stat-item" 
-            style={{ position: 'relative', cursor: 'pointer', justifyContent: 'space-between', height: '150px', boxSizing: 'border-box', width: '100%', gap: '0', borderRadius: '15px' }}
+            className="stat-item ann-card" 
+            style={{ position: 'relative', cursor: 'pointer', justifyContent: 'space-between', height: '150px', boxSizing: 'border-box', width: '100%', gap: '0', borderRadius: '15px', paddingLeft: '28px' }}
             onClick={() => openModal(ann)}
           >
             <span className="label">{displayDate(ann.Date)}</span>
@@ -261,117 +261,34 @@ const Announcements = () => {
 
       {selectedAnnouncement && (
         <div className="modal-overlay" onClick={closeModal}>
-          <div className="modal-content" style={{ width: "60%" }} onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content" style={{ width: '65%', maxWidth: '900px' }} onClick={(e) => e.stopPropagation()}>
             <span className="modal-close" onClick={closeModal}>&times;</span>
 
-            <div className="modal-scroll"> 
-              <div style={{ textAlign: 'center', padding: '20px 10px 0px 10px', flexShrink: 0 }}>
-                {isModalEditing ? (
-                  <div style={{ marginBottom: '10px' }}>
-                    <input 
-                      value={formData.Title} 
-                      onChange={(e) => setFormData({...formData, Title: e.target.value})} 
-                      style={{ 
-                        fontSize: '2rem', 
-                        width: '95%', 
-                        textAlign: 'center', 
-                        padding: '10px', 
-                        fontWeight: 'bold'
-                      }}
-                      placeholder="Announcement Title"
-                      required 
-                    />
-                  </div>
-                ) : (
-                  <h2 style={{ color: 'black', fontSize: '2.5rem' }}>{selectedAnnouncement.Title}</h2>
-                )}
-                <span className="label" style={{ color: 'var(--gold-muted)', fontWeight: 'bold' }}>{displayDate(selectedAnnouncement.Date)}</span>
-                {selectedAnnouncement.LastModified && (
-                  <div style={{ fontSize: '1rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-                    Last updated: {new Date(selectedAnnouncement.LastModified).toLocaleString()}
-                  </div>
-                )}
-                <hr className="modal-hr" style={{ marginTop: '20px' }} />
-              </div>
-
-              <div className="modal-body">
-                {isModalEditing ? (
-                  <textarea 
-                    value={formData.Text} 
-                    onChange={(e) => setFormData({...formData, Text: e.target.value})} 
-                    style={{ 
-                      width: '95%',
-                      height: '100%',
-                      padding: '10px', 
-                      fontSize: '1rem', 
-                      resize: 'none',
-                      textAlign: 'left',
-                      fontFamily: 'var(--sarif-sans)'
-                    }}
-                    placeholder="Announcement Content"
-                    required 
-                  />
-                ) : (
-                  <p style={{ whiteSpace: 'pre-wrap', textAlign: 'left', padding: '0 25px' }}>{selectedAnnouncement.Text}</p>
-                )}
-              </div>
+            {/* ── Navy gradient header ── */}
+            <div className="ann-modal-header">
+              <div className="ann-modal-badge">📢 Announcement</div>
+              <h2 className="ann-modal-title">{selectedAnnouncement.Title}</h2>
             </div>
 
-            {/* <div style={{ padding: '0px 10px 20px 10px', flexShrink: 0, overflowY: 'hidden', scrollbarGutter: 'stable both-edges' }}>
-              <hr className="modal-hr" />
-              <br></br>
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                {isModalEditing ? (
-                  <>
-                    {isModalAdding ? (
-                      <>
-                        <button 
-                          onClick={handleSubmit}
-                          style={{ padding: '10px 20px', margin: '0', fontSize: '0.9rem', width: 'auto' }}>
-                          Post
-                        </button>
-                        <button 
-                          onClick={closeModal} 
-                          style={{ padding: '10px 20px', margin: '0', fontSize: '0.9rem', width: 'auto' }}>
-                          Cancel
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <button 
-                          onClick={handleSubmit} 
-                          style={{ padding: '10px 20px', margin: '0', fontSize: '0.9rem', width: 'auto' }}>
-                          Save Changes
-                        </button>
-                        <button 
-                          onClick={() => setIsModalEditing(false)} 
-                          style={{ padding: '10px 20px', margin: '0', fontSize: '0.9rem', width: 'auto' }}>
-                          Cancel
-                        </button>
-                      </>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    <button 
-                      onClick={(e) => { 
-                        setIsModalEditing(true);
-                        const dateStr = selectedAnnouncement.Date ? new Date(selectedAnnouncement.Date).toISOString().split('T')[0] : '';
-                        setFormData({ Title: selectedAnnouncement.Title, Date: dateStr, Text: selectedAnnouncement.Text });
-                        setEditingId(selectedAnnouncement.AnnID);
-                      }} 
-                      style={{ padding: '10px 20px', margin: '0', fontSize: '0.9rem', width: 'auto' }}>
-                      Edit
-                    </button>
-                    <button 
-                      onClick={(e) => { handleDelete(selectedAnnouncement.AnnID, e); closeModal(); }} 
-                      style={{ padding: '10px 20px', margin: '0', fontSize: '0.9rem', width: 'auto', background: 'var(--error)' }}>
-                      Delete
-                    </button>
-                  </>
-                )}
-              </div>
-            </div> */}
+            {/* ── Meta strip: date + last modified ── */}
+            <div className="ann-modal-meta">
+              <span className="ann-modal-meta-date">
+                📅 {displayDate(selectedAnnouncement.Date)}
+              </span>
+              {selectedAnnouncement.LastModified && (
+                <>
+                  <span className="ann-modal-meta-sep">·</span>
+                  <span className="ann-modal-meta-edited">
+                    Last updated: {new Date(selectedAnnouncement.LastModified).toLocaleString()}
+                  </span>
+                </>
+              )}
+            </div>
+
+            {/* ── Scrollable body ── */}
+            <div className="modal-scroll">
+              <p className="ann-modal-body-text">{selectedAnnouncement.Text}</p>
+            </div>
           </div>
         </div>
       )}
