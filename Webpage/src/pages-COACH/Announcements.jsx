@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useOutletContext, useLocation } from 'react-router-dom';
 import { supabase } from '../db';
-import { Megaphone, Trophy, Users, Calendar, Save, Pencil, Trash2, Check, X, User } from 'lucide-react';
+import { Megaphone, Trophy, Users, Calendar, Save, Pencil, Trash2, Check, X } from 'lucide-react';
 
 const Announcements = () => {
   const { adminData } = useOutletContext();
@@ -19,16 +19,31 @@ const Announcements = () => {
     try {
       setLoading(true);
       const minimumDelay = new Promise(resolve => setTimeout(resolve, 750));
+      
+      // Perform a relational join to fetch StudName using the FK relationships
       const [_, { data, error }] = await Promise.all([
         minimumDelay,
         supabase
           .schema('Chessistant')
           .from('Announcements')
-          .select('*')
+          .select(`
+            *,
+            creatorProfile:Author ( StudName ),
+            editorProfile:LastEditor ( StudName )
+          `)
           .order('Date', { ascending: false })
       ]);
+      
       if (error) throw error;
-      setAnnouncements(data || []);
+      
+      // Map the nested join objects into flat properties for easier UI rendering
+      const formattedData = (data || []).map(ann => ({
+        ...ann,
+        AuthorName: ann.creatorProfile?.StudName || null,
+        EditorName: ann.editorProfile?.StudName || null
+      }));
+
+      setAnnouncements(formattedData);
     } catch (err) {
       console.error('Error fetching announcements:', err);
     } finally {
@@ -49,7 +64,6 @@ const Announcements = () => {
   const openModal = (ann) => {
     const initialDate = ann.Date || new Date().toISOString();
     setSelectedAnnouncement({ ...ann, Date: initialDate });
-    // If no AnnID, it's a new announcement - go into edit mode
     if (!ann.AnnID) {
       setIsModalEditing(true);
       setIsModalAdding(true);
@@ -97,6 +111,7 @@ const Announcements = () => {
 
       if (editingId) {
         payload.LastEditor = adminData?.StudNum;
+        
         const { error } = await supabase
           .schema('Chessistant')
           .from('Announcements')
@@ -104,11 +119,17 @@ const Announcements = () => {
           .eq('AnnID', editingId);
         if (error) throw error;
         
-        // Update the specific announcement in local state
+        // Optimistically update names in local UI state without refetching from DB
+        const updatedAnnouncement = { 
+          ...selectedAnnouncement, 
+          ...payload,
+          EditorName: adminData?.StudName 
+        };
+
         setAnnouncements(prev => 
-          prev.map(ann => ann.AnnID === editingId ? { ...ann, ...payload } : ann)
+          prev.map(ann => ann.AnnID === editingId ? updatedAnnouncement : ann)
         );
-        setSelectedAnnouncement({ ...selectedAnnouncement, ...payload });
+        setSelectedAnnouncement(updatedAnnouncement);
       } else {
         payload.Author = adminData?.StudNum;
         payload.LastEditor = adminData?.StudNum;
@@ -119,15 +140,20 @@ const Announcements = () => {
           .insert([payload])
           .select();
         if (error) throw error;
+
         if (data && data[0]) {
-          // Add the newly created announcement to local state
-          setAnnouncements(prev => [data[0], ...prev]);
-          setSelectedAnnouncement(data[0]);
-          setEditingId(data[0].AnnID);
+          const newAnn = {
+            ...data[0],
+            AuthorName: adminData?.StudName,
+            EditorName: adminData?.StudName
+          };
+
+          setAnnouncements(prev => [newAnn, ...prev]);
+          setSelectedAnnouncement(newAnn);
+          setEditingId(newAnn.AnnID);
         }
       }
 
-      // REMOVED: fetchAnnouncements(); <-- This was causing the reload flash
       setIsModalEditing(false);
       setIsModalAdding(false);
     } catch (err) {
@@ -141,8 +167,6 @@ const Announcements = () => {
     const dateStr = ann.Date ? new Date(ann.Date).toISOString().split('T')[0] : '';
     setFormData({ Title: ann.Title, Date: dateStr, Text: ann.Text });
     setEditingId(ann.AnnID);
-    // Note: 'setShowForm' is not defined in state, you might want to remove or fix it
-    // setShowForm(true); 
   };
 
   const handleDelete = async (annId, e) => {
@@ -156,12 +180,8 @@ const Announcements = () => {
         .eq('AnnID', annId);
       if (error) throw error;
       
-      // Remove the deleted announcement from local state instantly
       setAnnouncements(prev => prev.filter(ann => ann.AnnID !== annId));
-      
-      // Close the modal upon deletion
       closeModal();
-      
     } catch (err) {
       console.error('Error deleting announcement:', err);
     }
@@ -188,7 +208,6 @@ const Announcements = () => {
     return view === 'past' ? dateA - dateB : dateB - dateA;
   });
 
-  // Fixed standard HTML 'class' to JSX 'className'
   if (loading) return (
     <div className="overlay">
       <div className="spinner"></div>
@@ -285,7 +304,7 @@ const Announcements = () => {
       {selectedAnnouncement && (
         <div className="modal-overlay" onClick={closeModal}>
           <div className="modal-content" style={{ width: '65%', maxWidth: '900px' }} onClick={(e) => e.stopPropagation()}>
-            <span className="modal-close" onClick={closeModal}>&times;</span>
+            <span className="modal-close" onClick={closeModal} style={{ zIndex: '1', color:'white' }}>&times;</span>
 
             <div className="ann-modal-header" style={{ background: getRoleGradient(adminData.Role, false), height: '160' }}>
               <div className="ann-modal-badge"><Megaphone size={15} strokeWidth={4} /> Announcement</div>
@@ -302,11 +321,30 @@ const Announcements = () => {
               )}
             </div>
 
-            {/* ── Meta strip: date + last modified ── */}
+            {/* ── Meta strip: purely using your CSS classes now ── */}
             <div className="ann-modal-meta">
               <span className="ann-modal-meta-date">
                 <Calendar size={15} strokeWidth={4} /> {displayDate(selectedAnnouncement.Date)}
               </span>
+              
+              {selectedAnnouncement.AuthorName && (
+                <>
+                  <span className="ann-modal-meta-sep">·</span>
+                  <span className="ann-modal-meta-edited">
+                    Posted by {selectedAnnouncement.AuthorName}
+                  </span>
+                </>
+              )}
+
+              {selectedAnnouncement.EditorName && selectedAnnouncement.EditorName !== selectedAnnouncement.AuthorName && (
+                <>
+                  <span className="ann-modal-meta-sep">·</span>
+                  <span className="ann-modal-meta-edited">
+                    Edited by {selectedAnnouncement.EditorName}
+                  </span>
+                </>
+              )}
+
               {selectedAnnouncement.LastModified && (
                 <>
                   <span className="ann-modal-meta-sep">·</span>
@@ -317,7 +355,6 @@ const Announcements = () => {
               )}
             </div>
 
-            {/* ── Scrollable body ── */}
             <div className="modal-scroll">
               {isModalEditing ? (
                 <div style={{ padding: '24px 40px', flex: 1, display: 'flex', flexDirection: 'column' }}>
@@ -334,7 +371,6 @@ const Announcements = () => {
               )}
             </div>
 
-            {/* ── Footer: action buttons ── */}
             <div className="ann-modal-footer">
               {isModalEditing ? (
                 <>

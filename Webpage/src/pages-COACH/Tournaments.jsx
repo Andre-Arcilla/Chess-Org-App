@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useOutletContext, useLocation } from 'react-router-dom';
 import { supabase } from '../db';
 import RoundRobinCrossTable from '../components/RoundRobinCrossTable';
-import { Megaphone, Trophy, Users, Calendar, Save, Pencil, Trash2, Check, X, User } from 'lucide-react';
+import { Megaphone, Trophy, Users, Calendar, Save, Pencil, Trash2, Check, X, Lock } from 'lucide-react';
 
 const Tournaments = () => {
   const { adminData } = useOutletContext();
@@ -98,11 +98,15 @@ const Tournaments = () => {
     try {
       setLoading(true);
       
-      // Fetch all tournaments at once without a backend filter
+      // Relational join for Author and LastEditor FKs
       let query = supabase
         .schema('Chessistant')
         .from('Tournaments')
-        .select('*');
+        .select(`
+          *,
+          creatorProfile:Author ( StudName ),
+          editorProfile:LastEditor ( StudName )
+        `);
       
       const minimumDelay = new Promise(resolve => setTimeout(resolve, 750));
       
@@ -112,7 +116,15 @@ const Tournaments = () => {
       ]);
       
       if (error) throw error;
-      setTournaments(data || []);
+      
+      // Flatten the relational data
+      const formattedData = (data || []).map(tour => ({
+        ...tour,
+        AuthorName: tour.creatorProfile?.StudName || null,
+        EditorName: tour.editorProfile?.StudName || null
+      }));
+
+      setTournaments(formattedData);
     } catch (err) {
       console.error('Error fetching tournaments:', err);
     } finally {
@@ -245,6 +257,7 @@ const Tournaments = () => {
 
       if (editingId) {
         payload.LastEditor = adminData?.StudNum;
+        
         const { error } = await supabase
           .schema('Chessistant')
           .from('Tournaments')
@@ -252,11 +265,17 @@ const Tournaments = () => {
           .eq('TourID', editingId);
         if (error) throw error;
         
-        // Update local state smoothly
+        // Optimistic local state update
+        const updatedTournament = { 
+          ...selectedTournament, 
+          ...payload,
+          EditorName: adminData?.StudName
+        };
+
         setTournaments(prev => 
-          prev.map(t => t.TourID === editingId ? { ...t, ...payload } : t)
+          prev.map(t => t.TourID === editingId ? updatedTournament : t)
         );
-        setSelectedTournament({ ...selectedTournament, ...payload });
+        setSelectedTournament(updatedTournament);
       } else {
         payload.Author = adminData?.StudNum;
         payload.LastEditor = adminData?.StudNum;
@@ -267,15 +286,20 @@ const Tournaments = () => {
           .insert([payload])
           .select();
         if (error) throw error;
+
         if (data && data[0]) {
-          // Append new tournament directly into your local storage array
-          setTournaments(prev => [data[0], ...prev]);
-          setSelectedTournament(data[0]);
-          setEditingId(data[0].TourID);
+          const newTour = {
+            ...data[0],
+            AuthorName: adminData?.StudName,
+            EditorName: adminData?.StudName
+          };
+          
+          setTournaments(prev => [newTour, ...prev]);
+          setSelectedTournament(newTour);
+          setEditingId(newTour.TourID);
         }
       }
 
-      // REMOVED: fetchTournaments(); <-- Kept completely silent
       setIsModalEditing(false);
       setIsModalAdding(false);
     } catch (err) {
@@ -311,7 +335,6 @@ const Tournaments = () => {
       }
 
       // 2. Clear existing matches for this tournament to avoid duplicates
-      // In a more robust system, we would upsert based on (tourid, player1, player2)
       const { error: deleteError } = await supabase
         .schema('Chessistant')
         .from('TournamentMatches')
@@ -426,7 +449,7 @@ const Tournaments = () => {
         .schema('Chessistant')
         .from('TournamentMatches')
         .delete()
-        .eq('tourid', tourId); // Note: lowercase 'tourid' based on your fetchMatches
+        .eq('tourid', tourId);
       if (matchesError) throw matchesError;
 
       // 2. Clear participants for this tournament
@@ -434,7 +457,7 @@ const Tournaments = () => {
         .schema('Chessistant')
         .from('TournamentParticipants')
         .delete()
-        .eq('TourID', tourId); // Note: uppercase 'TourID' based on your fetchParticipants
+        .eq('TourID', tourId);
       if (participantsError) throw participantsError;
 
       // 3. Delete the tournament itself
@@ -478,6 +501,11 @@ const Tournaments = () => {
       ? new Date(a.Date) - new Date(b.Date)   // Newest first for upcoming
       : new Date(b.Date) - new Date(a.Date)   // Oldest first for past
     );
+
+  // Calculates if the tournament is over 24 hours past its set Date
+  const isLocked = !isModalAdding && selectedTournament?.Date 
+    ? (new Date().getTime() - new Date(selectedTournament.Date).getTime()) > 86400000 
+    : false;
 
   if (loading) return (
     <div className="overlay">
@@ -564,7 +592,7 @@ const Tournaments = () => {
         ) : (
           displayedTournaments.map((tour) => (
           <div 
-            key={tour.TourID}
+            key={tour.TourID} 
             className="stat-item tour-card" 
             style={{ position: 'relative', cursor: 'pointer', justifyContent: 'space-between', height: '150px', boxSizing: 'border-box', width: '100%', gap: '0', borderRadius: '15px', paddingLeft: '28px' }}
             onClick={() => openModal(tour)}
@@ -603,15 +631,45 @@ const Tournaments = () => {
                 <span className="ann-modal-meta-date">
                   <Calendar size={15} strokeWidth={4} /> {displayDate(selectedTournament.Date)}
                 </span>
+                
                 <span className="ann-modal-meta-sep">·</span>
                 <span className="ann-modal-meta-date">
-                  <User size={15} strokeWidth={4} /> {selectedTournament.ParticipantCount}-Player {selectedTournament.Style}
+                  <Users size={15} strokeWidth={4} /> {selectedTournament.ParticipantCount}-Player {selectedTournament.Style}
                 </span>
+
+                {selectedTournament.AuthorName && (
+                  <>
+                    <span className="ann-modal-meta-sep">·</span>
+                    <span className="ann-modal-meta-edited">
+                      Posted by {selectedTournament.AuthorName}
+                    </span>
+                  </>
+                )}
+
+                {selectedTournament.EditorName && selectedTournament.EditorName !== selectedTournament.AuthorName && (
+                  <>
+                    <span className="ann-modal-meta-sep">·</span>
+                    <span className="ann-modal-meta-edited">
+                      Edited by {selectedTournament.EditorName}
+                    </span>
+                  </>
+                )}
+
                 {selectedTournament.LastModified && (
                   <>
                     <span className="ann-modal-meta-sep">·</span>
                     <span className="ann-modal-meta-edited">
                       Last updated: {new Date(selectedTournament.LastModified).toLocaleString()}
+                    </span>
+                  </>
+                )}
+                
+                {/* 24-Hour Lockout Indicator */}
+                {isLocked && (
+                  <>
+                    <span className="ann-modal-meta-sep">·</span>
+                    <span className="ann-modal-meta-edited" style={{ color: 'var(--error)', fontWeight: 'bold' }}>
+                      <Lock size={15} strokeWidth={4} /> Locked
                     </span>
                   </>
                 )}
@@ -669,7 +727,7 @@ const Tournaments = () => {
                       const min = 4, max = 30;
                       if (Number.isNaN(val)) val = min;
                       val = Math.round(val);
-                      if (val < min) val = min;
+                      if (val < min) val = max;
                       if (val > max) val = max;
                       if (val % 2 !== 0) val = val === max ? val - 1 : val + 1;
                       setFormData({ ...formData, ParticipantCount: val });
@@ -707,6 +765,7 @@ const Tournaments = () => {
                   setResults={setResults}
                   participants={participants}
                   onSaveMatch={handleSaveMatch}
+                  readOnly={isLocked} // Dynamic lockout applied here
                 />
               </div>
             </div>
@@ -728,18 +787,20 @@ const Tournaments = () => {
                 </>
               ) : (
                 <>
-                  {selectedTournament.Style === 'Round Robin' && (
+                  {selectedTournament.Style === 'Round Robin' && !isLocked && (
                     <button
                       onClick={handleSaveScores}
                       style={{ padding: '10px 24px', margin: 0, fontSize: '0.85rem', width: 'auto', background: 'var(--oak)' }}>
                       <Save size={15} strokeWidth={4} /> Save Scores
                     </button>
                   )}
-                  <button
-                    onClick={(e) => { handleEdit(selectedTournament, e); }}
-                    style={{ padding: '10px 24px', margin: 0, fontSize: '0.85rem', width: 'auto' }}>
-                    <Pencil size={15} strokeWidth={4} /> Edit
-                  </button>
+                  {!isLocked && (
+                    <button
+                      onClick={(e) => { handleEdit(selectedTournament, e); }}
+                      style={{ padding: '10px 24px', margin: 0, fontSize: '0.85rem', width: 'auto' }}>
+                      <Pencil size={15} strokeWidth={4} /> Edit
+                    </button>
+                  )}
                   <button
                     onClick={(e) => handleDelete(selectedTournament.TourID, e)}
                     style={{ padding: '10px 24px', margin: 0, fontSize: '0.85rem', width: 'auto', background: 'var(--error)' }}>

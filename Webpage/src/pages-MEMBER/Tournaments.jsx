@@ -99,11 +99,22 @@ const Tournaments = () => {
         supabase
           .schema('Chessistant')
           .from('Tournaments')
-          .select('*')
+          .select(`
+            *,
+            creatorProfile:Author ( StudName ),
+            editorProfile:LastEditor ( StudName )
+          `)
       ]);
 
       if (error) throw error;
-      setTournaments(data || []);
+      
+      const formattedData = (data || []).map(tour => ({
+        ...tour,
+        AuthorName: tour.creatorProfile?.StudName || null,
+        EditorName: tour.editorProfile?.StudName || null
+      }));
+
+      setTournaments(formattedData);
     } catch (err) {
       console.error('Error fetching tournaments:', err);
     } finally {
@@ -283,6 +294,11 @@ const Tournaments = () => {
       : new Date(b.Date) - new Date(a.Date)   // Most recent first for past
     );
 
+  // Calculates if the tournament is over 24 hours past its set Date
+  const isLocked = selectedTournament?.Date 
+    ? (new Date().getTime() - new Date(selectedTournament.Date).getTime()) > 86400000 
+    : false;
+
   if (loading) return (
     <div className="overlay">
       <div className="spinner"></div>
@@ -392,15 +408,45 @@ const Tournaments = () => {
               <span className="ann-modal-meta-date">
                 <Calendar size={15} strokeWidth={4} /> {displayDate(selectedTournament.Date)}
               </span>
+              
               <span className="ann-modal-meta-sep">·</span>
               <span className="ann-modal-meta-date">
-                <User size={15} strokeWidth={4} /> {selectedTournament.ParticipantCount}-Player {selectedTournament.Style}
+                <Users size={15} strokeWidth={4} /> {selectedTournament.ParticipantCount}-Player {selectedTournament.Style}
               </span>
+              
+              {selectedTournament.AuthorName && (
+                <>
+                  <span className="ann-modal-meta-sep">·</span>
+                  <span className="ann-modal-meta-edited">
+                    Posted by {selectedTournament.AuthorName}
+                  </span>
+                </>
+              )}
+
               {selectedTournament.LastModified && (
                 <>
                   <span className="ann-modal-meta-sep">·</span>
                   <span className="ann-modal-meta-edited">
                     Last updated: {new Date(selectedTournament.LastModified).toLocaleString()}
+                  </span>
+                </>
+              )}
+              
+              {selectedTournament.EditorName && selectedTournament.EditorName !== selectedTournament.AuthorName && (
+                <>
+                  <span className="ann-modal-meta-sep">·</span>
+                  <span className="ann-modal-meta-edited">
+                    Edited by {selectedTournament.EditorName}
+                  </span>
+                </>
+              )}
+              
+              {/* 24-Hour Lockout Indicator */}
+              {isLocked && (
+                <>
+                  <span className="ann-modal-meta-sep">·</span>
+                  <span className="ann-modal-meta-edited" style={{ color: 'var(--error)', fontWeight: 'bold' }}>
+                    🔒 Locked
                   </span>
                 </>
               )}
@@ -450,9 +496,9 @@ const Tournaments = () => {
                   fontSize: '0.85rem',
                   width: 'auto',
                   background: registeredTournaments.has(selectedTournament.TourID) ? 'var(--error)' : '#002965',
-                  cursor: (!canUnregisterCurrent || view === 'past') ? 'default' : 'pointer'
+                  cursor: (!canUnregisterCurrent || view === 'past' || isLocked) ? 'default' : 'pointer'
                 }}
-                disabled={!canUnregisterCurrent || view === 'past'}
+                disabled={!canUnregisterCurrent || view === 'past' || isLocked}
               >
                 {registeredTournaments.has(selectedTournament.TourID) ? <><X size={15} strokeWidth={4} /> Unregister</> : <><Check size={15} strokeWidth={4} /> Register</>}
               </button>
