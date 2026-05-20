@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useOutletContext, useLocation } from 'react-router-dom';
 import { supabase } from '../db';
+import { Megaphone, Trophy, Users, Calendar, Save, Pencil, Trash2, Check, X, User } from 'lucide-react';
 
 const Announcements = () => {
   const { adminData } = useOutletContext();
@@ -264,11 +265,8 @@ const Announcements = () => {
           <div className="modal-content" style={{ width: '65%', maxWidth: '900px' }} onClick={(e) => e.stopPropagation()}>
             <span className="modal-close" onClick={closeModal}>&times;</span>
 
-            {/* ── Header: navy gradient with title ── */}
-            <div className="ann-modal-header">
-              {!isModalEditing && (
-                <div className="ann-modal-badge">📢 Announcement</div>
-              )}
+            <div className="ann-modal-header" style={{ height: '160px' }}>
+              <div className="ann-modal-badge"><Megaphone size={15} strokeWidth={4} /> Announcement</div>
               {isModalEditing ? (
                 <input
                   className="ann-modal-title-input"
@@ -283,21 +281,19 @@ const Announcements = () => {
             </div>
 
             {/* ── Meta strip: date + last modified ── */}
-            {!isModalEditing && (
-              <div className="ann-modal-meta">
-                <span className="ann-modal-meta-date">
-                  📅 {displayDate(selectedAnnouncement.Date)}
-                </span>
-                {selectedAnnouncement.LastModified && (
-                  <>
-                    <span className="ann-modal-meta-sep">·</span>
-                    <span className="ann-modal-meta-edited">
-                      Last updated: {new Date(selectedAnnouncement.LastModified).toLocaleString()}
-                    </span>
-                  </>
-                )}
-              </div>
-            )}
+            <div className="ann-modal-meta">
+              <span className="ann-modal-meta-date">
+                <Calendar size={15} strokeWidth={4} /> {displayDate(selectedAnnouncement.Date)}
+              </span>
+              {selectedAnnouncement.LastModified && (
+                <>
+                  <span className="ann-modal-meta-sep">·</span>
+                  <span className="ann-modal-meta-edited">
+                    Last updated: {new Date(selectedAnnouncement.LastModified).toLocaleString()}
+                  </span>
+                </>
+              )}
+            </div>
 
             {/* ── Scrollable body ── */}
             <div className="modal-scroll">
@@ -323,12 +319,12 @@ const Announcements = () => {
                   <button
                     onClick={handleSubmit}
                     style={{ padding: '10px 24px', margin: 0, fontSize: '0.85rem', width: 'auto' }}>
-                    {isModalAdding ? 'Post Announcement' : 'Save Changes'}
+                    <Check size={15} strokeWidth={4} /> {isModalAdding ? 'Post Announcement' : 'Save Changes'}
                   </button>
                   <button
                     onClick={isModalAdding ? closeModal : () => setIsModalEditing(false)}
                     style={{ padding: '10px 24px', margin: 0, fontSize: '0.85rem', width: 'auto', background: 'var(--text-muted)' }}>
-                    Cancel
+                    <X size={15} strokeWidth={4} /> Cancel
                   </button>
                 </>
               ) : (
@@ -343,12 +339,12 @@ const Announcements = () => {
                       setEditingId(selectedAnnouncement.AnnID);
                     }}
                     style={{ padding: '10px 24px', margin: 0, fontSize: '0.85rem', width: 'auto' }}>
-                    ✏️ Edit
+                    <Pencil size={15} strokeWidth={4} /> Edit
                   </button>
                   <button
                     onClick={(e) => { handleDelete(selectedAnnouncement.AnnID, e); }}
                     style={{ padding: '10px 24px', margin: 0, fontSize: '0.85rem', width: 'auto', background: 'var(--error)' }}>
-                    🗑 Delete
+                    <Trash2 size={15} strokeWidth={4} /> Delete
                   </button>
                 </>
               )}

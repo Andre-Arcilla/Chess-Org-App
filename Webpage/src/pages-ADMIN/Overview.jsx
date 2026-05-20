@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import { supabase } from '../db';
+import { Megaphone, Trophy, Users, Calendar, Save, Pencil, Trash2, Check, X, User } from 'lucide-react';
 
 const Overview = () => {
   const { adminData } = useOutletContext();  
@@ -243,9 +244,9 @@ const Overview = () => {
                       textTransform: 'uppercase',
                       padding: '4px 12px',
                       borderRadius: '6px',
-                      border: '2px solid var(--gold)',
+                      border: '2px solid var(--gold)'
                     }}>
-                      {post.type === 'announcement' ? '📢 Announcement' : '🏆 Tournament'}
+                      {post.type === 'announcement' ? <><Megaphone size={15} strokeWidth={4} style={{ verticalAlign: 'middle', marginRight: '5px', position: 'relative', top: '-1px'}}/> Announcement</> : <><Trophy size={15} strokeWidth={4} style={{ verticalAlign: 'middle', marginRight: '5px', position: 'relative', top: '-1px'}}/> Tournament</>}
                     </div>
                     <div className="title" style={{ color: '#002965' }}>
                       {post.title}

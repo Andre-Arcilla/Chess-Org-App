@@ -1,17 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useOutletContext, useLocation } from 'react-router-dom';
 import { supabase } from '../db';
 import RoundRobinCrossTable from '../components/RoundRobinCrossTable';
+import { Megaphone, Trophy, Users, Calendar, Save, Pencil, Trash2, Check, X, User } from 'lucide-react';
 
 const Tournaments = () => {
+  const { adminData } = useOutletContext();
   const [tournaments, setTournaments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedTournament, setSelectedTournament] = useState(null);
   const [view, setView] = useState('upcoming');
   const [results, setResults] = useState({});
   const [participants, setParticipants] = useState([]);
-
-  // Registration state (from MemberTournaments)
   const [registeredTournaments, setRegisteredTournaments] = useState(new Set());
   const [studentNum, setStudentNum] = useState(null);
   const [canUnregisterCurrent, setCanUnregisterCurrent] = useState(true);
@@ -283,14 +283,34 @@ const Tournaments = () => {
       : new Date(b.Date) - new Date(a.Date)   // Most recent first for past
     );
 
-  // ─── Render ───────────────────────────────────────────────────────────────
-
   if (loading) return (
     <div className="overlay">
       <div className="spinner"></div>
       <p>Loading Tournaments...</p>
     </div>
   );
+  
+  const getRoleGradient = (role, isOpen) => {
+    switch (role?.toLowerCase()) {
+      case 'admin':
+        return isOpen 
+          ? 'linear-gradient(135deg, #003a8c, #0050b3)' 
+          : 'linear-gradient(135deg, #00183b, #002965)';
+      case 'member':
+        return isOpen 
+          ? 'linear-gradient(135deg, #5b966d, #73b386)' 
+          : 'linear-gradient(135deg, #2d4c37, #4a7c59)';
+      case 'disabled':
+        return isOpen 
+          ? 'linear-gradient(135deg, #999999, #b3b3b3)' 
+          : 'linear-gradient(135deg, #555555, #888888)';
+      case 'coach':
+      default:
+        return isOpen 
+          ? 'linear-gradient(135deg, var(--oak), var(--gold-muted))' 
+          : 'linear-gradient(135deg, var(--mahogany), var(--oak))';
+    }
+  };
 
   return (
     <div className="card">
@@ -362,20 +382,19 @@ const Tournaments = () => {
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <span className="modal-close" onClick={closeModal}>&times;</span>
 
-            {/* ── Full-width navy header ── */}
-            <div className="ann-modal-header">
-              <div className="ann-modal-badge">🏆 Tournament</div>
+            <div className="ann-modal-header" style={{ background: getRoleGradient(adminData.Role, false) }}>
+              <div className="ann-modal-badge"><Trophy size={15} strokeWidth={4} /> Tournament</div>
               <h2 className="ann-modal-title">{selectedTournament.Title}</h2>
             </div>
 
             {/* ── Meta strip ── */}
             <div className="ann-modal-meta">
               <span className="ann-modal-meta-date">
-                📅 {displayDate(selectedTournament.Date)}
+                <Calendar size={15} strokeWidth={4} /> {displayDate(selectedTournament.Date)}
               </span>
               <span className="ann-modal-meta-sep">·</span>
               <span className="ann-modal-meta-date">
-                👥 {selectedTournament.ParticipantCount}-Player {selectedTournament.Style}
+                <User size={15} strokeWidth={4} /> {selectedTournament.ParticipantCount}-Player {selectedTournament.Style}
               </span>
               {selectedTournament.LastModified && (
                 <>
@@ -435,7 +454,7 @@ const Tournaments = () => {
                 }}
                 disabled={!canUnregisterCurrent || view === 'past'}
               >
-                {registeredTournaments.has(selectedTournament.TourID) ? '✖ Unregister' : '✔ Register'}
+                {registeredTournaments.has(selectedTournament.TourID) ? <><X size={15} strokeWidth={4} /> Unregister</> : <><Check size={15} strokeWidth={4} /> Register</>}
               </button>
             </div>
           </div>

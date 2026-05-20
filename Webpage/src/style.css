@@ -493,7 +493,7 @@ td:nth-child(4) {
 }
 
 .stat-item {
-    background: #aeb9c9;
+    background: linear-gradient(135deg, #c8a84b 0%, #dbbe72 50%, #eddfa0 100%);
     padding: 25px;
     display: flex;
     flex-direction: column;
@@ -501,9 +501,10 @@ td:nth-child(4) {
 }
 
 .stat-container .stat-item:hover {
-    border: 3px solid var(--gold);
+    background: linear-gradient(135deg, #b8942e 0%, #c8a84b 50%, #dbbe72 100%);
+    box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.35), 0 10px 20px rgba(0,0,0,0.4);
     transform: translateY(-5px);
-    box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+    border: none;
 }
 
 .stat-container .stat-item:active {
@@ -735,6 +736,15 @@ p {
     margin-bottom: 14px;
 }
 
+.ann-modal-badge svg,
+.ann-modal-meta-date svg,
+.ann-modal-footer button svg {
+    vertical-align: middle;
+    margin-right: 5px;
+    position: relative;
+    top: -1px;
+}
+
 .ann-modal-title {
     font-family: var(--font-serif);
     font-size: 2.1rem;
@@ -859,38 +869,14 @@ p {
     letter-spacing: 1px;
 }
 
-/* ── Announcement List Card Accent ── */
 .ann-card {
     position: relative;
     overflow: hidden;
 }
 
-.ann-card::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 5px;
-    background: linear-gradient(180deg, var(--gold) 0%, var(--gold-muted) 100%);
-    border-radius: 4px 0 0 4px;
-}
-
-/* ── Tournament List Card Accent (orange) ── */
 .tour-card {
     position: relative;
     overflow: hidden;
-}
-
-.tour-card::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 5px;
-    background: linear-gradient(180deg, #FF5A00 0%, #d44a00 100%);
-    border-radius: 4px 0 0 4px;
 }
 
 /* ── Tournament Modal: edit-mode fields strip ── */

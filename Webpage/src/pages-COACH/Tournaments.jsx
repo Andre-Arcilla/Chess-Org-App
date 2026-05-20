@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useOutletContext, useLocation } from 'react-router-dom';
 import { supabase } from '../db';
 import RoundRobinCrossTable from '../components/RoundRobinCrossTable';
+import { Megaphone, Trophy, Users, Calendar, Save, Pencil, Trash2, Check, X, User } from 'lucide-react';
 
 const Tournaments = () => {
   const { adminData } = useOutletContext();
@@ -559,11 +560,8 @@ const Tournaments = () => {
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <span className="modal-close" onClick={closeModal}>&times;</span>
 
-            {/* ── Full-width navy header ── */}
-            <div className="ann-modal-header">
-              {!isModalEditing && (
-                <div className="ann-modal-badge">🏆 Tournament</div>
-              )}
+            <div className="ann-modal-header" style={{ height: '160px' }}>
+              <div className="ann-modal-badge"><Trophy size={15} strokeWidth={4} /> Tournament</div>
               {isModalEditing ? (
                 <input
                   className="ann-modal-title-input"
@@ -581,11 +579,11 @@ const Tournaments = () => {
             {!isModalEditing && (
               <div className="ann-modal-meta">
                 <span className="ann-modal-meta-date">
-                  📅 {displayDate(selectedTournament.Date)}
+                  <Calendar size={15} strokeWidth={4} /> {displayDate(selectedTournament.Date)}
                 </span>
                 <span className="ann-modal-meta-sep">·</span>
                 <span className="ann-modal-meta-date">
-                  👥 {selectedTournament.ParticipantCount}-Player {selectedTournament.Style}
+                  <User size={15} strokeWidth={4} /> {selectedTournament.ParticipantCount}-Player {selectedTournament.Style}
                 </span>
                 {selectedTournament.LastModified && (
                   <>
@@ -605,6 +603,7 @@ const Tournaments = () => {
                   <label className="tour-field-label">Date</label>
                   <input
                     type="date"
+                    style={{ padding: '8px' }}
                     value={formData.Date}
                     onChange={(e) => setFormData({ ...formData, Date: e.target.value })}
                     min={new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]}
@@ -614,6 +613,7 @@ const Tournaments = () => {
                 <div style={{ flex: '0 0 28%' }}>
                   <label className="tour-field-label">Hour</label>
                   <select
+                    style={{ padding: '8px' }}
                     value={formData.Hour}
                     onChange={(e) => setFormData({ ...formData, Hour: e.target.value })}
                     required
@@ -629,6 +629,7 @@ const Tournaments = () => {
                   <label className="tour-field-label">Max Players</label>
                   <input
                     type="number"
+                    style={{ padding: '9px' }}
                     step={2}
                     value={formData.ParticipantCount}
                     onChange={(e) => {
@@ -695,12 +696,12 @@ const Tournaments = () => {
                   <button
                     onClick={handleSubmit}
                     style={{ padding: '10px 24px', margin: 0, fontSize: '0.85rem', width: 'auto' }}>
-                    {isModalAdding ? 'Create Tournament' : 'Save Changes'}
+                    <Check size={15} strokeWidth={4} /> {isModalAdding ? 'Create Tournament' : 'Save Changes'}
                   </button>
                   <button
                     onClick={isModalAdding ? closeModal : () => setIsModalEditing(false)}
                     style={{ padding: '10px 24px', margin: 0, fontSize: '0.85rem', width: 'auto', background: 'var(--text-muted)' }}>
-                    Cancel
+                    <X size={15} strokeWidth={4} /> Cancel
                   </button>
                 </>
               ) : (
@@ -709,18 +710,18 @@ const Tournaments = () => {
                     <button
                       onClick={handleSaveScores}
                       style={{ padding: '10px 24px', margin: 0, fontSize: '0.85rem', width: 'auto', background: 'var(--oak)' }}>
-                      💾 Save Scores
+                      <Save size={15} strokeWidth={4} /> Save Scores
                     </button>
                   )}
                   <button
                     onClick={(e) => { handleEdit(selectedTournament, e); }}
                     style={{ padding: '10px 24px', margin: 0, fontSize: '0.85rem', width: 'auto' }}>
-                    ✏️ Edit
+                    <Pencil size={15} strokeWidth={4} /> Edit
                   </button>
                   <button
                     onClick={(e) => handleDelete(selectedTournament.TourID, e)}
                     style={{ padding: '10px 24px', margin: 0, fontSize: '0.85rem', width: 'auto', background: 'var(--error)' }}>
-                    🗑 Delete
+                    <Trash2 size={15} strokeWidth={4} /> Delete
                   </button>
                 </>
               )}

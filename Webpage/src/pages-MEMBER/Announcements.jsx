@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useOutletContext, useLocation } from 'react-router-dom';
 import { supabase } from '../db';
+import { Megaphone, Trophy, Users, Calendar, Save, Pencil, Trash2, Check, X, User } from 'lucide-react';
 
 const Announcements = () => {
   const { adminData } = useOutletContext();
@@ -187,13 +188,34 @@ const Announcements = () => {
     return view === 'past' ? dateA - dateB : dateB - dateA;
   });
 
-  // Fixed standard HTML 'class' to JSX 'className'
   if (loading) return (
     <div className="overlay">
       <div className="spinner"></div>
       <p>Loading Announcements...</p>
     </div>
   );
+  
+  const getRoleGradient = (role, isOpen) => {
+    switch (role?.toLowerCase()) {
+      case 'admin':
+        return isOpen 
+          ? 'linear-gradient(135deg, #003a8c, #0050b3)' 
+          : 'linear-gradient(135deg, #00183b, #002965)';
+      case 'member':
+        return isOpen 
+          ? 'linear-gradient(135deg, #5b966d, #73b386)' 
+          : 'linear-gradient(135deg, #2d4c37, #4a7c59)';
+      case 'disabled':
+        return isOpen 
+          ? 'linear-gradient(135deg, #999999, #b3b3b3)' 
+          : 'linear-gradient(135deg, #555555, #888888)';
+      case 'coach':
+      default:
+        return isOpen 
+          ? 'linear-gradient(135deg, var(--oak), var(--gold-muted))' 
+          : 'linear-gradient(135deg, var(--mahogany), var(--oak))';
+    }
+  };
 
   return (
     <div className="card">
@@ -264,16 +286,15 @@ const Announcements = () => {
           <div className="modal-content" style={{ width: '65%', maxWidth: '900px' }} onClick={(e) => e.stopPropagation()}>
             <span className="modal-close" onClick={closeModal}>&times;</span>
 
-            {/* ── Navy gradient header ── */}
-            <div className="ann-modal-header">
-              <div className="ann-modal-badge">📢 Announcement</div>
+            <div className="ann-modal-header" style={{ background: getRoleGradient(adminData.Role, false) }}>
+              <div className="ann-modal-badge"><Megaphone size={15} strokeWidth={4} /> Announcement</div>
               <h2 className="ann-modal-title">{selectedAnnouncement.Title}</h2>
             </div>
 
             {/* ── Meta strip: date + last modified ── */}
             <div className="ann-modal-meta">
               <span className="ann-modal-meta-date">
-                📅 {displayDate(selectedAnnouncement.Date)}
+                <Calendar size={15} strokeWidth={4} /> {displayDate(selectedAnnouncement.Date)}
               </span>
               {selectedAnnouncement.LastModified && (
                 <>
