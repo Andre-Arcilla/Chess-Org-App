@@ -3,6 +3,33 @@ import { useOutletContext } from 'react-router-dom';
 import { supabase } from '../db';
 import { Eye, EyeOff } from 'lucide-react';
 
+// ─── ENCRYPTION UTILITIES ──────────────────────────────────────────────
+const SECRET_KEY = "CHESSISTANT_SECRET_2026";
+
+const encryptPassword = (text) => {
+  if (!text) return text;
+  let result = '';
+  for (let i = 0; i < text.length; i++) {
+    result += String.fromCharCode(text.charCodeAt(i) ^ SECRET_KEY.charCodeAt(i % SECRET_KEY.length));
+  }
+  return btoa(result);
+};
+
+const decryptPassword = (base64Text) => {
+  if (!base64Text) return base64Text;
+  try {
+    let text = atob(base64Text);
+    let result = '';
+    for (let i = 0; i < text.length; i++) {
+      result += String.fromCharCode(text.charCodeAt(i) ^ SECRET_KEY.charCodeAt(i % SECRET_KEY.length));
+    }
+    return result;
+  } catch(e) {
+    return base64Text; // Fallback for old plaintext test accounts
+  }
+};
+// ───────────────────────────────────────────────────────────────────────
+
 const Profile = () => {
   const { adminData, setAdminData } = useOutletContext();
   const [profile, setProfile] = useState(null);
@@ -38,6 +65,12 @@ const Profile = () => {
           .single()
       ]);
       if (error) throw error;
+      
+      // Decrypt password so the UI handles it as normal text
+      if (data && data.Password) {
+        data.Password = decryptPassword(data.Password);
+      }
+      
       setProfile(data);
     } catch (err) {
       console.error('Error fetching profile:', err.message);
@@ -162,9 +195,9 @@ const Profile = () => {
         LastModified: updatedTimestamp,
       };
 
-      // Append password to query if changed safely
+      // Append password to query if changed safely (ENCRYPTED)
       if (newPassword) {
-        updatePayload.Password = newPassword;
+        updatePayload.Password = encryptPassword(newPassword);
       }
 
       const { error } = await supabase
@@ -193,7 +226,7 @@ const Profile = () => {
         StudNum: studNum,
         Rating: rating,
         LastModified: updatedTimestamp,
-        ...(newPassword && { Password: newPassword })
+        ...(newPassword && { Password: newPassword }) // Leave unencrypted in local UI state
       });
       setIsEditing(false);
       setSaveSuccess(true);

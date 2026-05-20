@@ -3,6 +3,33 @@ import { useOutletContext } from 'react-router-dom';
 import { supabase } from '../db';
 import { Eye, EyeOff } from 'lucide-react';
 
+// ─── ENCRYPTION UTILITIES ──────────────────────────────────────────────
+const SECRET_KEY = "CHESSISTANT_SECRET_2026";
+
+const encryptPassword = (text) => {
+  if (!text) return text;
+  let result = '';
+  for (let i = 0; i < text.length; i++) {
+    result += String.fromCharCode(text.charCodeAt(i) ^ SECRET_KEY.charCodeAt(i % SECRET_KEY.length));
+  }
+  return btoa(result);
+};
+
+const decryptPassword = (base64Text) => {
+  if (!base64Text) return base64Text;
+  try {
+    let text = atob(base64Text);
+    let result = '';
+    for (let i = 0; i < text.length; i++) {
+      result += String.fromCharCode(text.charCodeAt(i) ^ SECRET_KEY.charCodeAt(i % SECRET_KEY.length));
+    }
+    return result;
+  } catch(e) {
+    return base64Text; // Fallback for old plaintext test accounts
+  }
+};
+// ───────────────────────────────────────────────────────────────────────
+
 const Members = () => {
   const { adminData, setAdminData } = useOutletContext();
   const [members, setMembers] = useState([]);
@@ -45,7 +72,10 @@ const Members = () => {
 
   const startEdit = (member) => {
     setEditingId(member.UserID);
-    setEditForm(member);
+    setEditForm({
+      ...member,
+      Password: decryptPassword(member.Password) // Decrypt for editing
+    });
     setShowPassword(false);
   };
 
@@ -140,9 +170,9 @@ const Members = () => {
         LastModified: updatedTimestamp
       };
 
-      // Updates database with password if it was edited
+      // Updates database with password if it was edited (ENCRYPTED)
       if (editForm.Password && editForm.Password.trim()) {
-        updatePayload.Password = editForm.Password.trim();
+        updatePayload.Password = encryptPassword(editForm.Password.trim());
       }
 
       const { error } = await supabase
@@ -165,10 +195,22 @@ const Members = () => {
         if (setAdminData) setAdminData(updatedUser);
       }
       
+      const savedPassword = (editForm.Password && editForm.Password.trim()) 
+        ? encryptPassword(editForm.Password.trim()) 
+        : originalMember.Password;
+
       setMembers(prevMembers => 
         prevMembers.map(member => 
           member.UserID === editingId 
-            ? { ...member, ...editForm, Email: sanitizedEmail, StudName: editForm.StudName.trim(), StudNum: sanitizedStudNum, LastModified: updatedTimestamp } 
+            ? { 
+                ...member, 
+                ...editForm, 
+                Password: savedPassword, 
+                Email: sanitizedEmail, 
+                StudName: editForm.StudName.trim(), 
+                StudNum: sanitizedStudNum, 
+                LastModified: updatedTimestamp 
+              } 
             : member
         )
       );

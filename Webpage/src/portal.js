@@ -1,5 +1,33 @@
 import { supabase } from './db.js';
 
+// ─── ENCRYPTION UTILITIES ──────────────────────────────────────────────
+const SECRET_KEY = "CHESSISTANT_SECRET_2026";
+
+const encryptPassword = (text) => {
+    if (!text) return text;
+    let result = '';
+    for (let i = 0; i < text.length; i++) {
+        result += String.fromCharCode(text.charCodeAt(i) ^ SECRET_KEY.charCodeAt(i % SECRET_KEY.length));
+    }
+    return btoa(result); // Convert to Base64 to safely store in DB
+};
+
+const decryptPassword = (base64Text) => {
+    if (!base64Text) return base64Text;
+    try {
+        let text = atob(base64Text);
+        let result = '';
+        for (let i = 0; i < text.length; i++) {
+            result += String.fromCharCode(text.charCodeAt(i) ^ SECRET_KEY.charCodeAt(i % SECRET_KEY.length));
+        }
+        return result;
+    } catch (e) {
+        // Fallback: If it's an old plaintext password in the DB, just return it
+        return base64Text;
+    }
+};
+// ───────────────────────────────────────────────────────────────────────
+
 const loginSection = document.getElementById('login-section');
 const registerSection = document.getElementById('register-section');
 const showRegisterLink = document.getElementById('show-register');
@@ -29,7 +57,7 @@ regPasswordInput.addEventListener('input', () => regPasswordInput.setCustomValid
  * Toggle UI between Login and Register
  */
 function toggleForms(e, showForm) {
-    e.preventDefault();
+    if (e) e.preventDefault();
     
     // Clear any lingering native error bubbles
     emailInput.setCustomValidity('');
@@ -42,9 +70,13 @@ function toggleForms(e, showForm) {
     if (showForm === 'register') {
         loginSection.hidden = true;
         registerSection.hidden = false;
+        formTitle.textContent = 'Join the Club';
+        formSubtitle.textContent = 'Submit your details for membership approval.';
     } else {
         registerSection.hidden = true;
         loginSection.hidden = false;
+        formTitle.textContent = 'Chessistant';
+        formSubtitle.textContent = 'A UMak Chess Club Portal';
     }
 }
 
@@ -79,13 +111,15 @@ async function handleLogin(e) {
 
         const profile = profiles[0];  
         
-        // 2. Incorrect password flag on Password field
-        if (profile.Password != password) {
+        // 2. Incorrect password flag on Password field (Uses Decryption Bridge)
+        const decryptedStored = decryptPassword(profile.Password);
+        if (decryptedStored != password) {
             passwordInput.setCustomValidity('Incorrect password. Please try again.');
             loginForm.reportValidity();
             return;
         }
 
+        // RESTORED: Your original session structure!
         const safeUserData = {
             StudName: profile.StudName,
             StudNum: profile.StudNum,
@@ -94,6 +128,7 @@ async function handleLogin(e) {
         };
         localStorage.setItem('currentUser', JSON.stringify(safeUserData));
 
+        // RESTORED: Your original role-based routing!
         if (profile.Role === 'Admin') {
             window.location.href = '/dashboard-ADMIN.html';
         } else if (profile.Role === 'Coach') {
@@ -141,7 +176,7 @@ async function handleRegister(e) {
             else if (!password) regPasswordInput.setCustomValidity('Password cannot be left blank.');
             
             registerForm.reportValidity();
-            return; // Triggers finally block to re-enable button
+            return; 
         }
 
         // 2. Validate Student ID format (1 letter followed by exactly 8 digits)
@@ -160,7 +195,6 @@ async function handleRegister(e) {
         }
 
         // DATABASE DUPLICATION CHECKS
-        // Fetch database tables to verify duplicate parameters
         const [profileCheck, registrationCheck] = await Promise.all([
             supabase
                 .schema('Chessistant')
@@ -177,7 +211,6 @@ async function handleRegister(e) {
         if (profileCheck.error) throw profileCheck.error;
         if (registrationCheck.error) throw registrationCheck.error;
 
-        // Check Active Profiles Row Matches
         if (profileCheck.data && profileCheck.data.length > 0) {
             const match = profileCheck.data[0];
             if (match.Email.toLowerCase() === email.toLowerCase()) {
@@ -190,7 +223,6 @@ async function handleRegister(e) {
             return; 
         }
 
-        // Check Pending Applications Row Matches
         if (registrationCheck.data && registrationCheck.data.length > 0) {
             const match = registrationCheck.data[0];
             if (match.Email.toLowerCase() === email.toLowerCase()) {
@@ -203,12 +235,12 @@ async function handleRegister(e) {
             return;
         }
 
-        // Submit safely to database
+        // Submit safely to database (ENCRYPTED)
         const payload = {
             StudName: name,
             StudNum: studId,
             Email: email,
-            Password: password,
+            Password: encryptPassword(password),
             Date: new Date().toISOString()
         };
 
@@ -222,7 +254,7 @@ async function handleRegister(e) {
         // Clean success actions
         registerForm.reset();
         window.alert('Application submitted successfully! Please wait for an Admin to review your registration.');
-        toggleForms(new Event('click'), 'login');
+        toggleForms(null, 'login');
 
     } catch (error) {
         console.error('Registration Error:', error.message);
